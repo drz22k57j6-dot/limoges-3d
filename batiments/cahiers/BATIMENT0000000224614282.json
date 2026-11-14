@@ -1,0 +1,80 @@
+{
+ "id": "BATIMENT0000000224614282",
+ "adresse_proche": {
+  "valeur": "7 rue Eugène Le Roy 87100 Limoges",
+  "statut": "adresse BAN la plus proche (8 m)"
+ },
+ "typologie": {
+  "valeur": "maison",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 76.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 4.6,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   142,
+   142,
+   148
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "enduit gratté (crépi)",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   138,
+   123,
+   123
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "deux pentes ardoise/zinc",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.0,
+   "hauteur_m": 1.25,
+   "allege_m": 0.95,
+   "travee_m": 3.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC ou bois, volets battants ou roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [],
+ "sources_images_statut": "aucune photo libre ne montre ce bâtiment",
+ "rendu": "maillage générique coloré (build.py)"
+}

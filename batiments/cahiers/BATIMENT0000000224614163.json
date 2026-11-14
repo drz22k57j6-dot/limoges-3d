@@ -1,0 +1,113 @@
+{
+ "id": "BATIMENT0000000224614163",
+ "adresse_proche": {
+  "valeur": "4 rue La Rochefoucauld 87100 Limoges",
+  "statut": "adresse BAN la plus proche (16 m)"
+ },
+ "typologie": {
+  "valeur": "commerce",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Commercial et services",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 418.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 3.9,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 3.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   145,
+   151,
+   145
+  ],
+  "statut": "mesuré (pixels de 7 photo(s) Panoramax)"
+ },
+ "texture_mur": {
+  "valeur": "bardage métallique / enduit",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   127,
+   115,
+   111
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 3.0,
+   "hauteur_m": 2.4,
+   "allege_m": 0.3,
+   "travee_m": 4.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "vitrines aluminium",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "cd3d3698-0ae3-425d-8b90-adf95837c99b",
+   "date": "2026-10-06",
+   "distance_m": 51.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=cd3d3698-0ae3-425d-8b90-adf95837c99b"
+  },
+  {
+   "id": "9f918711-9b29-4164-935c-3d6d84bd6e9d",
+   "date": "2026-10-06",
+   "distance_m": 54.6,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=9f918711-9b29-4164-935c-3d6d84bd6e9d"
+  },
+  {
+   "id": "2d8d887f-b61b-4503-9900-e0754adb2366",
+   "date": "2025-07-30",
+   "distance_m": 56.4,
+   "licence": "etalab-2.0",
+   "auteur": "george abitbol",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=2d8d887f-b61b-4503-9900-e0754adb2366"
+  },
+  {
+   "id": "3e216240-c19a-4a1b-8626-2426184c61e3",
+   "date": "2026-10-06",
+   "distance_m": 61.8,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=3e216240-c19a-4a1b-8626-2426184c61e3"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

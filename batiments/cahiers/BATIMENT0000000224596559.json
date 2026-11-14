@@ -1,0 +1,79 @@
+{
+ "id": "BATIMENT0000000224596559",
+ "adresse_proche": {
+  "valeur": "14 rue Georges Briquet 87100 Limoges",
+  "statut": "adresse BAN la plus proche (26 m)"
+ },
+ "typologie": {
+  "valeur": "commerce",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Commercial et services",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 414.7,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 8.5,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 2,
+  "statut": "estimé (hauteur / hauteur d'étage type)"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 3.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   214,
+   211,
+   205
+  ],
+  "statut": "estimé (couleur type selon l'usage)"
+ },
+ "texture_mur": {
+  "valeur": "bardage métallique / enduit",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   122,
+   126,
+   128
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 3.0,
+   "hauteur_m": 2.4,
+   "allege_m": 0.3,
+   "travee_m": 4.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "vitrines aluminium",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [],
+ "sources_images_statut": "aucune photo libre ne montre ce bâtiment",
+ "rendu": "maillage générique coloré (build.py)"
+}

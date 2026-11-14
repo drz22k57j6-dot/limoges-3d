@@ -1,0 +1,112 @@
+{
+ "id": "BATIMENT0000000224596553",
+ "adresse_proche": {
+  "valeur": "14 rue Georges Briquet 87100 Limoges",
+  "statut": "adresse BAN la plus proche (79 m)"
+ },
+ "typologie": {
+  "valeur": "commerce",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Commercial et services",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 12549.6,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 9.3,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 3,
+  "statut": "estimé (hauteur / hauteur d'étage type)"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 3.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   141,
+   130,
+   111
+  ],
+  "statut": "mesuré (pixels de 9 photo(s) Panoramax)"
+ },
+ "texture_mur": {
+  "valeur": "bardage métallique / enduit",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   168,
+   165,
+   163
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 3.0,
+   "hauteur_m": 2.4,
+   "allege_m": 0.3,
+   "travee_m": 4.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "vitrines aluminium",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "2dfc5f9d-1e3a-4fb4-b06e-da0e9c2ba54c",
+   "date": "2026-10-06",
+   "distance_m": 97.8,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=2dfc5f9d-1e3a-4fb4-b06e-da0e9c2ba54c"
+  },
+  {
+   "id": "2cb56be9-fee2-484b-b5db-bb342db39527",
+   "date": "2026-10-06",
+   "distance_m": 98.1,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=2cb56be9-fee2-484b-b5db-bb342db39527"
+  },
+  {
+   "id": "df4b2a04-ff94-465c-a810-60748b5fb77f",
+   "date": "2026-10-06",
+   "distance_m": 99.8,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=df4b2a04-ff94-465c-a810-60748b5fb77f"
+  },
+  {
+   "id": "1c36b715-b001-4f10-882d-75adb9c514d3",
+   "date": "2026-10-06",
+   "distance_m": 100.5,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=1c36b715-b001-4f10-882d-75adb9c514d3"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

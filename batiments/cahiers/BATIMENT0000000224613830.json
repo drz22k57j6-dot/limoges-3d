@@ -1,0 +1,80 @@
+{
+ "id": "BATIMENT0000000224613830",
+ "adresse_proche": {
+  "valeur": "26 rue Eusèbe Bombal 87100 Limoges",
+  "statut": "adresse BAN la plus proche (10 m)"
+ },
+ "typologie": {
+  "valeur": "maison",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 109.2,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 7.5,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   135,
+   124,
+   112
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "enduit gratté (crépi)",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   166,
+   132,
+   115
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "deux pentes tuiles",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.0,
+   "hauteur_m": 1.25,
+   "allege_m": 0.95,
+   "travee_m": 3.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC ou bois, volets battants ou roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [],
+ "sources_images_statut": "aucune photo libre ne montre ce bâtiment",
+ "rendu": "maillage générique coloré (build.py)"
+}

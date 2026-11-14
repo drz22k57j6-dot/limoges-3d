@@ -1,0 +1,113 @@
+{
+ "id": "BATIMENT0000000224596727",
+ "adresse_proche": {
+  "valeur": "12 avenue Président Coty 87100 Limoges",
+  "statut": "adresse BAN la plus proche (19 m)"
+ },
+ "typologie": {
+  "valeur": "collectif_haut",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 503.7,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 54.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 19,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   167,
+   167,
+   165
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "panneaux béton peints / enduit lisse",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   171,
+   175,
+   174
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.2,
+   "hauteur_m": 1.35,
+   "allege_m": 0.95,
+   "travee_m": 2.7
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC blanc, volets roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "bafbb5ca-bb01-4e60-a39c-fe0cf83e0482",
+   "date": "2026-10-06",
+   "distance_m": 295.5,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=bafbb5ca-bb01-4e60-a39c-fe0cf83e0482"
+  },
+  {
+   "id": "6b7f1268-0fcd-457b-8872-03e2f6cf8af6",
+   "date": "2026-10-06",
+   "distance_m": 301.3,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=6b7f1268-0fcd-457b-8872-03e2f6cf8af6"
+  },
+  {
+   "id": "4e469440-4716-4bbc-85f0-1f4e2335f83d",
+   "date": "2026-10-06",
+   "distance_m": 304.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=4e469440-4716-4bbc-85f0-1f4e2335f83d"
+  },
+  {
+   "id": "307956ff-5974-4353-8f70-baa7659205f9",
+   "date": "2026-10-06",
+   "distance_m": 306.7,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=307956ff-5974-4353-8f70-baa7659205f9"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "moteur détaillé (building_engine.js)"
+}

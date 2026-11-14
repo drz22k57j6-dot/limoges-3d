@@ -1,0 +1,89 @@
+{
+ "id": "BATIMENT0000000224614066",
+ "adresse_proche": {
+  "valeur": "8 rue Emile Littré 87100 Limoges",
+  "statut": "adresse BAN la plus proche (13 m)"
+ },
+ "typologie": {
+  "valeur": "maison",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 75.1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 7.2,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 2,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   162,
+   128,
+   99
+  ],
+  "statut": "mesuré (pixels de 1 photo(s) Panoramax)"
+ },
+ "texture_mur": {
+  "valeur": "enduit gratté (crépi)",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   179,
+   129,
+   109
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.0,
+   "hauteur_m": 1.25,
+   "allege_m": 0.95,
+   "travee_m": 3.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC ou bois, volets battants ou roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "eaed69b7-c3ec-46e5-8d10-e346fc624f64",
+   "date": "2026-10-29",
+   "distance_m": 65.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=eaed69b7-c3ec-46e5-8d10-e346fc624f64"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

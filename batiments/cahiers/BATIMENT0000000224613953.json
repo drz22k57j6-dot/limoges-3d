@@ -1,0 +1,113 @@
+{
+ "id": "BATIMENT0000000224613953",
+ "adresse_proche": {
+  "valeur": "18 rue Eusèbe Bombal 87100 Limoges",
+  "statut": "adresse BAN la plus proche (18 m)"
+ },
+ "typologie": {
+  "valeur": "collectif_haut",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 281.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 13.7,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   171,
+   164,
+   147
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "panneaux béton peints / enduit lisse",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   197,
+   201,
+   204
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.2,
+   "hauteur_m": 1.35,
+   "allege_m": 0.95,
+   "travee_m": 2.7
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC blanc, volets roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "7e355d57-d3f7-438a-929c-a7ef287871e9",
+   "date": "2025-07-30",
+   "distance_m": 140.4,
+   "licence": "etalab-2.0",
+   "auteur": "george abitbol",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=7e355d57-d3f7-438a-929c-a7ef287871e9"
+  },
+  {
+   "id": "8ac64530-bde6-42a9-99e2-153d9a12b1a3",
+   "date": "2021-08-17",
+   "distance_m": 138.2,
+   "licence": "CC-BY-SA-4.0",
+   "auteur": "StephaneP",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=8ac64530-bde6-42a9-99e2-153d9a12b1a3"
+  },
+  {
+   "id": "dbc1c56d-b03d-4e48-b47c-de20cd049200",
+   "date": "2021-08-17",
+   "distance_m": 139.9,
+   "licence": "CC-BY-SA-4.0",
+   "auteur": "StephaneP",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=dbc1c56d-b03d-4e48-b47c-de20cd049200"
+  },
+  {
+   "id": "baf0d36d-e46a-4293-ab81-4fc10005c256",
+   "date": "2021-08-17",
+   "distance_m": 141.8,
+   "licence": "CC-BY-SA-4.0",
+   "auteur": "StephaneP",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=baf0d36d-e46a-4293-ab81-4fc10005c256"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "moteur détaillé (building_engine.js)"
+}

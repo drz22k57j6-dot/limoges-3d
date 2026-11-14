@@ -1,0 +1,108 @@
+{
+ "id": "BATIMENT0000000224613139",
+ "adresse_proche": {
+  "valeur": "7 rue Chanoine Chalmette 87100 Limoges",
+  "statut": "adresse BAN la plus proche (21 m)"
+ },
+ "typologie": {
+  "valeur": "annexe",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Annexe",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 45.9,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 2.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   188,
+   177,
+   146
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "enduit / parpaing / tôle",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   220,
+   216,
+   204
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": null,
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "porte de garage",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "1f76a958-726c-49b4-bff1-eb8556a401a1",
+   "date": "2026-10-06",
+   "distance_m": 44.8,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=1f76a958-726c-49b4-bff1-eb8556a401a1"
+  },
+  {
+   "id": "2161a513-edaa-400a-aa65-6bca46c1ff34",
+   "date": "2026-10-06",
+   "distance_m": 45.6,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=2161a513-edaa-400a-aa65-6bca46c1ff34"
+  },
+  {
+   "id": "72265165-7ee4-422d-a1a4-51e71a018459",
+   "date": "2026-10-06",
+   "distance_m": 52.6,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=72265165-7ee4-422d-a1a4-51e71a018459"
+  },
+  {
+   "id": "bbfcce82-237f-46fb-bdb7-a45bcc0c460b",
+   "date": "2026-10-27",
+   "distance_m": 56.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=bbfcce82-237f-46fb-bdb7-a45bcc0c460b"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

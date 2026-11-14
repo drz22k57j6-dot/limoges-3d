@@ -1,0 +1,75 @@
+{
+ "id": "BATIMENT0000002009928250",
+ "adresse_proche": {
+  "valeur": "27bis allée du Puy Réjaud 87100 Limoges",
+  "statut": "adresse BAN la plus proche (16 m)"
+ },
+ "typologie": {
+  "valeur": "annexe",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Annexe",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 24.3,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 4.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   210,
+   200,
+   185
+  ],
+  "statut": "estimé (couleur type selon l'usage)"
+ },
+ "texture_mur": {
+  "valeur": "enduit / parpaing / tôle",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   178,
+   155,
+   143
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": null,
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "porte de garage",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [],
+ "sources_images_statut": "aucune photo libre ne montre ce bâtiment",
+ "rendu": "maillage générique coloré (build.py)"
+}

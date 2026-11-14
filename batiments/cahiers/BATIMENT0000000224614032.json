@@ -1,0 +1,92 @@
+{
+ "id": "BATIMENT0000000224614032",
+ "adresse_proche": {
+  "valeur": "49 rue de Saint Gence 87100 Limoges",
+  "statut": "adresse BAN la plus proche (5 m)"
+ },
+ "typologie": {
+  "valeur": "annexe",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Annexe",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 27.0,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 1.9,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   160,
+   152,
+   144
+  ],
+  "statut": "mesuré (pixels de 1 photo(s) Panoramax)"
+ },
+ "texture_mur": {
+  "valeur": "enduit / parpaing / tôle",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   166,
+   158,
+   151
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": null,
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "porte de garage",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "eca49ebf-f58d-42cf-b411-25997f588e3a",
+   "date": "2026-10-29",
+   "distance_m": 45.5,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=eca49ebf-f58d-42cf-b411-25997f588e3a"
+  },
+  {
+   "id": "9cfc7b6d-20d7-405d-a65d-9f0748f145f3",
+   "date": "2026-10-29",
+   "distance_m": 65.1,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=9cfc7b6d-20d7-405d-a65d-9f0748f145f3"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

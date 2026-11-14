@@ -1,0 +1,105 @@
+{
+ "id": "BATIMENT0000000010658427",
+ "adresse_proche": {
+  "valeur": "33 rue de Saint Gence 87100 Limoges",
+  "statut": "adresse BAN la plus proche (8 m)"
+ },
+ "typologie": {
+  "valeur": "commerce",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Commercial et services",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 74.2,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 3.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 3.5,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   144,
+   135,
+   134
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "bardage métallique / enduit",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   117,
+   110,
+   110
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 3.0,
+   "hauteur_m": 2.4,
+   "allege_m": 0.3,
+   "travee_m": 4.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "vitrines aluminium",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "93256f61-06ff-42a3-83ff-286452ec255a",
+   "date": "2026-10-29",
+   "distance_m": 32.4,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=93256f61-06ff-42a3-83ff-286452ec255a"
+  },
+  {
+   "id": "938d0cee-591b-4950-9a21-aef2d5749458",
+   "date": "2026-10-29",
+   "distance_m": 46.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=938d0cee-591b-4950-9a21-aef2d5749458"
+  },
+  {
+   "id": "4ee40ff5-e1d4-47eb-bc60-3ea36a03a83e",
+   "date": "2026-10-29",
+   "distance_m": 64.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=4ee40ff5-e1d4-47eb-bc60-3ea36a03a83e"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

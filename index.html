@@ -222,7 +222,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=18';
+const V = '?v=19';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1110,10 +1110,30 @@ async function main() {
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
     { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
-    // buildings rebuilt in detail by the Building Appearance Engine (profiles in data/batiments_detail)
+    // buildings rebuilt in detail by the Building Appearance Engine (profiles in data/batiments_detail):
+    // the far version is built for all of them, the detailed one only near the camera (memory on iPhone)
     fetch('data/batiments_detail/index.json' + V).then(r => r.ok ? r.json() : null).then(async idx => {
-      if (!idx) return; const BE = createBuildingEngine(THREE, { V, texBase: 'data/tex/' });
-      for (const id of idx.batiments) { try { const P = await (await fetch('data/batiments_detail/' + id + '.json' + V)).json(); const o = BE.build(P, H0); scene.add(o); window.__bae = (window.__bae || []).concat(o); const ev = await fetch('data/batiments_detail/' + id + '.env.json' + V); if (ev.ok) scene.add(BE.buildEnv(await ev.json(), groundH)); } catch (e) { console.warn('BAE', id, e); } }
+      if (!idx) return; const BE = createBuildingEngine(THREE, { V, texBase: 'data/tex/' }); window.__BE = BE;
+      const list = [];
+      await Promise.all(idx.batiments.map(async id => {
+        try {
+          const P = await (await fetch('data/batiments_detail/' + id + '.json' + V)).json(); const far = BE.build(P, H0, 'far'); scene.add(far);
+          list.push({ P, far, near: null, c: far.userData.centre, r: Math.max(...P.empreinte.map(p => Math.hypot(p[0] - far.userData.centre[0], p[1] - far.userData.centre[1]))) });
+          const ev = await fetch('data/batiments_detail/' + id + '.env.json' + V); if (ev.ok) scene.add(BE.buildEnv(await ev.json(), groundH));
+        } catch (e) { console.warn('BAE', id, e); }
+      }));
+      window.__bae = list;
+      const dispose = o => o.traverse(m => { if (m.geometry) m.geometry.dispose(); if (m.material && m.material.map && m.material.map.isCanvasTexture) m.material.map.dispose(); });
+      window.__baeUpdate = (x, z) => {   // build at most one detailed building per call, nearest first
+        let best = null, bd = 1e9;
+        for (const b of list) {
+          const d = Math.hypot(x - b.c[0], z - b.c[1]) - b.r;
+          if (b.near && d > 330) { scene.remove(b.near); dispose(b.near); b.near = null; b.far.visible = true; }
+          else if (!b.near && d < 230 && d < bd) { bd = d; best = b; }
+        }
+        if (best) { best.near = BE.build(best.P, H0, 'near'); scene.add(best.near); best.far.visible = false; }
+      };
+      setInterval(() => { const c = window.__dbg && window.__dbg.camera; if (c && !document.hidden) window.__baeUpdate(c.position.x, c.position.z); }, 400);
     }).catch(e => console.warn('BAE index', e));
     applyTime(); applyQuality();
     respawn(true);

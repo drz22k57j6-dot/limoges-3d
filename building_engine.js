@@ -107,6 +107,19 @@ export function createBuildingEngine(T, opts = {}) {
     if (!opaque) wallRect(G, 'dark', F, a, b, yAl, yb, d + 1.4, null);   // depth behind the glass (neutral dark interior)
   }
 
+  // recessed balcony: coloured back wall + door/window, slab edge, metal railing
+  function balcon(G, F, u0, u1, y0, y1, gr, seed) {
+    const bc = gr.balcon, d = bc.retrait_m, acc = lin(bc.rgb), slab = lin(bc.dalle_rgb || [236, 236, 234]), rail = lin(bc.garde_corps_rgb || [70, 74, 78]);
+    wallRect(G, 'wall', F, u0, u1, y0, y0 + 0.2, 0, acc); wallRect(G, 'wall', F, u0, u0 + 0.15, y0 + 0.2, y1, 0, acc); wallRect(G, 'wall', F, u1 - 0.15, u1, y0 + 0.2, y1, 0, acc);
+    reveal(G, 'wall', F, u0 + 0.15, u1 - 0.15, y0 + 0.2, y1, 0, d, acc.map(v => v * 0.9));
+    const a = u0 + 0.15, b = u1 - 0.15, m = (a + b) / 2;
+    wallRect(G, 'wall', F, a, b, y0 + 0.2, y1, d, acc.map(v => v * 0.95));
+    wallRect(G, 'glass', F, m - 0.45, m + 0.45, y0 + 0.2, y0 + 2.25, d - 0.01);           // French window
+    wallRect(G, 'trim', F, m - 0.5, m + 0.5, y0 + 2.25, y0 + 2.3, d - 0.02, lin([236, 236, 234]));
+    // railing at the facade line
+    wallRect(G, 'metal', F, a, b, y0 + 1.0, y0 + 1.05, 0.02, rail);
+    for (let u = a + 0.06; u < b; u += 0.12) wallRect(G, 'metal', F, u, u + 0.018, y0 + 0.2, y0 + 1.0, 0.02, rail);
+  }
   function porch(G, F, u0, u1, y0, y1, gr, slabCol) {
     const d = gr.rdc.profondeur_m, white = lin([238, 238, 236]);
     wallRect(G, 'trim', F, u0 - 0.25, u0, y0, y1, 0, white); wallRect(G, 'trim', F, u1, u1 + 0.25, y0, y1, 0, white);
@@ -116,8 +129,10 @@ export function createBuildingEngine(T, opts = {}) {
     const c = (u0 + u1) / 2; wallRect(G, 'metal', F, c - 0.03, c + 0.03, y0, y1 - 0.4, d - 0.02, lin([70, 72, 76]));
   }
 
-  function build(P, H0) {
-    const G = Builder(), Gf = Builder();
+  const NOOP = { quad() {}, tri() {}, mesh() { return null; }, B: {} };
+  // level: 'near' (detailed geometry), 'far' (envelope + painted facades) or undefined (THREE.LOD with both)
+  function build(P, H0, level) {
+    const G = level === 'far' ? NOOP : Builder(), Gf = level === 'near' ? NOOP : Builder();
     const E = P.empreinte, n = E.length, gr = P.grammaire, cc = P.couleurs_modules;
     const ground = P.sol_par_sommet.map(v => v - H0);
     const base = P.base_alt - H0, h = P.hauteur_niveau, top = base + P.niveaux * h, roofY = P.toit_alt - H0, parY = top + 0.7;
@@ -139,7 +154,7 @@ export function createBuildingEngine(T, opts = {}) {
       if (fac.role === 'pignon') continue;
       const C = chain(fac.sommets), nMod = Math.max(1, Math.round(C.L / modW)), k = C.L / (nMod * modW);
       // module colours are listed from the observed end
-      const rev = P.couleurs_depuis_fin, colOf = m => lin((cc.observes[rev ? nMod - 1 - m : m]) || cc.defaut);
+      const rev = P.couleurs_depuis_fin && fac.role === 'entrees', colOf = m => { const i = rev ? nMod - 1 - m : m; return lin((cc.repeter ? cc.observes[i % cc.observes.length] : cc.observes[i]) || cc.defaut); };
       const entS = fac.role === 'entrees' ? P.entrees.map(e => e.s) : [];
       let s = 0;
       for (let m = 0; m < nMod; m++) {
@@ -159,9 +174,13 @@ export function createBuildingEngine(T, opts = {}) {
             if (y1 < gmin + 0.3) { continue; }                          // level fully below the terrain
             if (y0 < gmin - 0.05) { wallRect(G, 'wall', F, 0, w, y0, y1, 0, wc.map(v => v * 0.85)); continue; } // half-buried level: blind wall
             if (L === 0 && isEnt) { porch(G, F, 0.15, w - 0.15, y0, y1, gr, wc); continue; }
-            if (part.type === 'loggia') loggia(G, F, 0, w, y0, y1, gr, cc, seed, lin([236, 236, 234]));
+            if (part.type === 'balcon' && L > 0) balcon(G, F, 0, w, y0, y1, gr, seed);
+            else if (L === 0 && gr.rdc && gr.rdc.rgb) { wallRect(G, 'wall', F, 0, w, y0, y1, 0, lin(gr.rdc.rgb)); if (part.type !== 'balcon') window_(G, F, 0, w, y0, y1, gr, lin(gr.rdc.rgb), seed); }
+            else if (part.type === 'loggia') loggia(G, F, 0, w, y0, y1, gr, cc, seed, lin([236, 236, 234]));
+            else if (part.type === 'balcon') window_(G, F, 0, w, y0, y1, gr, wc, seed);
             else window_(G, F, 0, w, y0, y1, gr, wc, seed);
-            if (gr.joints_niveau && part.type === 'panneau') wallRect(G, 'trim', F, 0, w, y0 - 0.008, y0 + 0.008, -0.004, wc.map(v => v * 0.72));
+            if (gr.bandeau_niveau && L > 0) wallRect(G, 'trim', F, 0, w, y0 - gr.bandeau_niveau.hauteur_m / 2, y0 + gr.bandeau_niveau.hauteur_m / 2, -0.01, lin(gr.bandeau_niveau.rgb));
+            else if (gr.joints_niveau && part.type === 'panneau') wallRect(G, 'trim', F, 0, w, y0 - 0.008, y0 + 0.008, -0.004, wc.map(v => v * 0.72));
           }
           // white crown band + parapet with metal coping
           wallRect(G, 'trim', F, 0, w, top, parY, 0, band);
@@ -176,7 +195,8 @@ export function createBuildingEngine(T, opts = {}) {
       const i = fac.sommets[0], j = fac.sommets[1], a = E[i], b = E[j], F = frame(a, b, outN(a, b)), g = Math.min(ground[i], ground[j]);
       const col = lin(P.pignon.rgb);
       for (const B of [G, Gf]) { wallRect(B, 'wall', F, 0, F.w, g - 0.5, top, 0, col); wallRect(B, 'trim', F, 0, F.w, top, parY, 0, band); }
-      for (let y = base + P.pignon.joints_m; y < top; y += P.pignon.joints_m) wallRect(G, 'trim', F, 0, F.w, y - 0.005, y + 0.005, -0.003, col.map(v => v * 0.75));
+      if (P.pignon.joints_m > 0.1) for (let y = base + P.pignon.joints_m; y < top; y += P.pignon.joints_m) wallRect(G, 'trim', F, 0, F.w, y - 0.005, y + 0.005, -0.003, col.map(v => v * 0.75));
+      if (gr.bandeau_niveau) for (let L = 1; L < P.niveaux; L++) { const y = base + L * h; if (y > g) wallRect(G, 'trim', F, 0, F.w, y - gr.bandeau_niveau.hauteur_m / 2, y + gr.bandeau_niveau.hauteur_m / 2, -0.01, lin(gr.bandeau_niveau.rgb)); }
       if (P.pignon.grilles) for (let L = 0; L < P.niveaux; L++) { const y = base + L * h + 1.8; if (y > g) box(G, 'metal', F, F.w * 0.2, F.w * 0.2 + 0.3, y, y + 0.2, -0.02, 0.0, lin([180, 180, 178])); }
       box(G, 'metal', F, -0.02, F.w + 0.02, parY, parY + 0.06, -0.05, 0.3, lin([170, 172, 174]));
     }
@@ -211,6 +231,7 @@ export function createBuildingEngine(T, opts = {}) {
     let cx = 0, cz = 0; for (const p of E) { cx += p[0]; cz += p[1]; } cx /= n; cz /= n;
     const lod = new T.LOD(); lod.position.set(cx, (base + top) / 2, cz);
     for (const g of [lod0, lod1]) g.position.set(-cx, -(base + top) / 2, -cz);
+    if (level) { const g = level === 'near' ? lod0 : lod1; g.position.set(0, 0, 0); g.name = 'bae_' + level + '_' + P.id; g.userData.centre = [cx, cz]; return g; }
     lod.addLevel(lod0, 0); lod.addLevel(lod1, opts.lodDistance || 260);
     lod.name = 'bae_' + P.id; lod.userData.profil = P;
     return lod;

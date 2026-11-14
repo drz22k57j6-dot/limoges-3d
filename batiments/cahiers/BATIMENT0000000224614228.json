@@ -1,0 +1,113 @@
+{
+ "id": "BATIMENT0000000224614228",
+ "adresse_proche": {
+  "valeur": "rue Arago 87100 Limoges",
+  "statut": "adresse BAN la plus proche (9 m)"
+ },
+ "typologie": {
+  "valeur": "maison",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 72.0,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 6.7,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 2,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   183,
+   177,
+   159
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "enduit gratté (crépi)",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   134,
+   119,
+   117
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.0,
+   "hauteur_m": 1.25,
+   "allege_m": 0.95,
+   "travee_m": 3.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC ou bois, volets battants ou roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "fc907713-c8ba-42b9-bcc0-23a74b25da3f",
+   "date": "2021-08-17",
+   "distance_m": 50.5,
+   "licence": "CC-BY-SA-4.0",
+   "auteur": "StephaneP",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=fc907713-c8ba-42b9-bcc0-23a74b25da3f"
+  },
+  {
+   "id": "5d29f5ba-cd28-4b9e-9210-8ffef009ae88",
+   "date": "2026-10-27",
+   "distance_m": 73.9,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=5d29f5ba-cd28-4b9e-9210-8ffef009ae88"
+  },
+  {
+   "id": "cab1730a-dd95-4220-90b9-635985bbc666",
+   "date": "2025-07-30",
+   "distance_m": 88.2,
+   "licence": "etalab-2.0",
+   "auteur": "george abitbol",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=cab1730a-dd95-4220-90b9-635985bbc666"
+  },
+  {
+   "id": "bbfcce82-237f-46fb-bdb7-a45bcc0c460b",
+   "date": "2026-10-27",
+   "distance_m": 93.8,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=bbfcce82-237f-46fb-bdb7-a45bcc0c460b"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

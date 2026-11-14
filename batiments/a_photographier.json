@@ -1,0 +1,117 @@
+[
+ {
+  "id": "BATIMENT0000000224596707",
+  "adresse": "1 allée Emile Kahn 87100 Limoges",
+  "hauteur_m": 25.2
+ },
+ {
+  "id": "BATIMENT0000000224596636",
+  "adresse": "1 allée Le Titien 87100 Limoges",
+  "hauteur_m": 44.6
+ },
+ {
+  "id": "BATIMENT0000000224596526",
+  "adresse": "14 rue Marcel Vardelle 87100 Limoges",
+  "hauteur_m": 15.5
+ },
+ {
+  "id": "BATIMENT0000000224596695",
+  "adresse": "18 rue Olivier de Serres 87100 Limoges",
+  "hauteur_m": 54.9
+ },
+ {
+  "id": "BATIMENT0000000224596708",
+  "adresse": "20 rue Olivier de Serres 87100 Limoges",
+  "hauteur_m": 46.1
+ },
+ {
+  "id": "BATIMENT0000000224596690",
+  "adresse": "22 rue Olivier de Serres 87100 Limoges",
+  "hauteur_m": 47.5
+ },
+ {
+  "id": "BATIMENT0000000224596721",
+  "adresse": "23 rue Maréchal Foch 87100 Limoges",
+  "hauteur_m": 24.6
+ },
+ {
+  "id": "BATIMENT0000000224596630",
+  "adresse": "27 rue Bertran de Born 87100 Limoges",
+  "hauteur_m": 13.1
+ },
+ {
+  "id": "BATIMENT0000000224596664",
+  "adresse": "3 allée Emile Kahn 87100 Limoges",
+  "hauteur_m": 25.9
+ },
+ {
+  "id": "BATIMENT0000000224596694",
+  "adresse": "3 allée Le Titien 87100 Limoges",
+  "hauteur_m": 46.5
+ },
+ {
+  "id": "BATIMENT0000000224596451",
+  "adresse": "30 avenue Président Auriol 87100 Limoges",
+  "hauteur_m": 26.5
+ },
+ {
+  "id": "BATIMENT0000000224596503",
+  "adresse": "32 avenue Président Auriol 87100 Limoges",
+  "hauteur_m": 27.4
+ },
+ {
+  "id": "BATIMENT0000000224596450",
+  "adresse": "34 avenue Président Auriol 87100 Limoges",
+  "hauteur_m": 26.6
+ },
+ {
+  "id": "BATIMENT0000000224596703",
+  "adresse": "37 avenue Président Coty 87100 Limoges",
+  "hauteur_m": 13.0
+ },
+ {
+  "id": "BATIMENT0000000224596731",
+  "adresse": "37 avenue Président Coty 87100 Limoges",
+  "hauteur_m": 32.4
+ },
+ {
+  "id": "BATIMENT0000000224596622",
+  "adresse": "37 rue Olivier de Serres 87100 Limoges",
+  "hauteur_m": 14.4
+ },
+ {
+  "id": "BATIMENT0000000224596685",
+  "adresse": "38 rue Albert Samain 87100 Limoges",
+  "hauteur_m": 16.6
+ },
+ {
+  "id": "BATIMENT0000000224596643",
+  "adresse": "38 rue Olivier de Serres 87100 Limoges",
+  "hauteur_m": 20.6
+ },
+ {
+  "id": "BATIMENT0000000224596635",
+  "adresse": "47 rue Albert Samain 87100 Limoges",
+  "hauteur_m": 13.5
+ },
+ {
+  "id": "BATIMENT0000000224596621",
+  "adresse": "47 rue Olivier de Serres 87100 Limoges",
+  "hauteur_m": 16.5
+ },
+ {
+  "id": "BATIMENT0000000224596710",
+  "adresse": "55 rue Maréchal Foch 87100 Limoges",
+  "hauteur_m": 28.6
+ },
+ {
+  "id": "BATIMENT0000000224596723",
+  "adresse": "57 rue Albert Samain 87100 Limoges",
+  "hauteur_m": 14.7
+ },
+ {
+  "id": "BATIMENT0000000224596649",
+  "adresse": "allée Abbé Desgranges 87100 Limoges",
+  "hauteur_m": 24.7
+ }
+]

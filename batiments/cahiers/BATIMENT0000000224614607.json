@@ -1,0 +1,112 @@
+{
+ "id": "BATIMENT0000000224614607",
+ "adresse_proche": {
+  "valeur": "5 rue Eusèbe Bombal 87100 Limoges",
+  "statut": "adresse BAN la plus proche (25 m)"
+ },
+ "typologie": {
+  "valeur": "collectif_haut",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Indifférencié",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 110.7,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 21.4,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 8,
+  "statut": "estimé (hauteur / hauteur d'étage type)"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   171,
+   164,
+   147
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "panneaux béton peints / enduit lisse",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   152,
+   156,
+   163
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.2,
+   "hauteur_m": 1.35,
+   "allege_m": 0.95,
+   "travee_m": 2.7
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC blanc, volets roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "7a8cf2b6-8847-41a8-9a22-338c671b5345",
+   "date": "2025-07-30",
+   "distance_m": 83.2,
+   "licence": "etalab-2.0",
+   "auteur": "george abitbol",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=7a8cf2b6-8847-41a8-9a22-338c671b5345"
+  },
+  {
+   "id": "fd8f2476-91df-4bbb-8bc7-48044f1da4fb",
+   "date": "2025-07-30",
+   "distance_m": 83.4,
+   "licence": "etalab-2.0",
+   "auteur": "george abitbol",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=fd8f2476-91df-4bbb-8bc7-48044f1da4fb"
+  },
+  {
+   "id": "1a2ddf37-146a-4445-872e-50fd29c83aa7",
+   "date": "2026-10-06",
+   "distance_m": 87.1,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=1a2ddf37-146a-4445-872e-50fd29c83aa7"
+  },
+  {
+   "id": "ad03f935-164b-4005-b919-da120a232f1f",
+   "date": "2026-10-06",
+   "distance_m": 87.2,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=ad03f935-164b-4005-b919-da120a232f1f"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

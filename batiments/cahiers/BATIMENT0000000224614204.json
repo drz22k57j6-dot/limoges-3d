@@ -1,0 +1,113 @@
+{
+ "id": "BATIMENT0000000224614204",
+ "adresse_proche": {
+  "valeur": "9 rue La Rochefoucauld 87100 Limoges",
+  "statut": "adresse BAN la plus proche (17 m)"
+ },
+ "typologie": {
+  "valeur": "maison",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 139.5,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 3.3,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 1,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.7,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   188,
+   179,
+   161
+  ],
+  "statut": "estimé (estimation (6 voisins mesurés))"
+ },
+ "texture_mur": {
+  "valeur": "enduit gratté (crépi)",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   119,
+   118,
+   116
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.0,
+   "hauteur_m": 1.25,
+   "allege_m": 0.95,
+   "travee_m": 3.0
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC ou bois, volets battants ou roulants",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "9f918711-9b29-4164-935c-3d6d84bd6e9d",
+   "date": "2026-10-06",
+   "distance_m": 74.0,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=9f918711-9b29-4164-935c-3d6d84bd6e9d"
+  },
+  {
+   "id": "2d8d887f-b61b-4503-9900-e0754adb2366",
+   "date": "2025-07-30",
+   "distance_m": 79.1,
+   "licence": "etalab-2.0",
+   "auteur": "george abitbol",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=2d8d887f-b61b-4503-9900-e0754adb2366"
+  },
+  {
+   "id": "d5228029-780d-4c8c-a398-a19d26644cc6",
+   "date": "2021-08-17",
+   "distance_m": 74.5,
+   "licence": "CC-BY-SA-4.0",
+   "auteur": "StephaneP",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=d5228029-780d-4c8c-a398-a19d26644cc6"
+  },
+  {
+   "id": "b742e05d-4123-49c4-9809-4dae9072141f",
+   "date": "2021-08-17",
+   "distance_m": 76.8,
+   "licence": "CC-BY-SA-4.0",
+   "auteur": "StephaneP",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=b742e05d-4123-49c4-9809-4dae9072141f"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

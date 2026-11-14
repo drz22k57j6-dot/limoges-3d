@@ -1,0 +1,113 @@
+{
+ "id": "BATIMENT0000000224614016",
+ "adresse_proche": {
+  "valeur": "25 rue de Saint Gence 87100 Limoges",
+  "statut": "adresse BAN la plus proche (11 m)"
+ },
+ "typologie": {
+  "valeur": "collectif_bas",
+  "statut": "estimé (usage BD TOPO, hauteur, surface)"
+ },
+ "usage_bdtopo": {
+  "valeur": "Résidentiel",
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "emprise_m2": {
+  "valeur": 102.3,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_m": {
+  "valeur": 10.6,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "niveaux": {
+  "valeur": 2,
+  "statut": "mesuré",
+  "source": "BD TOPO"
+ },
+ "hauteur_niveau_m": {
+  "valeur": 2.8,
+  "statut": "estimé (valeur type)"
+ },
+ "couleur_mur_rgb": {
+  "valeur": [
+   177,
+   164,
+   160
+  ],
+  "statut": "mesuré (pixels de 4 photo(s) Panoramax)"
+ },
+ "texture_mur": {
+  "valeur": "enduit gratté",
+  "statut": "estimé (typologie)"
+ },
+ "couleur_toit_rgb": {
+  "valeur": [
+   163,
+   136,
+   132
+  ],
+  "statut": "mesuré",
+  "source": "BD ORTHO"
+ },
+ "type_toit": {
+  "valeur": "plat",
+  "statut": "estimé (couleur et forme vues sur l'orthophoto)"
+ },
+ "fenetres": {
+  "valeur": {
+   "largeur_m": 1.1,
+   "hauteur_m": 1.3,
+   "allege_m": 0.95,
+   "travee_m": 2.6
+  },
+  "statut": "estimé (valeur type)"
+ },
+ "menuiseries": {
+  "valeur": "PVC blanc",
+  "statut": "estimé (typologie)"
+ },
+ "balcons_loggias": {
+  "valeur": null,
+  "statut": "non observé"
+ },
+ "sources_images": [
+  {
+   "id": "938d0cee-591b-4950-9a21-aef2d5749458",
+   "date": "2026-10-29",
+   "distance_m": 24.7,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=938d0cee-591b-4950-9a21-aef2d5749458"
+  },
+  {
+   "id": "4ee40ff5-e1d4-47eb-bc60-3ea36a03a83e",
+   "date": "2026-10-29",
+   "distance_m": 26.2,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=4ee40ff5-e1d4-47eb-bc60-3ea36a03a83e"
+  },
+  {
+   "id": "93256f61-06ff-42a3-83ff-286452ec255a",
+   "date": "2026-10-29",
+   "distance_m": 38.5,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=93256f61-06ff-42a3-83ff-286452ec255a"
+  },
+  {
+   "id": "eaed69b7-c3ec-46e5-8d10-e346fc624f64",
+   "date": "2026-10-29",
+   "distance_m": 40.2,
+   "licence": "etalab-2.0",
+   "auteur": "dsi-sig@limoges-metropole.fr",
+   "url": "https://api.panoramax.xyz/#focus=pic&pic=eaed69b7-c3ec-46e5-8d10-e346fc624f64"
+  }
+ ],
+ "sources_images_statut": "photos Panoramax (CC-BY-SA 4.0) dont le champ couvre le bâtiment — à confirmer visuellement",
+ "rendu": "maillage générique coloré (build.py)"
+}

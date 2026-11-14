@@ -1,0 +1,20 @@
+{
+ "source_observation": "capture fournie par l'utilisateur (allée Émile Kahn, vue depuis la rue Trésaguet, mars 2025), regardée seulement",
+ "mur_rgb": [236, 234, 230],
+ "grammaire": {
+  "module": [
+   {"type": "balcon", "baies": 1, "largeur_baie_m": 3.0, "statut": "observé : colonne de balcons en retrait à fond rouge"},
+   {"type": "panneau", "baies": 2, "largeur_baie_m": 2.6, "statut": "observé : fenêtres blanches sur fond blanc ; largeur estimée"}
+  ],
+  "fenetre": {"largeur_m": 1.3, "hauteur_m": 1.4, "allege_m": 0.9, "profondeur_tableau_m": 0.14, "volet_roulant": true, "statut": "observé (fenêtres blanches) ; dimensions estimées"},
+  "balcon": {"retrait_m": 1.3, "rgb": [200, 62, 58], "dalle_rgb": [205, 70, 64], "garde_corps_rgb": [70, 72, 76], "statut": "observé : balcons rouges, garde-corps métal sombre"},
+  "loggia": {"retrait_m": 0.35, "allege_opaque_m": 1.0, "meneaux_m": 0.7},
+  "bandeau_niveau": {"hauteur_m": 0.14, "rgb": [205, 70, 64], "statut": "observé : liseré rouge à chaque plancher"},
+  "bandeau_haut": {"hauteur_m": 0.5, "rgb": [205, 70, 64], "statut": "observé : acrotère rouge"},
+  "rdc": {"porche_largeur_m": 3.0, "profondeur_m": 1.2, "rgb": [128, 130, 132], "statut": "observé : soubassement gris"},
+  "joints_niveau": false
+ },
+ "couleurs_modules": {"observes": [[236, 234, 230]], "defaut": [236, 234, 230], "repeter": true, "loggia_menuiserie": [140, 148, 154], "loggia_allege": [150, 156, 160]},
+ "pignon": {"rgb": [236, 234, 230], "joints_m": 0, "grilles": false, "statut": "observé : blanc avec liserés rouges"},
+ "cahier": {"balcons_loggias": {"valeur": "colonne de balcons en retrait, fond et dalles rouges", "statut": "observé (une façade) — reproduit sur toutes les façades"}}
+}

@@ -493,7 +493,9 @@
    150,
    156,
    160
-  ]
+  ],
+  "repeter": true,
+  "statut_repetition": "extrapolé à la demande de l'utilisateur : la séquence observée sur les 11 premiers modules est répétée sur toute la façade et à l'arrière"
  },
  "pignon": {
   "rgb": [
@@ -1039,8 +1041,8 @@
   "textures": "Poly Haven « concrete_slab_wall » / enduit (CC0) pour le relief et la rugosité, teintés par la couleur observée ; motifs de joints procéduraux. Aucune photo réelle utilisée comme texture."
  },
  "non_verifie": [
-  "façade arrière (ouest) : jamais photographiée dans nos sources — grammaire de la façade principale reprise",
-  "couleurs des modules au-delà du 6e module depuis la rue Trésaguet",
+  "façade arrière (ouest) : jamais photographiée — même grammaire et même séquence de couleurs (demande de l'utilisateur)",
+  "couleurs au-delà du 11e module : séquence observée répétée (extrapolation)",
   "dimensions exactes des fenêtres et des loggias (aucun relevé)",
   "positions des volets roulants (générées, état variable observé)",
   "intérieurs des logements (fond sombre neutre)"
