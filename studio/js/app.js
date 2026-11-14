@@ -265,6 +265,9 @@ $('imFiles').onchange = async e => {
 };
 $('imCommons').onclick = async () => { if (!S.R) return imInfo('Analysez d\'abord un bâtiment.'); imInfo('Recherche Wikimedia Commons…'); try { const l = await IMG.commons(S.R.lonlat[0], S.R.lonlat[1], 600); imAdd(l); imInfo(`${l.length} photo(s) libres géolocalisées à moins de 600 m (à aligner).`); } catch (e) { imInfo('Commons : ' + e.message); } };
 $('imPano').onclick = () => { const R = S.R; if (!R) return imInfo('Analysez d\'abord un bâtiment.'); const l = (R.photosAll || []).map(p => ({ id: 'px-' + p.id, source: p.source || 'Panoramax', thumb: p.thumb, full: p.sd, lon: p.lon, lat: p.lat, azimuth: p.azimuth, fov: p.fov, spherical: p.spherical, licence: p.licence, auteur: p.auteur, page: p.page, date: p.date, pose: 'auto' })); imAdd(l); imInfo(l.length ? `${l.length} photo(s) de rue (posées automatiquement).` : `Aucune photo Panoramax dans ${R.o.maxDist} m (augmentez le rayon dans Sources puis réanalysez).`); };
+// Jeton client Mapillary (lecture seule, fait pour être utilisé dans une page web publique)
+const MLY_DEFAULT = 'MLY|29931174879810116|4f77277d661dbe2c485a4770b357cc82';
+$('imMlyTok').value = MLY_DEFAULT;
 try { const t = localStorage.getItem('studio_mly'); if (t) $('imMlyTok').value = t; } catch (e) {}
 $('imMly').onclick = async () => { const R = S.R, tok = $('imMlyTok').value.trim(); if (!R) return imInfo('Analysez d\'abord un bâtiment.'); if (!tok) return imInfo('Créez un jeton gratuit sur mapillary.com/dashboard/developers puis collez-le.');
   try { localStorage.setItem('studio_mly', tok); } catch (e) {}
