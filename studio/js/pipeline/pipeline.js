@@ -3,6 +3,7 @@
 import { normalizePolygon, centroid, bboxOf, perimeter, ringArea, minAreaRect, median, fromL93, toL93, pointInPolygon } from '../geo.js';
 import * as IGN from '../sources/ign.js';
 import * as PX from '../sources/panoramax.js';
+import * as IMG from '../sources/images.js';
 import { analyseRoof, groundAlongOutline } from './roof.js';
 import * as FA from './facade.js';
 import { Provenance } from '../provenance.js';
@@ -125,12 +126,24 @@ export class Reconstruction {
     this.photos = [];
     if (this.o.panoramax && this.lonlat) {
       pv.source('panoramax', 'Panoramax (photos de rue)', 'licence propre à chaque photo');
-      const m = this.o.maxDist, bb = bboxOf(this.P, m);
+      let m = this.o.maxDist; const bb = bboxOf(this.P, m);
       const toLL = (x, y) => this.b.crs === 'EPSG:2154' ? fromL93(x, y) : this.b.proj.inv(x, y);
       const [w, s] = toLL(bb[0], bb[1]), [e, n] = toLL(bb[2], bb[3]);
-      let photos = [];
-      try { photos = await PX.searchPhotos(w, s, e, n, 500); this.photosAll = photos; } catch (er) { this.log('Panoramax : ' + er.message); }
-      this.log(`Panoramax : ${photos.length} photos dans un rayon de ${m} m`);
+      // recherche multi-sources : Panoramax + Mapillary (si jeton) ; rayon élargi automatiquement si rien n'est trouvé
+      const search = async (rad) => {
+        const b2 = bboxOf(this.P, rad), [w2, s2] = toLL(b2[0], b2[1]), [e2, n2] = toLL(b2[2], b2[3]); let out = [];
+        try { out = out.concat(await PX.searchPhotos(w2, s2, e2, n2, 500)); } catch (er) { this.log('Panoramax : ' + er.message); }
+        if (this.o.mapillaryToken) {
+          try { const ml = await IMG.mapillary(w2, s2, e2, n2, this.o.mapillaryToken); out = out.concat(ml.map(x => ({ ...x, sd: x.full, source: 'Mapillary' }))); pv.source('mapillary', 'Mapillary (photos de rue)', 'CC-BY-SA 4.0'); }
+          catch (er) { this.log('Mapillary : ' + er.message); }
+        }
+        return out;
+      };
+      let photos = await search(m);
+      if (!photos.length && m < 250) { this.log(`Aucune photo à ${m} m : recherche élargie à 250 m`); photos = await search(250); if (photos.length) this.o.maxDist = m = 250; }
+      this.photosAll = photos;
+      try { this.commons = await IMG.commons(this.lonlat[0], this.lonlat[1], 800); } catch (er) { this.commons = []; }
+      this.log(`Photos de rue : ${photos.length} (Panoramax${this.o.mapillaryToken ? ' + Mapillary' : ''}) dans ${m} m · Wikimedia Commons : ${this.commons.length} à aligner`);
       if (photos.length && this.b.crs === 'EPSG:2154') {
         const bbE = bboxOf(this.P, m + 5), res = Math.max(1, (bbE[2] - bbE[0]) / 1024, (bbE[3] - bbE[1]) / 1024);
         try { [this.mnsEnv, this.mntEnv] = await Promise.all([IGN.elevationGrid('MNS', bbE, res), IGN.elevationGrid('MNT', bbE, res)]); } catch (er) { this.log('occultations LiDAR indisponibles'); }
@@ -147,7 +160,7 @@ export class Reconstruction {
       for (const ph of this.photos) { try { ph.pix = await PX.loadPixels(ph, 'sd'); } catch (er) { this.log('photo ' + ph.id + ' : ' + er.message); } }
       this.photos = this.photos.filter(p => p.pix);
       const near = photos.length ? Math.min(...photos.map(p => Math.hypot(p.cam.x, p.cam.y))) : null;
-      pv.set('photos', 'Photos de rue utilisables', `${this.photos.length} / ${photos.length} trouvées`, this.photos.length ? 'photographiee' : 'deduite', this.photos.length ? 0.7 : 0.1, 'panoramax',
+      pv.set('photos', 'Photos de rue utilisables (auto)', `${this.photos.length} / ${photos.length} trouvées`, this.photos.length ? 'photographiee' : 'deduite', this.photos.length ? 0.7 : 0.1, 'panoramax',
         photos.length ? `photo la plus proche à ${near.toFixed(0)} m du centre ; visibilité testée avec le LiDAR (arbres, bâtiments)` : 'aucune photo Panoramax dans le rayon de recherche');
     }
     for (const up of this.userPhotos) { const g = this.groups[up.group]; if (g) FA.applyUserPhoto(g, up.pix, up.corners); }

@@ -117,8 +117,8 @@ function log(m) { const l = $('log'); l.textContent += m + '\n'; l.scrollTop = 1
 $('bAna').onclick = async () => {
   if (!S.b) return; sec('sPipe'); for (const k in stepState) delete stepState[k]; renderSteps(); $('log').textContent = '';
   $('bAna').disabled = $('bGen').disabled = true;
-  const R = S.R = new Reconstruction(S.b, { lidar: $('srcLidar').checked, ortho: $('srcOrtho').checked, panoramax: $('srcPano').checked, maxDist: +$('srcDist').value || 90, log, step: setStep });
-  try { await R.analyse(); $('bGen').disabled = false; renderProv(); renderFacades(); G.items = G.items.filter(x => x.blob); $('imPano').onclick(); }
+  const R = S.R = new Reconstruction(S.b, { lidar: $('srcLidar').checked, ortho: $('srcOrtho').checked, panoramax: $('srcPano').checked, maxDist: +$('srcDist').value || 90, mapillaryToken: (() => { try { return $('imMlyTok').value.trim() || localStorage.getItem('studio_mly') || ''; } catch (e) { return $('imMlyTok').value.trim(); } })(), log, step: setStep });
+  try { await R.analyse(); $('bGen').disabled = false; renderProv(); renderFacades(); G.items = G.items.filter(x => x.blob); $('imPano').onclick(); imAdd((R.commons || [])); }
   catch (e) { log('ERREUR : ' + e.message); console.error(e); }
   $('bAna').disabled = false;
 };
@@ -264,7 +264,7 @@ $('imFiles').onchange = async e => {
   imInfo(files.length + ' photo(s) ajoutée(s). Touchez « Aligner ».');
 };
 $('imCommons').onclick = async () => { if (!S.R) return imInfo('Analysez d\'abord un bâtiment.'); imInfo('Recherche Wikimedia Commons…'); try { const l = await IMG.commons(S.R.lonlat[0], S.R.lonlat[1], 600); imAdd(l); imInfo(`${l.length} photo(s) libres géolocalisées à moins de 600 m (à aligner).`); } catch (e) { imInfo('Commons : ' + e.message); } };
-$('imPano').onclick = () => { const R = S.R; if (!R) return imInfo('Analysez d\'abord un bâtiment.'); const l = (R.photosAll || []).map(p => ({ id: 'px-' + p.id, source: 'Panoramax', thumb: p.thumb, full: p.sd, lon: p.lon, lat: p.lat, azimuth: p.azimuth, fov: p.fov, spherical: p.spherical, licence: p.licence, auteur: p.auteur, page: p.page, date: p.date, pose: 'auto' })); imAdd(l); imInfo(l.length ? `${l.length} photo(s) Panoramax.` : `Aucune photo Panoramax dans ${R.o.maxDist} m (augmentez le rayon dans Sources puis réanalysez).`); };
+$('imPano').onclick = () => { const R = S.R; if (!R) return imInfo('Analysez d\'abord un bâtiment.'); const l = (R.photosAll || []).map(p => ({ id: 'px-' + p.id, source: p.source || 'Panoramax', thumb: p.thumb, full: p.sd, lon: p.lon, lat: p.lat, azimuth: p.azimuth, fov: p.fov, spherical: p.spherical, licence: p.licence, auteur: p.auteur, page: p.page, date: p.date, pose: 'auto' })); imAdd(l); imInfo(l.length ? `${l.length} photo(s) de rue (posées automatiquement).` : `Aucune photo Panoramax dans ${R.o.maxDist} m (augmentez le rayon dans Sources puis réanalysez).`); };
 try { const t = localStorage.getItem('studio_mly'); if (t) $('imMlyTok').value = t; } catch (e) {}
 $('imMly').onclick = async () => { const R = S.R, tok = $('imMlyTok').value.trim(); if (!R) return imInfo('Analysez d\'abord un bâtiment.'); if (!tok) return imInfo('Créez un jeton gratuit sur mapillary.com/dashboard/developers puis collez-le.');
   try { localStorage.setItem('studio_mly', tok); } catch (e) {}
