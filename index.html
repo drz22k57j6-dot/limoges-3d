@@ -221,7 +221,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=15';
+const V = '?v=16';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -453,6 +453,7 @@ function updateTrees(dt, cx, cz, hidden) {
   for (const im of dirty) im.instanceMatrix.needsUpdate = true;
 }
 function setupCity(gT, gO) {
+  const grassTex = texLoader.load('data/tex/herbe_d.jpg' + V); grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping; grassTex.anisotropy = 8;
   const detail = makeDetail();
   gT.scene.traverse(o => {
     if (!o.isMesh) return;
@@ -460,14 +461,20 @@ function setupCity(gT, gO) {
     o.geometry.computeVertexNormals();
     o.material = new THREE.MeshLambertMaterial({ map: old.map, reflectivity: 0, combine: THREE.MixOperation }); o.material.color.setScalar(1.22);
     o.material.onBeforeCompile = sh => {
-      sh.uniforms.detailMap = { value: detail };
+      sh.uniforms.detailMap = { value: detail }; sh.uniforms.grassMap = { value: grassTex };
       sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-      sh.fragmentShader = 'uniform sampler2D detailMap;\nvarying vec3 vWP;\n' + sh.fragmentShader.replace('#include <lights_fragment_maps>', '').replace('#include <envmap_fragment>', '').replace('#include <map_fragment>', `#include <map_fragment>
+      sh.fragmentShader = 'uniform sampler2D detailMap, grassMap;\nvarying vec3 vWP;\n' + sh.fragmentShader.replace('#include <lights_fragment_maps>', '').replace('#include <envmap_fragment>', '').replace('#include <map_fragment>', `#include <map_fragment>
         float dA = texture2D(detailMap, vWP.xz / 2.3).r;
         float dB = texture2D(detailMap, vWP.xz / 31.0).g;
         float dC = texture2D(detailMap, vWP.xz / 0.7).r;
         float near = clamp(1.0 - length(vViewPosition) / 140.0, 0.0, 1.0);
-        diffuseColor.rgb *= mix(1.0, (0.80 + 0.40 * dA) * (0.92 + 0.16 * dC), near) * (0.93 + 0.14 * dB);`);
+        diffuseColor.rgb *= mix(1.0, (0.80 + 0.40 * dA) * (0.92 + 0.16 * dC), near) * (0.93 + 0.14 * dB);
+        // grass: where the photo is green, a real grass texture gives the blades close by
+        float gr = diffuseColor.g - max(diffuseColor.r, diffuseColor.b);
+        float gm = smoothstep(0.0, 0.025, gr) * clamp(1.0 - length(vViewPosition) / 160.0, 0.0, 1.0);
+        float gt = texture2D(grassMap, vWP.xz / 1.7).r / 0.8;
+        float gt2 = texture2D(grassMap, vWP.xz / 7.3 + 0.37).r / 0.8;
+        diffuseColor.rgb *= mix(1.0, gt * (0.85 + 0.3 * gt2), gm);`);
     };
     if (old.map) { old.map.anisotropy = renderer.capabilities.getMaxAnisotropy(); old.map.colorSpace = THREE.SRGBColorSpace; }
     o.receiveShadow = true;
