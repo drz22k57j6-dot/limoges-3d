@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Universal Building Studio — Limoges 3D</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root { --bg:#0e1116; --pan:#161a22; --line:#262c38; --txt:#e8ecf2; --mut:#8b95a7; --acc:#ffb547; --mes:#3ecf8e; --pho:#4ea8ff; --ded:#ffb547; --gen:#ff6b8b; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; height:100%; background:var(--bg); color:var(--txt); font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overflow:hidden; }
+button,input,select { font:inherit; color:inherit; }
+#app { display:grid; height:100dvh; grid-template-rows:auto 1fr auto; padding-top:env(safe-area-inset-top); }
+header { display:flex; gap:8px; align-items:center; padding:8px 10px; background:var(--pan); border-bottom:1px solid var(--line); }
+header h1 { font-size:13px; letter-spacing:2px; margin:0 6px 0 0; white-space:nowrap; } header h1 b { color:var(--acc); }
+#q { flex:1; min-width:0; background:#0b0e13; border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+.btn { background:#232a36; border:1px solid #333c4c; border-radius:10px; padding:8px 12px; cursor:pointer; white-space:nowrap; }
+.btn.pri { background:var(--acc); color:#16120a; border-color:var(--acc); font-weight:700; }
+.btn:disabled { opacity:.4; }
+main { position:relative; display:grid; grid-template-columns:1fr; min-height:0; }
+#stage { position:relative; min-height:0; }
+#map, #view, #cmp { position:absolute; inset:0; }
+#view canvas { width:100%; height:100%; display:block; touch-action:none; }
+#view, #cmp { display:none; }
+.tabs { position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:900; display:flex; background:rgba(14,17,22,.8); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.tabs button { background:none; border:0; padding:7px 14px; cursor:pointer; color:var(--mut); } .tabs button.on { color:#111; background:var(--acc); font-weight:700; }
+#overlay3d { position:absolute; left:8px; bottom:8px; z-index:5; display:flex; gap:6px; flex-wrap:wrap; max-width:calc(100% - 16px); }
+#overlay3d label, .chip { background:rgba(14,17,22,.8); border:1px solid var(--line); border-radius:10px; padding:5px 9px; font-size:12px; }
+#legend { position:absolute; right:8px; bottom:8px; z-index:5; display:none; background:rgba(14,17,22,.85); border:1px solid var(--line); border-radius:10px; padding:6px 9px; font-size:12px; }
+#legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+#photoBar { position:absolute; left:8px; right:8px; top:52px; z-index:6; display:none; gap:8px; align-items:center; background:rgba(14,17,22,.85); border:1px solid var(--line); border-radius:10px; padding:6px 10px; }
+#panel { background:var(--pan); border-top:1px solid var(--line); max-height:46dvh; overflow:auto; padding-bottom:env(safe-area-inset-bottom); -webkit-overflow-scrolling:touch; }
+#ptabs { position:sticky; top:0; z-index:2; display:flex; overflow-x:auto; background:var(--pan); border-bottom:1px solid var(--line); }
+#ptabs button { flex:none; background:none; border:0; padding:10px 12px; color:var(--mut); cursor:pointer; border-bottom:2px solid transparent; }
+#ptabs button.on { color:var(--txt); border-color:var(--acc); }
+.sec { display:none; padding:10px 12px 16px; } .sec.on { display:block; }
+.row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:6px 0; }
+table { width:100%; border-collapse:collapse; font-size:13px; } td,th { padding:5px 4px; border-bottom:1px solid var(--line); vertical-align:top; text-align:left; }
+th { color:var(--mut); font-weight:500; } td.k { color:var(--mut); width:38%; }
+.tag { display:inline-block; padding:1px 7px; border-radius:8px; font-size:11px; font-weight:700; color:#0b0e13; white-space:nowrap; }
+.t-mesuree{background:var(--mes)} .t-photographiee{background:var(--pho)} .t-deduite{background:var(--ded)} .t-generee{background:var(--gen)}
+.conf { display:inline-block; width:46px; height:5px; background:#2a3140; border-radius:3px; overflow:hidden; vertical-align:middle; margin-left:4px; } .conf i { display:block; height:100%; background:var(--txt); }
+.note { color:var(--mut); font-size:12px; }
+.steps { list-style:none; padding:0; margin:4px 0; } .steps li { display:flex; gap:8px; padding:4px 0; border-bottom:1px dashed var(--line); font-size:13px; }
+.steps li span:first-child { width:20px; text-align:center; } .steps .d { color:var(--mut); font-size:12px; margin-left:auto; text-align:right; }
+#log { font:11px/1.35 ui-monospace,Menlo,monospace; color:var(--mut); white-space:pre-wrap; max-height:120px; overflow:auto; background:#0b0e13; border-radius:8px; padding:6px; margin-top:8px; }
+.warn { background:#3a2a10; border:1px solid #6b4a12; color:#ffd89a; padding:8px 10px; border-radius:10px; font-size:12px; margin:6px 0; }
+#cmp { overflow:auto; background:var(--bg); padding:52px 10px 10px; }
+.swipe { position:relative; width:100%; max-width:720px; margin:auto; } .swipe canvas { width:100%; display:block; border-radius:8px; } .swipe .top { position:absolute; inset:0; }
+.card { background:var(--pan); border:1px solid var(--line); border-radius:12px; padding:10px; margin:0 auto 12px; max-width:740px; }
+.card h3 { margin:0 0 6px; font-size:14px; }
+input[type=range] { width:100%; }
+select { background:#0b0e13; border:1px solid var(--line); border-radius:8px; padding:5px 6px; }
+input[type=number], input[type=password], input[type=text].f { width:80px; background:#0b0e13; border:1px solid var(--line); border-radius:8px; padding:5px 6px; }
+#cornerUI { position:fixed; inset:0; z-index:2000; background:#000d; display:none; flex-direction:column; }
+#cornerUI canvas { flex:1; min-height:0; width:100%; object-fit:contain; touch-action:none; }
+#cornerUI .bar { padding:10px; display:flex; gap:8px; align-items:center; background:var(--pan); }
+#alignUI { position:fixed; inset:0; z-index:2000; background:var(--bg); display:none; flex-direction:column; padding-top:env(safe-area-inset-top); }
+.abar { display:flex; gap:8px; align-items:center; padding:8px 10px; background:var(--pan); border-bottom:1px solid var(--line); }
+.abody { flex:1; min-height:0; display:grid; grid-template-rows:auto 1fr; overflow:auto; }
+.aimg canvas { width:100%; display:block; max-height:52dvh; object-fit:contain; background:#000; }
+.actl { padding:8px 12px 20px; } .actl label { display:block; margin:8px 0; font-size:13px; } #alMap { width:100%; max-width:420px; border-radius:8px; touch-action:none; display:block; }
+@media (min-width:980px) { .abody { grid-template-columns:1fr 380px; grid-template-rows:1fr; } .aimg canvas { max-height:none; height:100%; } }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-top:8px; }
+.im { background:#0b0e13; border:1px solid var(--line); border-radius:10px; overflow:hidden; font-size:11px; }
+.im img { width:100%; height:96px; object-fit:cover; display:block; background:#222; } .im div { padding:5px 6px; } .im .row { margin:4px 0 0; gap:4px; } .im .btn { padding:5px 8px; font-size:12px; }
+.leaflet-container { background:#1b1f26; }
+@media (min-width: 980px) { #app { grid-template-columns:1fr 430px; grid-template-rows:auto 1fr; } header { grid-column:1 / 3; } #panel { max-height:none; border-top:0; border-left:1px solid var(--line); } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>UNIVERSAL <b>BUILDING</b> STUDIO</h1>
+    <input id="q" placeholder="Adresse, ex. 1 à 31 allée Le Gréco, Limoges" enterkeyhint="search">
+    <button class="btn" id="go">Chercher</button>
+  </header>
+  <main>
+    <div id="stage">
+      <div class="tabs"><button data-v="map" class="on">Carte</button><button data-v="view">3D</button><button data-v="cmp">Comparer</button></div>
+      <div id="map"></div>
+      <div id="view"><canvas id="c3d"></canvas>
+        <div id="photoBar"><span class="note" id="photoInfo"></span><span style="flex:1"></span><span class="note">modèle</span><input type="range" id="opa" min="0" max="1" step="0.05" value="0.6" style="width:110px"><button class="btn" id="photoExit">Quitter</button></div>
+        <div id="overlay3d">
+          <label><input type="checkbox" id="vProv"> Provenance</label>
+          <label><input type="checkbox" id="vInt"> Intérieur (généré)</label>
+          <label><input type="checkbox" id="vEnv" checked> Environnement</label>
+        </div>
+        <div id="legend"></div>
+      </div>
+      <div id="cmp"><div class="card note">Générez un modèle pour comparer.</div></div>
+    </div>
+  </main>
+  <aside id="panel">
+    <div id="ptabs"><button data-s="sBat" class="on">Bâtiment</button><button data-s="sSrc">Sources</button><button data-s="sPipe">Pipeline</button><button data-s="sProv">Provenance</button><button data-s="sImg">Images</button><button data-s="sFac">Façades</button><button data-s="sExp">Export</button></div>
+    <section class="sec on" id="sBat"><div id="batInfo" class="note">Touchez un bâtiment sur la carte (zoom rapproché), ou cherchez une adresse. <br><br><button class="btn" id="greco">Premier test : 1 à 31 allée Le Gréco</button></div></section>
+    <section class="sec" id="sSrc">
+      <div class="row"><label><input type="checkbox" id="srcLidar" checked> LiDAR HD IGN (volume, toit, sol)</label></div>
+      <div class="row"><label><input type="checkbox" id="srcOrtho" checked> BD ORTHO 20 cm (toit, couleurs)</label></div>
+      <div class="row"><label><input type="checkbox" id="srcPano" checked> Panoramax (photos de rue)</label> <span class="note">rayon</span> <input type="number" id="srcDist" value="90" min="20" max="200"> m</div>
+      <div class="row"><label><input type="checkbox" checked disabled> Emprise : BD TOPO (France) ou OpenStreetMap (ailleurs)</label></div>
+      <p class="note">Ajoutez vos propres photos de façade dans l'onglet « Façades ». Sources écartées : Google Street View (conditions d'utilisation), Mapillary (jeton requis, possible plus tard), modèles génératifs de façades (inventent l'aspect).</p>
+    </section>
+    <section class="sec" id="sPipe">
+      <div class="row"><button class="btn pri" id="bAna" disabled>Analyser le bâtiment</button><button class="btn pri" id="bGen" disabled>Générer le modèle</button></div>
+      <ul class="steps" id="steps"></ul>
+      <div id="log"></div>
+    </section>
+    <section class="sec" id="sProv"><div class="note">Disponible après l'analyse.</div></section>
+    <section class="sec" id="sImg">
+      <p class="note">Toutes les images trouvées pour ce bâtiment. <b>Aligner</b> : vous indiquez d'où la photo a été prise (position, direction, inclinaison, zoom) en superposant le modèle ; <b>Appliquer</b> la projette sur les façades et le modèle se corrige (couleurs, fenêtres détectées).</p>
+      <div class="row"><label class="btn pri">📷 Mes photos<input type="file" id="imFiles" accept="image/*" multiple hidden></label><button class="btn" id="imCommons">Wikimedia Commons</button><button class="btn" id="imPano">Panoramax</button></div>
+      <div class="row"><input type="password" class="f" id="imMlyTok" placeholder="jeton Mapillary (gratuit)" style="width:190px"><button class="btn" id="imMly">Mapillary</button></div>
+      <div class="row"><input type="text" class="f" id="imUrl" placeholder="adresse d'une image (https://…)" style="width:220px"><button class="btn" id="imUrlGo">Importer</button></div>
+      <div class="note" id="imInfo"></div>
+      <div id="imGrid" class="grid"></div>
+      <p class="note">Sources non utilisées : Google Street View / Maps (leurs conditions interdisent d'en extraire des textures), réseaux sociaux (droits des auteurs). Vos propres photos (ou celles d'amis, avec accord) sont la meilleure source.</p>
+    </section>
+    <section class="sec" id="sFac"><div class="note">Disponible après l'analyse.</div></section>
+    <section class="sec" id="sExp">
+      <div class="row"><label><input type="checkbox" id="xEnv"> inclure l'environnement (sol + orthophoto)</label></div>
+      <div class="row"><label><input type="checkbox" id="xInt"> inclure l'intérieur généré (fictif)</label></div>
+      <div class="row"><button class="btn pri" id="bDl" disabled>Télécharger le GLB</button><span class="note" id="dlInfo"></span></div>
+      <hr style="border-color:var(--line)">
+      <p class="note">Publier dans le jeu (ajoute <code>data/studio/&lt;id&gt;.glb</code> et le manifeste au dépôt). Jeton GitHub « fine-grained » avec accès <i>Contents: read & write</i> sur le dépôt ; il reste dans cette page sauf si vous cochez « mémoriser ».</p>
+      <div class="row"><input type="text" class="f" id="ghRepo" value="drz22k57j6-dot/limoges-3d" style="width:220px"></div>
+      <div class="row"><input type="password" class="f" id="ghTok" placeholder="jeton GitHub" style="width:220px"><label class="note"><input type="checkbox" id="ghMem"> mémoriser</label></div>
+      <div class="row"><button class="btn" id="bPub" disabled>Publier dans Limoges 3D</button><a class="btn" href="../?studio=1" target="_blank">Voir dans Limoges 3D</a></div>
+      <div class="note" id="pubInfo"></div>
+    </section>
+  </aside>
+</div>
+<div id="alignUI"><div class="abar"><b id="alTitle"></b><span style="flex:1"></span><button class="btn" id="alCancel">Annuler</button><button class="btn pri" id="alApply">Appliquer au modèle</button></div>
+  <div class="abody"><div class="aimg"><canvas id="alC"></canvas></div>
+  <div class="actl">
+    <div class="row"><span class="note">Plan : touchez pour</span><select id="alTapMode"><option value="aim">viser</option><option value="pos">placer la caméra</option></select><span class="note">(glissez le point bleu pour le déplacer)</span></div>
+    <canvas id="alMap" width="320" height="220"></canvas><div class="row"><span class="note">échelle</span><input type="range" id="alZoom" min="40" max="800" step="10"></div>
+    <div class="note" id="alPos"></div>
+    <label>Direction <b id="alAzV"></b>°<input type="range" id="alAz" min="0" max="360" step="0.5"></label><div class="row"><button class="btn" data-nudge="az:-1">↺ 1°</button><button class="btn" data-nudge="az:1">↻ 1°</button><button class="btn" id="alAim">Viser le bâtiment</button></div>
+    <label>Inclinaison <b id="alPitchV"></b>°<input type="range" id="alPitch" min="-30" max="70" step="0.5"></label>
+    <label>Champ (zoom) <b id="alFovV"></b>°<input type="range" id="alFov" min="10" max="120" step="0.5"></label>
+    <label>Hauteur de prise de vue <b id="alHV"></b> m<input type="range" id="alH" min="0" max="80" step="0.1"></label>
+    <div class="row"><button class="btn" data-nudge="fwd:2">Avancer 2 m</button><button class="btn" data-nudge="fwd:-2">Reculer</button><button class="btn" data-nudge="side:-2">← 2 m</button><button class="btn" data-nudge="side:2">2 m →</button></div>
+    <div class="row"><span class="note">Modèle</span><input type="range" id="alOp" min="0" max="1" step="0.05" value="0.5" style="width:120px"><select id="alBlend"><option value="source-over">superposé</option><option value="difference">différence</option></select></div>
+    <p class="note">Faites coïncider les coins et le haut du bâtiment avec la photo. En mode « différence », c'est aligné quand les bords s'éteignent.</p>
+  </div></div></div>
+<div id="cornerUI"><canvas id="cornerC"></canvas><div class="bar"><span class="note" id="cornerTxt"></span><span style="flex:1"></span><button class="btn" id="cornerReset">Recommencer</button><button class="btn" id="cornerCancel">Annuler</button><button class="btn pri" id="cornerOk" disabled>Valider</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
