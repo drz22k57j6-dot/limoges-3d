@@ -136,11 +136,12 @@ for n_ph, (k, lst) in enumerate(by_photo.items()):
         r, g, b = P[:, 0], P[:, 1], P[:, 2]; mx = P.max(1); mn = P.min(1); lum = P.mean(1)
         ok = (lum > 55) & (lum < 250)
         ok &= ~((g > r*1.04) & (g > b*1.04) & (mx-mn > 18))        # vegetation
-        ok &= ~((b > r+18) & (b > g+4))                               # sky / blue glass
+        ok &= ~((b > r+6) & (lum > 150)) & ~((b > r+18) & (b > g+4))   # sky (bright bluish) / blue glass
         if ok.sum() < max(6, 0.25*len(P)): continue
         Q = P[ok]; ql = Q.mean(1); thr = np.percentile(ql, 35)
         Q = Q[ql >= thr]                                               # drop windows / dark joints
         col = np.median(Q, 0)
+        if col[2] > col[0]+8 and col.mean() > 175: continue          # still sky
         w = (ok.mean()) * (1.0/(1.0+d/15.0)) * (1.2 if ph['date'] >= '2023' else 1.0)
         obs.setdefault(int(bi), []).append((col, w, ph['id']))
     if n_ph % 300 == 0: print('photo', n_ph, len(by_photo), flush=True)
