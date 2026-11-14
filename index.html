@@ -388,7 +388,7 @@ function buildTrees(buf) {
     else if (h > 6 && h < 17 && rr < 0.16) k = 2;
     TREE.kind[i] = k;
     const M = P.models[KINDS[k]], s = Math.max(0.35, h / M.height);
-    TREE.sc[2 * i] = s * THREE.MathUtils.clamp(r / (M.crown * s), 0.8, 1.3); TREE.sc[2 * i + 1] = s;
+    TREE.sc[2 * i] = s * THREE.MathUtils.clamp(r / (M.crown * s), 0.45, 2.6); TREE.sc[2 * i + 1] = s; // largeur de couronne mesurée au LiDAR
     // leaf tint: the crown colour seen from above, made a little richer (the atlas is near white)
     col.setHSL(THREE.MathUtils.clamp(hsl.h, 0.17, 0.33), Math.min(1, hsl.s * 1.15 + 0.12), THREE.MathUtils.clamp(hsl.l * 1.35 + 0.05, 0.12, 0.42));
     if (k === 2) col.offsetHSL(-0.01, 0.0, 0.08);
@@ -410,13 +410,53 @@ function buildTrees(buf) {
   }
   // near and middle levels: pools refilled around the camera
   for (let k = 0; k < 4; k++) for (const lv of [0, 1]) for (const [pi, part] of P.models[KINDS[k]].lods[lv].parts.entries()) {
-    const cap = lv === 0 ? 260 : 1600;
+    const cap = lv === 0 ? 420 : 2600;
     const im = new THREE.InstancedMesh(part.geometry, part.material, cap); im.count = 0; im.frustumCulled = false;
     im.castShadow = !!part.cast; im.receiveShadow = true; im.userData.tint = part.tint;
     if (part.tint) im.setColorAt(0, new THREE.Color(1, 1, 1));
     scene.add(im); (TREE.pools[k + ':' + lv] ||= []).push(im);
   }
   TREE.zero = new THREE.Matrix4().makeScale(0, 0, 0);
+}
+// Bois denses : volume de canopée mesuré au LiDAR (surface MNH), couleur de l'orthophoto, troncs dessous.
+function buildForests(buf) {
+  const dv = new DataView(buf); if (dv.getUint32(0, true) !== 0x31524f46) return; // 'FOR1'
+  const nC = dv.getUint32(4, true), nK = dv.getUint32(8, true); let o = 12;
+  // relief de feuillage : carte de normales procédurale (touffes), répétée tous les 7 m
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d');
+  g.fillStyle = 'rgb(128,128,255)'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 900; i++) { const x = Math.random() * 256, y = Math.random() * 256, r = 4 + Math.random() * 12; for (const [dx, dy] of [[0, 0], [256, 0], [0, 256], [-256, 0], [0, -256]]) {
+    const gr = g.createRadialGradient(x + dx - r * 0.3, y + dy - r * 0.3, 1, x + dx, y + dy, r); gr.addColorStop(0, 'rgba(100,100,255,0.55)'); gr.addColorStop(0.6, 'rgba(150,150,240,0.35)'); gr.addColorStop(1, 'rgba(128,128,255,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x + dx, y + dy, r, 0, 7); g.fill(); } }
+  const nrm = new THREE.CanvasTexture(cv); nrm.wrapS = nrm.wrapT = THREE.RepeatWrapping;
+  const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 128; const g2 = cv2.getContext('2d'); const im = g2.createImageData(128, 128);
+  for (let i = 0; i < 128 * 128; i++) { const v = 200 + Math.random() * 55; im.data[4 * i] = im.data[4 * i + 1] = im.data[4 * i + 2] = v; im.data[4 * i + 3] = 255; }
+  g2.putImageData(im, 0, 0); const vari = new THREE.CanvasTexture(cv2); vari.wrapS = vari.wrapT = THREE.RepeatWrapping; vari.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, map: vari, normalMap: nrm, normalScale: new THREE.Vector2(1.6, 1.6), roughness: 0.95, side: THREE.DoubleSide });
+  for (let c = 0; c < nC; c++) {
+    const nv = dv.getUint32(o, true), ni = dv.getUint32(o + 4, true), isz = dv.getUint32(o + 8, true); o += 12;
+    const pos = new Float32Array(buf.slice(o, o + nv * 12)); o += nv * 12;
+    const col = new Uint8Array(buf.slice(o, o + nv * 3)); o += nv * 3 + ((4 - (nv * 3) % 4) % 4);
+    const idx = isz === 2 ? new Uint16Array(buf.slice(o, o + ni * 2)) : new Uint32Array(buf.slice(o, o + ni * 4)); o += ni * isz + ((4 - (ni * isz) % 4) % 4);
+    const uv = new Float32Array(nv * 2); for (let i = 0; i < nv; i++) { uv[2 * i] = pos[3 * i] / 7; uv[2 * i + 1] = pos[3 * i + 2] / 7; }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3, true)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.computeVertexNormals(); geo.computeBoundingSphere();
+    const m = new THREE.Mesh(geo, mat); m.name = 'canopee_lidar'; m.receiveShadow = true; m.castShadow = QUALITIES[qi].shadowAll;
+    scene.add(m); treeChunks.push({ obj: m, c: geo.boundingSphere.center.clone() });
+  }
+  if (nK) {
+    const k = new Float32Array(buf.slice(o, o + nK * 20)), cyl = new THREE.CylinderGeometry(0.75, 1, 1, 6, 1, true); cyl.translate(0, 0.5, 0);
+    const tm = new THREE.MeshStandardMaterial({ map: barkTexture(), roughness: 0.95 });
+    // troncs regroupés par carré de 500 m (culling)
+    const groups = new Map();
+    for (let i = 0; i < nK; i++) { const gk = key(Math.floor(k[5 * i] / 500), Math.floor(k[5 * i + 2] / 500)); let a = groups.get(gk); if (!a) groups.set(gk, a = []); a.push(i); }
+    const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), P = new THREE.Vector3(), Sc = new THREE.Vector3();
+    for (const list of groups.values()) {
+      const imm = new THREE.InstancedMesh(cyl, tm, list.length);
+      list.forEach((i, j) => { const h = k[5 * i + 3], r = 0.12 + 0.012 * h; imm.setMatrixAt(j, M4.compose(P.set(k[5 * i], k[5 * i + 1], k[5 * i + 2]), Q, Sc.set(r, h * 0.62, r))); });
+      imm.computeBoundingSphere(); imm.castShadow = false; imm.receiveShadow = true; scene.add(imm); treeChunks.push({ obj: imm, c: imm.boundingSphere.center.clone() });
+    }
+  }
+  console.info(`forêts : ${nC} morceaux de canopée, ${nK} troncs`);
 }
 function barkTexture() {
   const W = 128, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
@@ -1108,6 +1148,7 @@ async function main() {
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
+    loadBin('data/forets.wasm', 'f').then(buildForests).catch(e => console.warn('forêts', e));
     { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
     applyTime(); applyQuality();
     respawn(true);
