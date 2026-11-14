@@ -169,7 +169,7 @@ const nightMats = [];
 const manager = new THREE.LoadingManager();
 const loader = new GLTFLoader(manager); loader.setMeshoptDecoder(MeshoptDecoder);
 const prog = {};
-function setProg(k, v) { prog[k] = v; const tot = Object.values(prog).reduce((a, b) => a + b, 0) / 6; $('bar').firstElementChild.style.width = (tot * 100).toFixed(0) + '%'; }
+function setProg(k, v) { prog[k] = v; const tot = Object.values(prog).reduce((a, b) => a + b, 0) / 8; $('bar').firstElementChild.style.width = (tot * 100).toFixed(0) + '%'; }
 async function fetchProg(url, key) {
   const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status);
   const total = +r.headers.get('content-length') || 0;
@@ -280,6 +280,44 @@ function makeDetail() {
   x.putImageData(d, 0, 0);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; t.colorSpace = THREE.NoColorSpace; return t;
 }
+const texLoader = new THREE.TextureLoader();
+const waterNormal = (() => {
+  const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'); const im = x.createImageData(N, N);
+  const h = (i, j) => Math.sin(i * 0.19 + Math.sin(j * 0.07) * 2) * 0.5 + Math.sin(j * 0.23 + i * 0.05) * 0.5 + Math.sin((i + j) * 0.41) * 0.25;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const dx = h(i + 1, j) - h(i - 1, j), dy = h(i, j + 1) - h(i, j - 1), k = 4 * (j * N + i);
+    im.data[k] = 128 + dx * 60; im.data[k + 1] = 128 + dy * 60; im.data[k + 2] = 255; im.data[k + 3] = 255;
+  }
+  x.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+})();
+function buildTrees(buf) {
+  const dv = new DataView(buf), n = dv.getUint32(0, true);
+  const f = new Float32Array(buf.slice(4, 4 + n * 24)), c = new Uint8Array(buf.slice(4 + n * 24, 4 + n * 28));
+  // crown: lumpy icosphere (unit, base at 0.28, top at 1), trunk: hexagonal prism
+  const crownG = new THREE.IcosahedronGeometry(1, 1); const p = crownG.attributes.position;
+  for (let i = 0; i < p.count; i++) { const r = 0.85 + 0.3 * Math.abs(Math.sin(p.getX(i) * 5.1 + p.getY(i) * 3.7 + p.getZ(i) * 4.3)); p.setXYZ(i, p.getX(i) * r, 0.64 + p.getY(i) * 0.36 * r, p.getZ(i) * r); }
+  crownG.computeVertexNormals();
+  const trunkG = new THREE.CylinderGeometry(0.045, 0.07, 0.42, 6); trunkG.translate(0, 0.21, 0);
+  const crownM = new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true, envMapIntensity: 0.08 });
+  const trunkM = new THREE.MeshStandardMaterial({ color: 0x5a4636, roughness: 1 });
+  const buckets = new Map();
+  for (let i = 0; i < n; i++) {
+    const x = f[6 * i], z = f[6 * i + 2]; addTo(treeGrid, x, z, [x, z]);
+    const k = key(Math.floor(x / 1000), Math.floor(z / 1000)); let b = buckets.get(k); if (!b) buckets.set(k, b = []); b.push(i);
+  }
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), col = new THREE.Color(), hsl = {};
+  for (const list of buckets.values()) {
+    const cm = new THREE.InstancedMesh(crownG, crownM, list.length), tm = new THREE.InstancedMesh(trunkG, trunkM, list.length);
+    list.forEach((i, j) => {
+      const h = f[6 * i + 3], r = f[6 * i + 4];
+      Q.setFromAxisAngle(Y, f[6 * i + 5]);
+      M.compose(new THREE.Vector3(f[6 * i], f[6 * i + 1], f[6 * i + 2]), Q, new THREE.Vector3(r, h, r));
+      cm.setMatrixAt(j, M); tm.setMatrixAt(j, M);
+      col.setRGB(c[4 * i] / 255, c[4 * i + 1] / 255, c[4 * i + 2] / 255, THREE.SRGBColorSpace); col.getHSL(hsl); col.setHSL(THREE.MathUtils.clamp(hsl.h, 0.16, 0.33), Math.min(1, hsl.s * 1.2 + 0.05), Math.min(0.42, hsl.l * 1.05)); cm.setColorAt(j, col);
+    });
+    for (const m of [cm, tm]) { m.computeBoundingSphere(); m.castShadow = true; scene.add(m); treeChunks.push({ obj: m, c: m.boundingSphere.center.clone() }); }
+  }
+}
 function setupCity(gT, gO) {
   const detail = makeDetail();
   gT.scene.traverse(o => {
@@ -324,13 +362,26 @@ function setupCity(gT, gO) {
         };
         nightMats.push(m);
       }
-      if (m.name === 'bitume') { m.roughness = 0.88; }
-      if (/facade|mur|toits/.test(m.name)) { m.color.multiplyScalar(0.78); m.envMapIntensity = 0.5; }
+      const PBR = { bitume: 'bitume', toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit' };
+      const tn = PBR[m.name];
+      if (tn) {
+        const ref = m.map;
+        const fix = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (ref) { t.offset.copy(ref.offset); t.repeat.copy(ref.repeat); t.rotation = ref.rotation; t.center.copy(ref.center); } return t; };
+        m.normalMap = fix(texLoader.load('data/tex/' + tn + '_n.jpg')); m.normalScale.set(0.9, 0.9);
+        m.roughnessMap = fix(texLoader.load('data/tex/' + tn + '_r.jpg'));
+        if (!/facade|mur/.test(m.name)) m.color.setScalar(1.22); // albedo detail textures are normalised to 0.8
+        m.envMapIntensity = m.name === 'bitume' ? 0.12 : 0.3; m.needsUpdate = true;
+      }
+      if (/facade|mur/.test(m.name)) { m.color.multiplyScalar(0.74); m.envMapIntensity = 0.35; }
+      if (m.name === 'eau') {
+        m.normalMap = waterNormal; waterNormal.offset.copy(m.map.offset); waterNormal.repeat.copy(m.map.repeat);
+        m.map = null; m.color.set(0x2c4a46); m.roughness = 0.06; m.metalness = 0.0; m.envMapIntensity = 1.4; m.normalScale.set(0.35, 0.35);
+        o.receiveShadow = true; o.castShadow = false; m.needsUpdate = true;
+      }
       if (m.name === 'marquage') { m.emissive = new THREE.Color(0x222222); }
     }
   });
-  // re-chunk trees for culling
-  const treeMeshes = []; gO.scene.traverse(o => { if (o.isInstancedMesh) treeMeshes.push(o); });
+  const treeMeshes = [];
   const M = new THREE.Matrix4(), P = new THREE.Vector3(), Q = new THREE.Quaternion(), S = new THREE.Vector3();
   for (const im of treeMeshes) {
     im.updateWorldMatrix(true, false);
@@ -813,14 +864,14 @@ function setMode(m) {
 let lastStreet = '', streetT = 0;
 async function main() {
   try {
-    const [gT, gO, gC, rel, bat, rds, names] = await Promise.all([
+    const [gT, gO, gC, rel, bat, rds, treesBuf, names] = await Promise.all([
       loadGLB('data/terrain.wasm', 't'), loadGLB('data/objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
-      loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'),
+      loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'), loadBin('data/arbres.wasm', 'r2'),
       fetch('data/routes_noms.json').then(r => r.json())]);
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
-    setupCity(gT, gO); setupCar(gC); buildMap(rings);
+    setupCity(gT, gO); buildTrees(treesBuf); setupCar(gC); buildMap(rings);
     applyTime(); applyQuality();
     respawn(true);
     surfaceOffset = 0.2;
@@ -849,6 +900,7 @@ function loop(now) {
   // sun follows car for shadows
   sun.position.set(F.x + sunDir.x * 300, F.y + sunDir.y * 300, F.z + sunDir.z * 300); sun.target.position.set(F.x, F.y, F.z);
   sky.position.copy(camera.position);
+  waterNormal.offset.x = (t * 0.012) % 1; waterNormal.offset.y = (t * 0.007) % 1;
   // distance culling
   const far = QUALITIES[qi].far + 600, tf = QUALITIES[qi].trees;
   for (const c of chunks) c.obj.visible = Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;

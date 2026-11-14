@@ -1,0 +1,465 @@
+import json, struct, io, math, sys, random
+import numpy as np, tifffile
+from PIL import Image, ImageDraw
+from shapely.geometry import shape, Polygon, MultiPolygon, LineString
+from shapely.geometry.polygon import orient
+import mapbox_earcut as earcut
+
+D = sys.argv[1]; OUTD = sys.argv[2]
+X0, Y0, R = 562924.0, 6528957.0, 3000.0
+random.seed(1); rng = np.random.default_rng(1)
+
+# ---------- rasters (2 m) ----------
+def mosaic(prefix):
+    a = np.zeros((3000, 3000), np.float32)
+    for i in range(3):
+        for j in range(3):
+            t = tifffile.imread(f"{D}/{prefix}_{i}_{j}.tif")
+            a[(2-j)*1000:(3-j)*1000, i*1000:(i+1)*1000] = t
+    return a
+MNT = mosaic('mnt'); MNH = mosaic('mnh')
+XMIN, YMAX = X0-R, Y0+R
+def raster_h(x, y, A=MNT):
+    c = (np.asarray(x)-XMIN)/2-0.5; r = (YMAX-np.asarray(y))/2-0.5
+    c = np.clip(c, 0, 2998.999); r = np.clip(r, 0, 2998.999)
+    c0 = np.floor(c).astype(int); r0 = np.floor(r).astype(int); fc = c-c0; fr = r-r0
+    return (A[r0,c0]*(1-fc)*(1-fr)+A[r0,c0+1]*fc*(1-fr)+A[r0+1,c0]*(1-fc)*fr+A[r0+1,c0+1]*fc*fr)
+H0 = float(raster_h(X0, Y0))
+print('ground at address', H0)
+
+# ---------- terrain tiles ----------
+tiles = []  # (x0,y0,step,Hgrid)
+for i in range(3):
+    for j in range(3):
+        x0 = XMIN+i*2000; y0 = Y0-R+j*2000
+        step = 4.0 if (i, j) == (1, 1) else 10.0
+        n = int(2000/step)+1
+        xs = x0+np.arange(n)*step; ys = y0+np.arange(n)*step
+        gx, gy = np.meshgrid(xs, ys)  # [b,a]
+        Hg = raster_h(gx, gy).astype(np.float64)
+        if step < 10:  # match coarse neighbours on the border (no cracks)
+            k = int(10/step)
+            for edge in (Hg[0, :], Hg[-1, :], Hg[:, 0], Hg[:, -1]):
+                idx = np.arange(len(edge)); base = (idx//k)*k; nxt = np.minimum(base+k, len(edge)-1)
+                f = (idx-base)/k; edge[:] = edge[base]*(1-f)+edge[nxt]*f
+        tiles.append((x0, y0, step, Hg, i, j))
+
+def export_heights(path):
+    hb = bytearray(struct.pack('<fI', H0, len(tiles)))
+    for (x0, y0, st, Hg, i, j) in tiles:
+        mn = float(Hg.min())
+        hb += struct.pack('<ffffI', x0-X0, y0-Y0, st, mn, Hg.shape[0])
+        hb += np.round((Hg-mn)*100).astype(np.uint16).tobytes()
+    open(path, 'wb').write(hb)
+export_heights(OUTD+'/relief.bin')
+
+def mesh_h(x, y):
+    x = np.atleast_1d(np.asarray(x, float)); y = np.atleast_1d(np.asarray(y, float))
+    out = np.empty_like(x)
+    for (x0, y0, s, Hg, i, j) in tiles:
+        m = (x >= x0) & (x <= x0+2000) & (y >= y0) & (y <= y0+2000)
+        if not m.any(): continue
+        n = Hg.shape[0]-1
+        a = np.clip((x[m]-x0)/s, 0, n-1e-9); b = np.clip((y[m]-y0)/s, 0, n-1e-9)
+        a0 = np.floor(a).astype(int); b0 = np.floor(b).astype(int); fx = a-a0; fy = b-b0
+        h00 = Hg[b0, a0]; h10 = Hg[b0, a0+1]; h01 = Hg[b0+1, a0]; h11 = Hg[b0+1, a0+1]
+        up = fx >= fy
+        out[m] = np.where(up, h00+fx*(h10-h00)+fy*(h11-h10), h00+fy*(h01-h00)+fx*(h11-h01))
+    out[(x < XMIN) | (x > XMIN+6000) | (y < Y0-R) | (y > YMAX)] = np.nan
+    return out
+
+# ---------- GLB writer ----------
+class GLB:
+    def __init__(s):
+        s.bin = bytearray(); s.g = {"asset": {"version": "2.0", "generator": "Sid Limoges builder"},
+            "buffers": [], "bufferViews": [], "accessors": [], "meshes": [], "nodes": [], "materials": [],
+            "textures": [], "images": [], "samplers": [{"magFilter": 9729, "minFilter": 9987, "wrapS": 10497, "wrapT": 10497},
+                                                     {"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071}],
+            "scenes": [{"nodes": []}], "scene": 0, "extensionsUsed": []}
+    def view(s, data, target=None):
+        while len(s.bin) % 4: s.bin.append(0)
+        bv = {"buffer": 0, "byteOffset": len(s.bin), "byteLength": len(data)}
+        if target: bv["target"] = target
+        s.bin += data; s.g["bufferViews"].append(bv); return len(s.g["bufferViews"])-1
+    def acc(s, arr, typ, ctype, target=None, normalized=False, minmax=False):
+        arr = np.ascontiguousarray(arr)
+        v = s.view(arr.tobytes(), target)
+        a = {"bufferView": v, "componentType": ctype, "count": int(arr.shape[0]), "type": typ}
+        if normalized: a["normalized"] = True
+        if minmax:
+            a["min"] = [float(x) for x in arr.min(0)]; a["max"] = [float(x) for x in arr.max(0)]
+        s.g["accessors"].append(a); return len(s.g["accessors"])-1
+    def image(s, pil, q=85):
+        b = io.BytesIO(); pil.convert('RGB').save(b, 'JPEG', quality=q, optimize=True)
+        v = s.view(b.getvalue()); s.g["images"].append({"bufferView": v, "mimeType": "image/jpeg"})
+        return len(s.g["images"])-1
+    def texture(s, pil, sampler=0, q=85):
+        s.g["textures"].append({"sampler": sampler, "source": s.image(pil, q)}); return len(s.g["textures"])-1
+    def material(s, name, color=(1, 1, 1, 1), tex=None, unlit=False, rough=0.9):
+        m = {"name": name, "pbrMetallicRoughness": {"baseColorFactor": list(color), "metallicFactor": 0.0, "roughnessFactor": rough}}
+        if tex is not None: m["pbrMetallicRoughness"]["baseColorTexture"] = {"index": tex}
+        if unlit:
+            m["extensions"] = {"KHR_materials_unlit": {}}
+            if "KHR_materials_unlit" not in s.g["extensionsUsed"]: s.g["extensionsUsed"].append("KHR_materials_unlit")
+        s.g["materials"].append(m); return len(s.g["materials"])-1
+    def prim(s, pos, idx, mat, uv=None, col=None):
+        pos = np.asarray(pos, np.float32)
+        at = {"POSITION": s.acc(pos, "VEC3", 5126, 34962, minmax=True)}
+        if uv is not None: at["TEXCOORD_0"] = s.acc(np.asarray(uv, np.float32), "VEC2", 5126, 34962)
+        if col is not None:
+            c = np.asarray(col, np.float64).copy(); c[:, :3] = (c[:, :3]/255.0)**2.2*255.0  # glTF vertex colours are linear
+            at["COLOR_0"] = s.acc(np.round(c).astype(np.uint8), "VEC4", 5121, 34962, normalized=True)
+        idx = np.asarray(idx).reshape(-1)
+        ia = s.acc(idx.astype(np.uint16 if len(pos) < 65535 else np.uint32), "SCALAR", 5123 if len(pos) < 65535 else 5125, 34963)
+        return {"attributes": at, "indices": ia, "material": mat}
+    def node(s, name, prims, extra=None, root=True):
+        s.g["meshes"].append({"name": name, "primitives": prims})
+        n = {"name": name, "mesh": len(s.g["meshes"])-1}
+        if extra: n.update(extra)
+        s.g["nodes"].append(n); k = len(s.g["nodes"])-1
+        if root: s.g["scenes"][0]["nodes"].append(k)
+        return k
+    def write(s, path):
+        s.g["buffers"] = [{"byteLength": len(s.bin)}]
+        if not s.g["extensionsUsed"]: del s.g["extensionsUsed"]
+        js = json.dumps(s.g, separators=(',', ':')).encode()
+        while len(js) % 4: js += b' '
+        while len(s.bin) % 4: s.bin.append(0)
+        total = 12+8+len(js)+8+len(s.bin)
+        with open(path, 'wb') as f:
+            f.write(struct.pack('<III', 0x46546C67, 2, total))
+            f.write(struct.pack('<II', len(js), 0x4E4F534A)); f.write(js)
+            f.write(struct.pack('<II', len(s.bin), 0x004E4942)); f.write(s.bin)
+
+G = GLB(); GT = G
+def L(x, y, z):  # Lambert93 -> glTF (Y up, -Z north), origin = address
+    return np.stack([np.asarray(x)-X0, np.asarray(z)-H0, -(np.asarray(y)-Y0)], -1)
+
+# ---------- terrain ----------
+ortho = {}
+for (x0, y0, s, Hg, i, j) in tiles:
+    n = Hg.shape[0]
+    xs = x0+np.arange(n)*s; ys = y0+np.arange(n)*s
+    gx, gy = np.meshgrid(xs, ys)
+    pos = L(gx.ravel(), gy.ravel(), Hg.ravel())
+    uv = np.stack([(gx.ravel()-x0)/2000, (y0+2000-gy.ravel())/2000], -1)
+    a, b = np.meshgrid(np.arange(n-1), np.arange(n-1)); v00 = (b*n+a).ravel()
+    v10 = v00+1; v01 = v00+n; v11 = v00+n+1
+    idx = np.stack([v00, v10, v11, v00, v11, v01], -1)
+    img = Image.open(f"{D}/ortho_{i}_{j}.jpg"); ortho[(i, j)] = np.asarray(img)
+    if (i, j) != (1, 1): img = img.resize((2048, 2048), Image.LANCZOS)
+    t = G.texture(img, sampler=1, q=82 if (i, j) != (1, 1) else 85)
+    m = G.material(f"sol_{i}_{j}", tex=t, unlit=True)
+    G.node(f"Terrain_{i}_{j}", [G.prim(pos, idx, m, uv=uv)])
+print('terrain ok')
+GT.write(OUTD+'/ville_terrain.glb')
+G = GLB()
+
+def ortho_rgb(x, y):
+    x = np.asarray(x); y = np.asarray(y)
+    i = np.clip(((x-XMIN)//2000).astype(int), 0, 2); j = np.clip(((y-(Y0-R))//2000).astype(int), 0, 2)
+    px = np.clip(((x-(XMIN+i*2000))/2000*4096).astype(int), 0, 4095)
+    py = np.clip(((Y0-R+(j+1)*2000-y)/2000*4096).astype(int), 0, 4095)
+    out = np.zeros((len(x), 3))
+    for k in range(len(x)): out[k] = ortho[(i[k], j[k])][py[k], px[k]]
+    return out
+
+# ---------- facade textures ----------
+def facade(kind):
+    W = 256; im = Image.new('RGB', (W, W), (255, 255, 255)); d = ImageDraw.Draw(im)
+    if kind == 'res':
+        d.rectangle([0, 236, W, W], fill=(232, 230, 226))           # floor slab line
+        d.rectangle([70, 60, 186, 200], fill=(205, 205, 205))       # frame
+        d.rectangle([80, 70, 176, 190], fill=(58, 70, 84))          # glass
+        d.rectangle([80, 70, 176, 100], fill=(120, 110, 100))       # shutter box
+        d.line([128, 100, 128, 190], fill=(205, 205, 205), width=5)
+        d.rectangle([64, 196, 192, 206], fill=(190, 190, 190))      # sill
+    else:
+        d.rectangle([0, 80, W, 180], fill=(70, 84, 98))
+        for xx in range(0, W, 64): d.line([xx, 80, xx, 180], fill=(170, 170, 170), width=4)
+        d.rectangle([0, 236, W, W], fill=(225, 225, 225))
+    return im
+TEX_RES = G.texture(facade('res')); TEX_COM = G.texture(facade('com'))
+M_RES = G.material('facade_logements', tex=TEX_RES); M_COM = G.material('facade_activites', tex=TEX_COM)
+M_PLAIN = G.material('mur_simple')
+TXD = '/home/claude/game/pub/data/tex/'
+def ftex(n): return G.texture(Image.open(TXD+n+'_d.jpg').convert('RGB'), q=84)
+M_ROOF_T = G.material('toit_tuiles', tex=ftex('tuiles'), rough=0.75); M_ROOF_S = G.material('toit_ardoise', tex=ftex('ardoise'), rough=0.6); M_ROOF_F = G.material('toit_plat', tex=ftex('toit_plat'), rough=0.9)
+import os
+FAC = json.load(open(D+'/facades.json')) if os.path.exists(D+'/facades.json') else {}
+INFO = []
+
+# ---------- buildings ----------
+B = json.load(open(f"{D}/bat.json"))['features']
+CH = 1000.0
+ACC = {}
+CUR = [None]
+def push(k, p, uv, c, idx):
+    a = ACC.setdefault((CUR[0], k), {'p': [], 'uv': [], 'c': [], 'i': [], 'n': 0}); a['p'].append(p); a['uv'].append(uv); a['c'].append(c); a['i'].append(idx+a['n']); a['n'] += len(p)
+
+def walls(k, ring_xy, zb, zt, ground, col):
+    # ring closed (first==last), zt per vertex
+    P = np.asarray(ring_xy); n = len(P)
+    seg = np.r_[0, np.cumsum(np.hypot(*np.diff(P, axis=0).T))]
+    bot = L(P[:, 0], P[:, 1], np.full(n, zb)); top = L(P[:, 0], P[:, 1], zt)
+    pos = np.vstack([bot, top])
+    uv = np.vstack([np.stack([seg/3.0, -(zb-ground)/2.8*np.ones(n)], -1), np.stack([seg/3.0, -(zt-ground)/2.8], -1)])
+    e = np.arange(n-1)
+    idx = np.stack([e, e+1, n+e+1, e, n+e+1, n+e], -1).ravel()
+    push(k, pos, uv, np.tile(col, (2*n, 1)), idx)
+
+def roof_flat(poly, z, col):
+    rings = [np.asarray(poly.exterior.coords)[:-1]] + [np.asarray(r.coords)[:-1] for r in poly.interiors]
+    V = np.vstack(rings); ends = np.cumsum([len(r) for r in rings]).astype(np.uint32)
+    tri = np.asarray(earcut.triangulate_float64(V, ends)).reshape(-1, 3)
+    if len(tri) == 0: return
+    a, b, c = V[tri[:, 0]], V[tri[:, 1]], V[tri[:, 2]]
+    cr = (b[:, 0]-a[:, 0])*(c[:, 1]-a[:, 1])-(b[:, 1]-a[:, 1])*(c[:, 0]-a[:, 0])
+    tri[cr < 0] = tri[cr < 0][:, [0, 2, 1]]
+    push('roof_f', L(V[:, 0], V[:, 1], np.full(len(V), z)), V/4.0, np.tile(col, (len(V), 1)), tri.ravel())
+
+wall_tint = {'Résidentiel': (236, 228, 212), 'Industriel': (200, 200, 196), 'Commercial et services': (225, 222, 215),
+             'Religieux': (220, 208, 186), 'Sportif': (215, 215, 210), 'Agricole': (190, 175, 155), 'Annexe': (210, 200, 185)}
+nb = 0; gables = 0; FOOT = []
+for f in B:
+    p = f['properties']; g = shape(f['geometry'])
+    polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
+    for poly in polys:
+        poly = Polygon([(x, y) for x, y, *_ in poly.exterior.coords], [[(x, y) for x, y, *_ in r.coords] for r in poly.interiors])
+        poly = poly.simplify(0.25)
+        if poly.is_empty or not poly.is_valid or poly.area < 6 or poly.geom_type != 'Polygon': continue
+        poly = orient(poly, 1.0)
+        CUR[0] = (int((poly.centroid.x-XMIN)//CH), int((poly.centroid.y-(Y0-R))//CH))
+        FOOT.append([np.asarray(poly.exterior.coords)[:, :2], 0.0])
+        ex = np.asarray(poly.exterior.coords)
+        gh = mesh_h(ex[:, 0], ex[:, 1])
+        if np.isnan(gh).any(): continue
+        ground = float(np.mean(gh)); zb = float(gh.min())-0.8
+        h = p.get('hauteur') or ((p.get('nombre_d_etages') or 0)*2.9) or 4.0
+        h = max(2.5, float(h)); zt = ground+h; FOOT[-1][1] = zt-H0
+        usage = p.get('usage_1') or 'Indifférencié'
+        bid = p.get('cleabs')
+        if bid in FAC:
+            tint = np.array(FAC[bid]['rgb'], float); src = FAC[bid]['src']
+        else:
+            tint = np.array(wall_tint.get(usage, (226, 220, 208)), float)*rng.uniform(0.92, 1.04); src = 'estimation'
+        col = np.r_[np.clip(tint, 0, 255), 255].astype(np.uint8)
+        small = poly.area < 35 or h < 3.2 or usage == 'Annexe'
+        k = 'plain' if small else ('res' if usage in ('Résidentiel', 'Indifférencié') else 'com')
+        # roof colour from orthophoto
+        rp = poly.representative_point(); cx, cy = poly.centroid.x, poly.centroid.y
+        sx = np.r_[rp.x, cx*0.6+ex[:-1, 0]*0.4]; sy = np.r_[rp.y, cy*0.6+ex[:-1, 1]*0.4]
+        pts = [(a, b) for a, b in zip(sx, sy) if poly.contains(__import__('shapely').geometry.Point(a, b))] or [(rp.x, rp.y)]
+        rc = np.median(ortho_rgb(np.array([q[0] for q in pts]), np.array([q[1] for q in pts])), 0)
+        rc = np.clip(rc*1.08+6, 0, 255); rcol = np.r_[rc, 255].astype(np.uint8)
+        is_tiles = rc[0] > rc[1]*1.1 and rc[0] > rc[2]*1.18
+        INFO.append({'id': bid, 'usage': usage, 'hauteur_m': round(h, 1), 'mur_rgb': [int(v) for v in col[:3]], 'mur_source': src,
+                     'toit_rgb': [int(v) for v in rcol[:3]], 'toit_source': 'orthophoto IGN', 'x': round(cx-X0, 1), 'z': round(-(cy-Y0), 1)})
+        # gable roof for simple houses
+        mrr = poly.minimum_rotated_rectangle
+        if (not poly.interiors and h <= 10 and usage in ('Résidentiel', 'Indifférencié') and 40 < poly.area < 300
+                and mrr.geom_type == 'Polygon' and poly.area/mrr.area > 0.86):
+            c = np.asarray(orient(mrr, 1.0).exterior.coords)[:4]
+            l01 = np.hypot(*(c[1]-c[0])); l12 = np.hypot(*(c[2]-c[1]))
+            if l12 > l01: c = np.roll(c, -1, axis=0); l01, l12 = l12, l01
+            rh = float(np.clip(0.32*l12, 1.3, 3.5)); eave = max(zt-rh, ground+2.6); ridge = eave+rh
+            m12 = (c[1]+c[2])/2; m30 = (c[3]+c[0])/2
+            ring = np.array([c[0], c[1], m12, c[2], c[3], m30, c[0]])
+            tops = np.array([eave, eave, ridge, eave, eave, ridge, eave])
+            walls(k, ring, zb, tops, ground, col)
+            ov = 0.35  # small overhang
+            d = (c[1]-c[0])/l01; nrm = (m30-c[0]); nrm = nrm/np.linalg.norm(nrm)
+            def ext(pt, outd): return pt+outd*ov
+            e0, e1 = ext(c[0], -d-nrm), ext(c[1], d-nrm); e2, e3 = ext(c[2], d+nrm), ext(c[3], -d+nrm)
+            r12 = ext(m12, d); r30 = ext(m30, -d); dz = ov*rh/(l12/2)
+            V = np.array([e0, e1, r12, r30, e2, e3]); Z = np.array([eave-dz, eave-dz, ridge, ridge, eave-dz, eave-dz])
+            ruv = np.stack([(V-e0)@d/2.0, np.abs((V-e0)@nrm-(l12/2+ov))/1.6], -1)
+            INFO[-1]['toit'] = 'deux pentes ' + ('tuiles' if is_tiles else 'ardoise/zinc')
+            push('roof_t' if is_tiles else 'roof_s', L(V[:, 0], V[:, 1], Z), ruv, np.tile(rcol, (6, 1)),
+                 np.array([0, 1, 2, 0, 2, 3, 4, 5, 3, 4, 3, 2]))
+            gables += 1
+        else:
+            walls(k, ex, zb, np.full(len(ex), zt), ground, col)
+            for r in poly.interiors:
+                ri = np.asarray(r.coords); walls(k, ri, zb, np.full(len(ri), zt), ground, col)
+            # parapet look: roof slightly darker grey mixed with ortho
+            roof_flat(poly, zt, rcol); INFO[-1]['toit'] = 'plat'
+        nb += 1
+print('buildings', nb, 'gables', gables)
+json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
+
+for cell in sorted(set(c for c, k in ACC)):
+    prims_b = []
+    for k, m in (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F)):
+        a = ACC.get((cell, k))
+        if not a: continue
+        P = np.vstack(a['p']); I = np.concatenate(a['i']); UV = np.vstack(a['uv']); C = np.vstack(a['c'])
+        prims_b.append(G.prim(P, I, m, uv=UV, col=C))
+    G.node(f'Batiments_{cell[0]}_{cell[1]}', prims_b)
+# collision footprints: [nRings][len, x,y...] in local metres (x east, z = -north)
+fb = bytearray(struct.pack('<I', len(FOOT)))
+for r, top in FOOT:
+    q = np.stack([r[:, 0]-X0, -(r[:, 1]-Y0)], -1).astype(np.float32)
+    fb += struct.pack('<If', len(q), top) + q.tobytes()
+open(OUTD+'/batiments_collision.bin', 'wb').write(fb)
+
+# ---------- roads ----------
+Rd = json.load(open(f"{D}/routes.json"))['features']
+W = {'Type autoroutier': 10, 'Route à 2 chaussées': 7, 'Route à 1 chaussée': 5.5, 'Rond-point': 7, 'Bretelle': 5,
+     'Route empierrée': 3.5, 'Chemin': 3}
+RA = {}; CL = []; NAMES = {}
+for f in Rd:
+    p = f['properties']; nat = p.get('nature')
+    if nat not in W: continue
+    pos_sol = str(p.get('position_par_rapport_au_sol') or '0')
+    if pos_sol.startswith('-'): continue
+    w = float(p.get('largeur_de_chaussee') or 0) or W[nat]
+    g = shape(f['geometry']); lines = list(g.geoms) if g.geom_type == 'MultiLineString' else [g]
+    for ln in lines:
+        cz = np.asarray(ln.coords)
+        ln2 = LineString(cz[:, :2])
+        if ln2.length < 1: continue
+        nseg = max(1, int(ln2.length/3)); ds = np.linspace(0, ln2.length, nseg+1)
+        P = np.array([ln2.interpolate(t).coords[0] for t in ds])
+        tg = np.gradient(P, axis=0); tg /= np.linalg.norm(tg, axis=1, keepdims=True)+1e-9
+        nr = np.stack([-tg[:, 1], tg[:, 0]], -1)
+        Lp = P+nr*w/2; Rp = P-nr*w/2
+        zgr = mesh_h(P[:, 0], P[:, 1])
+        if np.isnan(zgr).any(): continue
+        zc = None
+        if pos_sol != '0' and cz.shape[1] == 3 and (cz[:, 2] > 0).all():
+            zc = np.interp(ds, np.r_[0, np.cumsum(np.hypot(*np.diff(cz[:, :2], axis=0).T))], cz[:, 2]) + 0.3
+            if np.abs(zc-zgr).max() > 25: zc = None
+        if zc is not None:
+            zl = zr = np.maximum(zc, zgr+0.22)
+        else:
+            zl = mesh_h(Lp[:, 0], Lp[:, 1])+0.22; zr = mesh_h(Rp[:, 0], Rp[:, 1])+0.22
+            zc = mesh_h(P[:, 0], P[:, 1])+0.22
+            if np.isnan(zl).any() or np.isnan(zr).any(): continue
+            zm = np.maximum(np.maximum(zl, zr), zc); zl = zr = zm
+        cell = (int((P[len(P)//2, 0]-XMIN)//CH), int((P[len(P)//2, 1]-(Y0-R))//CH))
+        ra = RA.setdefault(cell, {'rp': [], 'ri': [], 'rc': [], 'ru': [], 'mp': [], 'mi': [], 'rn': 0, 'mn': 0})
+        nm = p.get('nom_collaboratif_gauche') or ''
+        CL.append((NAMES.setdefault(nm, len(NAMES)), w, P))
+        n = len(P); pos = np.vstack([L(Lp[:, 0], Lp[:, 1], zl), L(Rp[:, 0], Rp[:, 1], zr)])
+        e = np.arange(n-1); idx = np.stack([e, n+e, n+e+1, e, n+e+1, e+1], -1).ravel()
+        smp = ortho_rgb(P[:, 0], P[:, 1])
+        sat = smp.max(1)-smp.min(1); okp = (sat < 28) & (smp.mean(1) > 45)   # keep grey asphalt pixels (no trees/cars/shadows)
+        base = np.median(smp[okp], 0) if okp.sum() >= 3 else np.array([98, 98, 100.]) if nat != 'Chemin' else np.array([140, 132, 120.])
+        c = np.r_[np.clip(base*0.95, 0, 255), 255].astype(np.uint8)
+        dist = ds
+        ruv = np.vstack([np.stack([np.zeros(n), dist/3.5], -1), np.stack([np.full(n, w/3.5), dist/3.5], -1)])
+        ra['rp'].append(pos); ra['ri'].append(idx+ra['rn']); ra['rc'].append(np.tile(c, (2*n, 1))); ra['ru'].append(ruv); ra['rn'] += 2*n
+        # dashed centre line on real roads
+        if w >= 5 and nat != 'Chemin' and pos_sol == '0':
+            for k in range(0, n-1, 2):
+                a, b = P[k], P[k+1]; nn = nr[k]*0.08
+                q = np.array([a+nn, a-nn, b-nn, b+nn]); zq = np.array([zl[k], zl[k], zl[k+1], zl[k+1]])+0.03
+                ra['mp'].append(L(q[:, 0], q[:, 1], zq)); ra['mi'].append(np.array([0, 1, 2, 0, 2, 3])+ra['mn']); ra['mn'] += 4
+M_ROAD = G.material('bitume', tex=ftex('bitume'), rough=0.95); M_MARK = G.material('marquage', color=(0.95, 0.95, 0.92, 1))
+for cell, ra in sorted(RA.items()):
+    pr = [G.prim(np.vstack(ra['rp']), np.concatenate(ra['ri']), M_ROAD, uv=np.vstack(ra['ru']), col=np.vstack(ra['rc']))]
+    if ra['mp']: pr.append(G.prim(np.vstack(ra['mp']), np.concatenate(ra['mi']), M_MARK))
+    G.node(f'Routes_{cell[0]}_{cell[1]}', pr)
+rb = bytearray(struct.pack('<I', len(CL)))
+for nid, w, P in CL:
+    q = np.stack([P[:, 0]-X0, -(P[:, 1]-Y0)], -1).astype(np.float32)
+    rb += struct.pack('<IfI', nid, w, len(q)) + q.tobytes()
+open(OUTD+'/routes_axes.bin', 'wb').write(rb)
+json.dump(list(NAMES.keys()), open(OUTD+'/routes_noms.json', 'w'), ensure_ascii=False)
+print('roads', len(CL))
+
+# ---------- trees (LiDAR canopy, GPU instancing) ----------
+mask = Image.new('L', (3000, 3000), 0); dr = ImageDraw.Draw(mask)
+for f in B:
+    g = shape(f['geometry'])
+    for poly in (g.geoms if isinstance(g, MultiPolygon) else [g]):
+        cc = np.asarray(poly.exterior.coords)[:, :2]
+        dr.polygon([((x-XMIN)/2, (YMAX-y)/2) for x, y in cc], fill=255)
+for f in Rd:
+    p = f['properties']; nat = p.get('nature')
+    if nat not in W: continue
+    w = float(p.get('largeur_de_chaussee') or 0) or W[nat]
+    g = shape(f['geometry'])
+    for ln in (g.geoms if g.geom_type == 'MultiLineString' else [g]):
+        cc = np.asarray(ln.coords)[:, :2]
+        dr.line([((x-XMIN)/2, (YMAX-y)/2) for x, y in cc], fill=255, width=max(2, int(round((w+3)/2))))
+mask = np.asarray(mask.filter(__import__('PIL.ImageFilter', fromlist=['x']).MaxFilter(5))) > 0
+from numpy.lib.stride_tricks import sliding_window_view
+Hp = np.pad(MNH, 3, constant_values=-99)
+loc = sliding_window_view(Hp, (7, 7)).max(axis=(2, 3))
+cand = (MNH >= loc-1e-6) & (MNH > 3.0) & (~mask)
+rr, cc = np.nonzero(cand)
+tx = XMIN+(cc+0.5)*2+rng.uniform(-0.6, 0.6, len(cc)); ty = YMAX-(rr+0.5)*2+rng.uniform(-0.6, 0.6, len(cc))
+th = MNH[rr, cc].astype(float)
+tz = mesh_h(tx, ty); ok = ~np.isnan(tz); tx, ty, th, tz = tx[ok], ty[ok], th[ok], tz[ok]
+print('trees', len(tx))
+
+def tree_mesh(seed, green):
+    r = np.random.default_rng(seed)
+    # icosphere subdiv 1
+    t = (1+5**0.5)/2
+    V = np.array([[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], float)
+    F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]]
+    V = list(V/np.linalg.norm(V, axis=1, keepdims=True)); mid = {}
+    def m(a, b):
+        k = (min(a, b), max(a, b))
+        if k not in mid: v = V[a]+V[b]; V.append(v/np.linalg.norm(v)); mid[k] = len(V)-1
+        return mid[k]
+    F2 = []
+    F2 = F
+    V = np.array(V)*r.uniform(0.85, 1.12, (len(V), 1))
+    crown = np.stack([V[:, 0], 0.66+V[:, 1]*0.34, V[:, 2]], -1)
+    cc = np.tile([*green, 255], (len(V), 1)).astype(np.int32)
+    cc[:, :3] = np.clip(cc[:, :3]*(0.8+0.35*(V[:, 1:2]+1)/2), 0, 255)
+    # trunk (hexagonal prism)
+    ang = np.linspace(0, 2*np.pi, 7)[:-1]
+    tb = np.stack([np.cos(ang)*0.07, np.zeros(6), np.sin(ang)*0.07], -1); tt = tb.copy(); tt[:, 1] = 0.4
+    TV = np.vstack([tb, tt]); TF = []
+    for k in range(6):
+        a, b = k, (k+1) % 6; TF += [[a, 6+b, b], [a, 6+a, 6+b]]
+    pos = np.vstack([crown, TV]); idx = np.vstack([np.array(F2), np.array(TF)+len(crown)])
+    col = np.vstack([cc, np.tile([92, 70, 50, 255], (12, 1))]).astype(np.uint8)
+    return pos, idx, col
+
+# trees -> compact binary with real crown colour from the orthophoto
+tc = np.zeros((len(tx), 3))
+for dx_ in (-1.0, 0.0, 1.0):
+    for dy_ in (-1.0, 0.0, 1.0): tc += ortho_rgb(tx+dx_, ty+dy_)
+tc /= 9.0
+tc = np.clip(tc*1.15, 0, 255)
+rad = np.clip(th*0.3, 1.3, 6.5); rot = rng.uniform(0, 2*np.pi, len(tx))
+tb = bytearray(struct.pack('<I', len(tx)))
+arr = np.stack([tx-X0, tz-0.2-H0, -(ty-Y0), th, rad, rot], -1).astype(np.float32)
+cols = np.c_[tc, np.full(len(tx), 255)].astype(np.uint8)
+tb += arr.tobytes() + cols.tobytes()
+open(OUTD+'/arbres.bin', 'wb').write(tb)
+print('trees bin', len(tx))
+
+# water surfaces (BD TOPO surface_hydrographique)
+Wt = json.load(open(f"{D}/eau.json"))['features']
+wp, wi, wu, wn = [], [], [], 0
+for f in Wt:
+    g = shape(f['geometry'])
+    for poly in (g.geoms if isinstance(g, MultiPolygon) else [g]):
+        poly = Polygon([(x, y) for x, y, *_ in poly.exterior.coords], [[(x, y) for x, y, *_ in r.coords] for r in poly.interiors])
+        if not poly.is_valid or poly.area < 4: continue
+        rings = [np.asarray(poly.exterior.coords)[:-1]] + [np.asarray(r.coords)[:-1] for r in poly.interiors]
+        V = np.vstack(rings); ends = np.cumsum([len(r) for r in rings]).astype(np.uint32)
+        hz = mesh_h(V[:, 0], V[:, 1])
+        if np.isnan(hz).any(): continue
+        z = float(np.percentile(hz, 20)) + 0.3
+        tri = np.asarray(earcut.triangulate_float64(V, ends)).reshape(-1, 3)
+        if not len(tri): continue
+        A, Bv, C = V[tri[:, 0]], V[tri[:, 1]], V[tri[:, 2]]
+        cr = (Bv[:, 0]-A[:, 0])*(C[:, 1]-A[:, 1])-(Bv[:, 1]-A[:, 1])*(C[:, 0]-A[:, 0])
+        tri[cr < 0] = tri[cr < 0][:, [0, 2, 1]]
+        wp.append(L(V[:, 0], V[:, 1], np.full(len(V), z))); wu.append(V/8.0); wi.append(tri.ravel()+wn); wn += len(V)
+if wp:
+    M_WATER = G.material('eau', tex=G.texture(Image.new('RGB', (8, 8), (255, 255, 255))), color=(0.16, 0.24, 0.22, 1), rough=0.05)
+    G.node('Eau', [G.prim(np.vstack(wp), np.concatenate(wi), M_WATER, uv=np.vstack(wu))])
+print('water polys', len(wp))
+
+G.g["scenes"][0]["extras"] = {"origine": "31 allée Le Gréco, 87100 Limoges", "lambert93": [X0, Y0, H0], "rayon_m": R}
+G.write(OUTD+'/ville_objets.glb')
+import os; print([(f, os.path.getsize(OUTD+'/'+f)/1e6) for f in os.listdir(OUTD)])
