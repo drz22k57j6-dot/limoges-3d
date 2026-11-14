@@ -99,6 +99,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { createPlateauTrees } from './plateau_trees.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
@@ -219,7 +220,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=9';
+const V = '?v=10';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -332,33 +333,91 @@ const waterNormal = (() => {
   }
   x.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 })();
+// Trees of the "Plateau" game (pine, tree, birch, sapling), each one at the place and height the LiDAR measured.
+// Levels of detail per tree: near (bark + many leaf cards, shadows), middle, far (a few big cards, per 500 m chunk).
+const TREE = { data: null, n: 0, kind: null, sc: null, grid: new Map(), pools: {}, far: [], lod: null, t: 0 };
 function buildTrees(buf) {
   const dv = new DataView(buf), n = dv.getUint32(0, true);
   const f = new Float32Array(buf.slice(4, 4 + n * 24)), c = new Uint8Array(buf.slice(4 + n * 24, 4 + n * 28));
-  // crown: lumpy icosphere (unit, base at 0.28, top at 1), trunk: hexagonal prism
-  const crownG = new THREE.IcosahedronGeometry(1, 1); const p = crownG.attributes.position;
-  for (let i = 0; i < p.count; i++) { const r = 0.85 + 0.3 * Math.abs(Math.sin(p.getX(i) * 5.1 + p.getY(i) * 3.7 + p.getZ(i) * 4.3)); p.setXYZ(i, p.getX(i) * r, 0.64 + p.getY(i) * 0.36 * r, p.getZ(i) * r); }
-  crownG.computeVertexNormals();
-  const trunkG = new THREE.CylinderGeometry(0.045, 0.07, 0.42, 6); trunkG.translate(0, 0.21, 0);
-  const crownM = new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true, envMapIntensity: 1 });
-  const trunkM = new THREE.MeshStandardMaterial({ color: 0x5a4636, roughness: 1 });
-  const buckets = new Map();
+  const P = createPlateauTrees(THREE, { sunDir, sunColor: sun.color, sunIntensity: () => sun.intensity, barkMap: barkTexture() });
+  TREE.P = P; TREE.data = f; TREE.n = n;
+  const KINDS = ['tree', 'pine', 'birch', 'sapling'];
+  TREE.kind = new Uint8Array(n); TREE.sc = new Float32Array(n * 2); TREE.col = []; TREE.lod = new Int8Array(n).fill(2);
+  const col = new THREE.Color(), hsl = {};
   for (let i = 0; i < n; i++) {
-    const x = f[6 * i], z = f[6 * i + 2]; addTo(treeGrid, x, z, [x, z]);
-    const k = key(Math.floor(x / 1000), Math.floor(z / 1000)); let b = buckets.get(k); if (!b) buckets.set(k, b = []); b.push(i);
+    const x = f[6 * i], z = f[6 * i + 2], h = f[6 * i + 3], r = f[6 * i + 4];
+    addTo(treeGrid, x, z, [x, z]);
+    col.setRGB(c[4 * i] / 255, c[4 * i + 1] / 255, c[4 * i + 2] / 255, THREE.SRGBColorSpace); col.getHSL(hsl);
+    const hash = (Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1, rr = Math.abs(hash);
+    let k = 0;
+    if (h < 4.5) k = 3;
+    else if (hsl.l < 0.16 && hsl.h > 0.22 && h > 10 && rr < 0.35) k = 1;
+    else if (h > 6 && h < 17 && rr < 0.16) k = 2;
+    TREE.kind[i] = k;
+    const M = P.models[KINDS[k]], s = Math.max(0.35, h / M.height);
+    TREE.sc[2 * i] = s * THREE.MathUtils.clamp(r / (M.crown * s), 0.8, 1.3); TREE.sc[2 * i + 1] = s;
+    // leaf tint: the crown colour seen from above, made a little richer (the atlas is near white)
+    col.setHSL(THREE.MathUtils.clamp(hsl.h, 0.17, 0.33), Math.min(1, hsl.s * 1.15 + 0.12), THREE.MathUtils.clamp(hsl.l * 1.35 + 0.05, 0.12, 0.42));
+    if (k === 2) col.offsetHSL(-0.01, 0.0, 0.08);
+    TREE.col.push(col.clone());
+    const gk = key(Math.floor(x / 50), Math.floor(z / 50)); let g = TREE.grid.get(gk); if (!g) TREE.grid.set(gk, g = []); g.push(i);
   }
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), col = new THREE.Color(), hsl = {};
-  for (const list of buckets.values()) {
-    const cm = new THREE.InstancedMesh(crownG, crownM, list.length), tm = new THREE.InstancedMesh(trunkG, trunkM, list.length);
-    list.forEach((i, j) => {
-      const h = f[6 * i + 3], r = f[6 * i + 4];
-      Q.setFromAxisAngle(Y, f[6 * i + 5]);
-      M.compose(new THREE.Vector3(f[6 * i], f[6 * i + 1], f[6 * i + 2]), Q, new THREE.Vector3(r, h, r));
-      cm.setMatrixAt(j, M); tm.setMatrixAt(j, M);
-      col.setRGB(c[4 * i] / 255, c[4 * i + 1] / 255, c[4 * i + 2] / 255, THREE.SRGBColorSpace); col.getHSL(hsl); col.setHSL(THREE.MathUtils.clamp(hsl.h, 0.16, 0.33), Math.min(1, hsl.s * 1.2 + 0.05), Math.min(0.45, hsl.l * 1.3 + 0.02)); cm.setColorAt(j, col);
-    });
-    for (const m of [cm, tm]) { m.computeBoundingSphere(); m.castShadow = true; scene.add(m); treeChunks.push({ obj: m, c: m.boundingSphere.center.clone() }); }
+  const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), V = new THREE.Vector3(), Sv = new THREE.Vector3();
+  TREE.matrix = (i, out) => { Q.setFromAxisAngle(Y, f[6 * i + 5]); return out.compose(V.set(f[6 * i], f[6 * i + 1] + 0.05, f[6 * i + 2]), Q, Sv.set(TREE.sc[2 * i], TREE.sc[2 * i + 1], TREE.sc[2 * i])); };
+  // far level: one instanced mesh per kind and 500 m chunk
+  const chunk = new Map();
+  for (let i = 0; i < n; i++) { const ck = TREE.kind[i] + ':' + key(Math.floor(f[6 * i] / 500), Math.floor(f[6 * i + 2] / 500)); let a = chunk.get(ck); if (!a) chunk.set(ck, a = []); a.push(i); }
+  TREE.slot = new Int32Array(n); TREE.farMesh = new Array(n);
+  for (const [ck, list] of chunk) {
+    const k = +ck.split(':')[0], part = P.models[KINDS[k]].lods[2].parts[0];
+    const im = new THREE.InstancedMesh(part.geometry, part.material, list.length);
+    list.forEach((i, j) => { im.setMatrixAt(j, TREE.matrix(i, M4)); im.setColorAt(j, TREE.col[i]); TREE.slot[i] = j; TREE.farMesh[i] = im; });
+    im.computeBoundingSphere(); im.frustumCulled = true;
+    scene.add(im); treeChunks.push({ obj: im, c: im.boundingSphere.center.clone() }); TREE.far.push(im);
   }
+  // near and middle levels: pools refilled around the camera
+  for (let k = 0; k < 4; k++) for (const lv of [0, 1]) for (const [pi, part] of P.models[KINDS[k]].lods[lv].parts.entries()) {
+    const cap = lv === 0 ? 260 : 1600;
+    const im = new THREE.InstancedMesh(part.geometry, part.material, cap); im.count = 0; im.frustumCulled = false;
+    im.castShadow = !!part.cast; im.receiveShadow = true; im.userData.tint = part.tint;
+    if (part.tint) im.setColorAt(0, new THREE.Color(1, 1, 1));
+    scene.add(im); (TREE.pools[k + ':' + lv] ||= []).push(im);
+  }
+  TREE.zero = new THREE.Matrix4().makeScale(0, 0, 0);
+}
+function barkTexture() {
+  const W = 128, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
+  x.fillStyle = '#7d6a55'; x.fillRect(0, 0, W, H);
+  for (let i = 0; i < 140; i++) { const xx = Math.random() * W; x.strokeStyle = `rgba(30,22,14,${0.25 + Math.random() * 0.45})`; x.lineWidth = 1 + Math.random() * 3; x.beginPath(); x.moveTo(xx, Math.random() * H); x.lineTo(xx + (Math.random() - .5) * 5, Math.random() * H); x.stroke(); }
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function updateTrees(dt, cx, cz, hidden) {
+  if (!TREE.data) return;
+  TREE.P.WIND.time.value += dt;
+  for (const k in TREE.pools) for (const im of TREE.pools[k]) im.visible = !hidden;
+  if (hidden || (TREE.t -= dt) > 0) return;
+  TREE.t = 0.3;
+  const f = TREE.data, M4 = new THREE.Matrix4(), want = new Map(), R = 170, cr = Math.ceil(R / 50);
+  const ci = Math.floor(cx / 50), cj = Math.floor(cz / 50);
+  for (let i = ci - cr; i <= ci + cr; i++) for (let j = cj - cr; j <= cj + cr; j++) {
+    const g = TREE.grid.get(key(i, j)); if (!g) continue;
+    for (const t of g) { const d = Math.hypot(f[6 * t] - cx, f[6 * t + 2] - cz); if (d < R) want.set(t, d < (TREE.kind[t] === 3 ? 35 : 45) ? 0 : 1); }
+  }
+  const dirty = new Set();
+  // trees that went back to the far level
+  for (let t = 0; t < TREE.n; t++) if (TREE.lod[t] !== 2 && !want.has(t)) { const im = TREE.farMesh[t]; im.setMatrixAt(TREE.slot[t], TREE.matrix(t, M4)); TREE.lod[t] = 2; dirty.add(im); }
+  const fill = {};
+  for (const [t, lv] of want) {
+    if (TREE.lod[t] === 2) { const im = TREE.farMesh[t]; im.setMatrixAt(TREE.slot[t], TREE.zero); dirty.add(im); }
+    TREE.lod[t] = lv;
+    const pk = TREE.kind[t] + ':' + lv, pools = TREE.pools[pk], cnt = fill[pk] || 0;
+    if (cnt >= pools[0].instanceMatrix.count) continue;
+    TREE.matrix(t, M4);
+    for (const im of pools) { im.setMatrixAt(cnt, M4); if (im.userData.tint) im.setColorAt(cnt, TREE.col[t]); }
+    fill[pk] = cnt + 1;
+  }
+  for (const pk in TREE.pools) for (const im of TREE.pools[pk]) { im.count = fill[pk] || 0; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
+  for (const im of dirty) im.instanceMatrix.needsUpdate = true;
 }
 function setupCity(gT, gO) {
   const detail = makeDetail();
@@ -1041,6 +1100,7 @@ function loop(now) {
   const far = QUALITIES[qi].far + 600, tf = QUALITIES[qi].trees;
   for (const c of chunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
+  updateTrees(dt, camera.position.x, camera.position.z, cityMode === 'google');
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : S.vf) * 3.6);
