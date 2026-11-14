@@ -124,7 +124,7 @@ const QUALITIES = [
 let qi = isTouch ? 1 : 0;
 // ---------------- cinematic post-processing ----------------
 const GradeShader = {
-  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, sat: { value: 1.14 }, contrast: { value: 1.07 }, vig: { value: 0.32 }, grain: { value: 0.022 }, warm: { value: new THREE.Vector3(1.03, 1.0, 0.96) } },
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, sat: { value: 1.08 }, contrast: { value: 1.04 }, vig: { value: 0.25 }, grain: { value: 0.015 }, warm: { value: new THREE.Vector3(1.01, 1.0, 0.98) } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: `uniform sampler2D tDiffuse; uniform float time, sat, contrast, vig, grain; uniform vec3 warm; varying vec2 vUv;
     float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)) + time) * 43758.5453); }
@@ -177,7 +177,7 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 let envRT = null;
 
 const TIMES = [
-  { name: 'JOUR', elev: 48, az: 150, sun: 2.5, hemi: 1.05, fog: 0xc4d6e8, exp: 1.05, night: 0 },
+  { name: 'JOUR', elev: 48, az: 150, sun: 2.5, hemi: 1.05, fog: 0xb9cbe0, exp: 0.85, night: 0 },
   { name: 'GOLDEN', elev: 6, az: 250, sun: 2.8, hemi: 0.8, fog: 0xe0b48a, exp: 0.9, night: 0.15 },
   { name: 'NUIT', elev: -8, az: 300, sun: 0.0, hemi: 0.3, fog: 0x0b1020, exp: 1.0, night: 1 },
 ];
@@ -219,7 +219,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=8';
+const V = '?v=9';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -945,7 +945,7 @@ async function startGoogleCity() {
       sc.traverse(o => {
         if (!o.isMesh) return;
         const old = o.material; // photogrammetry already contains the real light: draw it unlit
-        o.material = new THREE.MeshBasicMaterial({ map: old.map || null, color: old.map ? 0xffffff : old.color, fog: true });
+        o.material = new THREE.MeshBasicMaterial({ map: old.map || null, color: old.map ? 0xffffff : old.color, fog: true, toneMapped: false }); // show the photo as it is
         if (o.material.map) o.material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
         old.dispose();
       });
@@ -1053,7 +1053,7 @@ function loop(now) {
     if (!nm && lastStreet) { lastStreet = ''; $('street').style.opacity = 0; }
   }
   drawMap(); updateAudio();
-  if (composer) { gradePass.uniforms.time.value = t % 100; bloomPass.strength = TIMES[ti].night ? 0.55 : 0.18; bloomPass.threshold = TIMES[ti].night ? 0.7 : 0.93; composer.render(dt); } else renderer.render(scene, camera);
+  if (composer) { gradePass.uniforms.time.value = t % 100; bloomPass.enabled = !!TIMES[ti].night; bloomPass.strength = 0.45; bloomPass.threshold = 0.75; composer.render(dt); } else renderer.render(scene, camera);
   frames++; fpsT += dt; if (fpsT > 1) { window.__fps = frames / fpsT; frames = 0; fpsT = 0; }
 }
 main();
