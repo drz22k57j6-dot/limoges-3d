@@ -281,6 +281,24 @@ normal = normalize(mat3(viewMatrix) * normalize(nW + vec3(-gNxz.x, 0.0, -gNxz.y)
     return out;
   }
   /** Road signs and traffic lights at their OpenStreetMap places: [[kind, x, y, z, heading], ...]. */
+  /** kerbs (granite grey), gutters (smooth concrete) and bridge parapets, one merged mesh. */
+  function buildKerbs(buf) {
+    if (!buf || buf.byteLength < 8) return [];
+    const dv = new DataView(buf); const nP = dv.getUint32(0, true), nI = dv.getUint32(4, true);
+    if (!nP) return [];
+    const P = new Float32Array(buf.slice(8, 8 + nP * 16)), I = new Uint32Array(buf.slice(8 + nP * 16, 8 + nP * 16 + nI * 4));
+    const pos = new Float32Array(nP * 3), col = new Float32Array(nP * 3);
+    const C = [[0.62, 0.61, 0.58], [0.50, 0.49, 0.47], [0.66, 0.65, 0.62]];
+    for (let i = 0; i < nP; i++) {
+      pos[3 * i] = P[4 * i]; pos[3 * i + 1] = P[4 * i + 1]; pos[3 * i + 2] = P[4 * i + 2];
+      const c = C[P[4 * i + 3] | 0] || C[0], n = 0.94 + 0.06 * Math.sin(P[4 * i] * 1.7 + P[4 * i + 2] * 2.3);
+      col[3 * i] = c[0] * n; col[3 * i + 1] = c[1] * n; col[3 * i + 2] = c[2] * n;
+    }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('color', new T.BufferAttribute(col, 3));
+    g.setIndex(new T.BufferAttribute(I, 1)); g.computeVertexNormals(); g.computeBoundingSphere();
+    const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, side: T.DoubleSide }));
+    m.receiveShadow = true; m.castShadow = false; m.name = 'bordures'; return [m];
+  }
   function buildSignals(list) {
     const out = [], M = new T.Matrix4(), Q = new T.Quaternion(), Y = new T.Vector3(0, 1, 0), P = new T.Vector3(), S1 = new T.Vector3(1, 1, 1);
     const mkFace = (draw) => { const c = document.createElement('canvas'); c.width = c.height = 128; draw(c.getContext('2d')); const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t; };
@@ -324,5 +342,5 @@ normal = normalize(mat3(viewMatrix) * normalize(nW + vec3(-gNxz.x, 0.0, -gNxz.y)
     inst(lens(2.48, 0), new T.MeshStandardMaterial({ color: 0x0b2a14, roughness: 0.3 }), ts, false);
     return out;
   }
-  return { material, build, buildV3, buildDeco, buildSignals, uniforms };
+  return { material, build, buildV3, buildDeco, buildSignals, buildKerbs, uniforms };
 }

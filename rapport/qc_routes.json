@@ -1,0 +1,2825 @@
+{
+ "osm_absentes": {
+  "longueur_osm_m": 524124,
+  "longueur_absente_m": {
+   "residential": 4854,
+   "unclassified": 2480,
+   "service": 7927,
+   "secondary": 1775,
+   "tertiary": 1461,
+   "primary": 443,
+   "living_street": 131
+  },
+  "nombre": 145,
+  "liste": [
+   {
+    "classe": "unclassified",
+    "nom": "Rue de Beauvais",
+    "longueur_m": 828.4,
+    "x": -2919.0,
+    "z": -1015.2
+   },
+   {
+    "classe": "residential",
+    "nom": "Chemin des Bois",
+    "longueur_m": 548.6,
+    "x": 1282.3,
+    "z": -2966.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 498.7,
+    "x": 1948.6,
+    "z": 1159.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 463.8,
+    "x": 2994.0,
+    "z": -2540.0
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue de l'Hermiterie",
+    "longueur_m": 433.1,
+    "x": -2670.1,
+    "z": -2928.8
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue du Gué de Verthamont",
+    "longueur_m": 428.8,
+    "x": -467.6,
+    "z": 2980.4
+   },
+   {
+    "classe": "unclassified",
+    "nom": "Rue Fulton",
+    "longueur_m": 408.4,
+    "x": 2495.0,
+    "z": -2935.0
+   },
+   {
+    "classe": "secondary",
+    "nom": "Avenue Jean Gagnant",
+    "longueur_m": 365.8,
+    "x": 2891.6,
+    "z": 1479.0
+   },
+   {
+    "classe": "primary",
+    "nom": "Port du Naveix",
+    "longueur_m": 327.9,
+    "x": 2984.3,
+    "z": 1751.1
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rue du Mas-Loge",
+    "longueur_m": 325.3,
+    "x": -2988.1,
+    "z": 1374.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 298.1,
+    "x": 1070.7,
+    "z": 2962.5
+   },
+   {
+    "classe": "unclassified",
+    "nom": "Allée du Martiguet",
+    "longueur_m": 291.8,
+    "x": -2941.5,
+    "z": 1637.7
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 290.8,
+    "x": -819.9,
+    "z": 2993.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 290.5,
+    "x": 2948.5,
+    "z": 919.6
+   },
+   {
+    "classe": "unclassified",
+    "nom": null,
+    "longueur_m": 282.0,
+    "x": -435.3,
+    "z": -2986.9
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Rue de Babylone",
+    "longueur_m": 278.8,
+    "x": 2936.6,
+    "z": 2771.1
+   },
+   {
+    "classe": "unclassified",
+    "nom": "Rue de la Roche au Gô",
+    "longueur_m": 269.3,
+    "x": 1787.9,
+    "z": 2943.1
+   },
+   {
+    "classe": "secondary",
+    "nom": "Avenue de Landouge",
+    "longueur_m": 264.5,
+    "x": -2902.3,
+    "z": 536.2
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Francis Chigot",
+    "longueur_m": 260.1,
+    "x": 2950.1,
+    "z": -1073.0
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Rue Auguste Comte",
+    "longueur_m": 247.4,
+    "x": 2838.6,
+    "z": -2949.3
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Joseph Cugnot",
+    "longueur_m": 245.9,
+    "x": 2990.1,
+    "z": -2950.9
+   },
+   {
+    "classe": "unclassified",
+    "nom": null,
+    "longueur_m": 233.3,
+    "x": -2962.5,
+    "z": 1093.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 225.0,
+    "x": 2604.7,
+    "z": 1345.0
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Rue Henri Giffard",
+    "longueur_m": 217.1,
+    "x": 2677.0,
+    "z": -2955.6
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Rue du Mas Bilier",
+    "longueur_m": 204.5,
+    "x": -2994.1,
+    "z": 181.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 199.8,
+    "x": -235.2,
+    "z": 2954.5
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Charles Aznavour",
+    "longueur_m": 198.0,
+    "x": -2978.2,
+    "z": -308.7
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Duguay-Trouin",
+    "longueur_m": 190.7,
+    "x": -2935.0,
+    "z": 397.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 190.7,
+    "x": 2994.0,
+    "z": 106.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 188.6,
+    "x": 1610.9,
+    "z": 1837.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 180.4,
+    "x": -2923.6,
+    "z": 620.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 178.6,
+    "x": -770.1,
+    "z": 2946.4
+   },
+   {
+    "classe": "secondary",
+    "nom": "Pont de la Révolution",
+    "longueur_m": 176.5,
+    "x": 2306.4,
+    "z": 2985.4
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue de Pilsen",
+    "longueur_m": 174.9,
+    "x": -1144.5,
+    "z": 2996.3
+   },
+   {
+    "classe": "residential",
+    "nom": "Allée Édouard Manet",
+    "longueur_m": 169.7,
+    "x": 2966.1,
+    "z": -842.0
+   },
+   {
+    "classe": "service",
+    "nom": "Allée de Seto",
+    "longueur_m": 169.2,
+    "x": 2683.7,
+    "z": 1199.5
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Passerelle de Montplaisir",
+    "longueur_m": 167.1,
+    "x": 2989.3,
+    "z": 664.3
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Jean Delhote",
+    "longueur_m": 164.5,
+    "x": 253.5,
+    "z": -2970.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 161.9,
+    "x": 1297.7,
+    "z": 0.4
+   },
+   {
+    "classe": "service",
+    "nom": "Les Terrasses de Margaine",
+    "longueur_m": 161.4,
+    "x": 1561.0,
+    "z": 1094.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 158.9,
+    "x": 2973.6,
+    "z": -1040.7
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rue Camille Guérin",
+    "longueur_m": 158.8,
+    "x": -325.8,
+    "z": 2947.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 152.0,
+    "x": 303.5,
+    "z": 2969.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 150.8,
+    "x": 2968.0,
+    "z": 1613.7
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rue Pierre et Marie Curie",
+    "longueur_m": 149.6,
+    "x": 744.9,
+    "z": 2994.0
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Racine",
+    "longueur_m": 149.4,
+    "x": 875.9,
+    "z": -2992.0
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Avenue du Sablard",
+    "longueur_m": 148.7,
+    "x": 2990.4,
+    "z": 2018.8
+   },
+   {
+    "classe": "residential",
+    "nom": "Allée des Érables",
+    "longueur_m": 147.4,
+    "x": 1371.8,
+    "z": -2971.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 144.2,
+    "x": 2956.5,
+    "z": -1846.1
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Condorcet",
+    "longueur_m": 136.8,
+    "x": 2952.8,
+    "z": 244.6
+   },
+   {
+    "classe": "living_street",
+    "nom": "Rue Jean Fredon",
+    "longueur_m": 131.2,
+    "x": 2978.5,
+    "z": 1262.2
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rue Arthur Groussier",
+    "longueur_m": 129.7,
+    "x": 2983.0,
+    "z": -1737.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 123.2,
+    "x": 1238.7,
+    "z": 1203.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 123.2,
+    "x": 238.3,
+    "z": 2995.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 122.4,
+    "x": 1060.0,
+    "z": 2975.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 121.2,
+    "x": 738.9,
+    "z": 618.2
+   },
+   {
+    "classe": "unclassified",
+    "nom": "Rue François Tilly",
+    "longueur_m": 119.8,
+    "x": -2983.7,
+    "z": 2004.8
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Jean de Vienne",
+    "longueur_m": 119.4,
+    "x": -2954.3,
+    "z": 840.9
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Champlain",
+    "longueur_m": 115.8,
+    "x": 2969.0,
+    "z": 1087.7
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Molière",
+    "longueur_m": 115.6,
+    "x": 834.4,
+    "z": -2994.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 112.9,
+    "x": 536.1,
+    "z": 2963.0
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue des Fauvettes",
+    "longueur_m": 112.8,
+    "x": -1768.1,
+    "z": 2983.4
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Rue Eugène Varlin",
+    "longueur_m": 108.5,
+    "x": 2990.8,
+    "z": 2372.7
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 105.4,
+    "x": 717.8,
+    "z": 2299.1
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Florence Arthaud",
+    "longueur_m": 105.2,
+    "x": -2967.0,
+    "z": -247.7
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Maurice Rollinat",
+    "longueur_m": 103.5,
+    "x": -178.4,
+    "z": 2999.9
+   },
+   {
+    "classe": "residential",
+    "nom": "Avenue des Acacias",
+    "longueur_m": 103.3,
+    "x": -2985.9,
+    "z": 2565.8
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Martin Celerier",
+    "longueur_m": 99.4,
+    "x": -2992.5,
+    "z": 7.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 96.5,
+    "x": 2258.5,
+    "z": -377.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 95.0,
+    "x": -557.4,
+    "z": 2508.4
+   },
+   {
+    "classe": "residential",
+    "nom": "Allée des Roches Rouges",
+    "longueur_m": 93.6,
+    "x": 2956.2,
+    "z": 2987.6
+   },
+   {
+    "classe": "residential",
+    "nom": "Allée du Verdon",
+    "longueur_m": 93.2,
+    "x": 2989.3,
+    "z": 2993.3
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Henri Lagrange",
+    "longueur_m": 92.9,
+    "x": 2981.1,
+    "z": 403.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 91.8,
+    "x": 1480.4,
+    "z": 245.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 91.3,
+    "x": 2699.2,
+    "z": -2957.0
+   },
+   {
+    "classe": "service",
+    "nom": "Allée Georges Rouault",
+    "longueur_m": 90.3,
+    "x": 2972.1,
+    "z": -539.1
+   },
+   {
+    "classe": "tertiary",
+    "nom": "Avenue de Naugeat",
+    "longueur_m": 88.9,
+    "x": 493.2,
+    "z": 2989.3
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 86.7,
+    "x": -218.1,
+    "z": 2971.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 84.3,
+    "x": 2974.9,
+    "z": 2326.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 82.8,
+    "x": -515.7,
+    "z": -698.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 81.0,
+    "x": 2977.9,
+    "z": 2840.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 80.2,
+    "x": 521.9,
+    "z": 2973.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 79.3,
+    "x": -241.3,
+    "z": 2984.8
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue René Péchiéras",
+    "longueur_m": 79.3,
+    "x": 2983.6,
+    "z": -381.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 74.6,
+    "x": 2701.9,
+    "z": 2993.4
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rue Jean Baptiste Ruchaud",
+    "longueur_m": 74.4,
+    "x": 824.1,
+    "z": 2987.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 72.1,
+    "x": 793.3,
+    "z": 1712.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 72.0,
+    "x": 2784.6,
+    "z": -2493.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 70.9,
+    "x": -596.7,
+    "z": 2304.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 70.7,
+    "x": 2013.7,
+    "z": 418.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 69.7,
+    "x": 2793.7,
+    "z": -2500.5
+   },
+   {
+    "classe": "service",
+    "nom": "Les Porcelainiers",
+    "longueur_m": 69.3,
+    "x": 1669.7,
+    "z": 687.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 67.1,
+    "x": -593.2,
+    "z": -851.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 66.7,
+    "x": 2295.8,
+    "z": 2051.1
+   },
+   {
+    "classe": "service",
+    "nom": "Les Porcelainiers",
+    "longueur_m": 66.4,
+    "x": 1613.8,
+    "z": 652.6
+   },
+   {
+    "classe": "residential",
+    "nom": "Place Sabinus Valière",
+    "longueur_m": 64.6,
+    "x": 181.1,
+    "z": 2995.9
+   },
+   {
+    "classe": "residential",
+    "nom": "Impasse des Carriers",
+    "longueur_m": 63.9,
+    "x": 2994.4,
+    "z": 2520.1
+   },
+   {
+    "classe": "residential",
+    "nom": "Place Sabinus Valière",
+    "longueur_m": 62.2,
+    "x": 201.5,
+    "z": 2974.2
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Dupleix",
+    "longueur_m": 61.4,
+    "x": 2987.3,
+    "z": 1025.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 61.2,
+    "x": 2757.4,
+    "z": 862.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 60.8,
+    "x": 1211.0,
+    "z": 848.6
+   },
+   {
+    "classe": "secondary",
+    "nom": "Avenue Jean Gagnant",
+    "longueur_m": 60.3,
+    "x": 2999.3,
+    "z": 1437.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 59.0,
+    "x": 643.7,
+    "z": 2958.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 57.5,
+    "x": 1820.7,
+    "z": 1550.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 57.3,
+    "x": 2301.8,
+    "z": 1872.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 56.7,
+    "x": 1063.8,
+    "z": 1627.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 56.4,
+    "x": 1368.3,
+    "z": 1283.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 55.9,
+    "x": 1107.5,
+    "z": 1581.6
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue Pierre Durant",
+    "longueur_m": 55.3,
+    "x": -2982.3,
+    "z": 64.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 53.5,
+    "x": -898.1,
+    "z": 2966.1
+   },
+   {
+    "classe": "primary",
+    "nom": "Rue Henri Matisse",
+    "longueur_m": 52.5,
+    "x": 2958.4,
+    "z": -508.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 52.0,
+    "x": 2620.3,
+    "z": 2978.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 49.4,
+    "x": 1341.9,
+    "z": -342.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 48.8,
+    "x": -496.7,
+    "z": 2969.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 47.3,
+    "x": 1110.2,
+    "z": 1546.3
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 47.1,
+    "x": 821.3,
+    "z": 1055.9
+   },
+   {
+    "classe": "unclassified",
+    "nom": "Impasse d'Ambazac",
+    "longueur_m": 46.7,
+    "x": 2988.9,
+    "z": 505.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 45.4,
+    "x": -2980.2,
+    "z": 2072.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 42.9,
+    "x": 2978.3,
+    "z": 2313.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 42.8,
+    "x": 2201.7,
+    "z": 28.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 42.1,
+    "x": 650.2,
+    "z": 679.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 42.0,
+    "x": 1087.5,
+    "z": 1566.8
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 41.9,
+    "x": -283.5,
+    "z": 2978.8
+   },
+   {
+    "classe": "primary",
+    "nom": "Boulevard de Vanteaux",
+    "longueur_m": 41.6,
+    "x": -72.6,
+    "z": 2995.7
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 41.0,
+    "x": 2953.4,
+    "z": 2297.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 39.7,
+    "x": -690.8,
+    "z": 2969.9
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 38.9,
+    "x": 1009.8,
+    "z": 714.5
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rond-Point Marc Laycuras",
+    "longueur_m": 35.6,
+    "x": -52.0,
+    "z": 2984.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 35.4,
+    "x": 356.2,
+    "z": 2966.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 34.9,
+    "x": 2975.8,
+    "z": -2466.3
+   },
+   {
+    "classe": "secondary",
+    "nom": "Rond-Point Marc Laycuras",
+    "longueur_m": 34.8,
+    "x": -24.8,
+    "z": 2988.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 32.8,
+    "x": 1570.1,
+    "z": 715.6
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 31.3,
+    "x": 1566.5,
+    "z": 714.5
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 31.1,
+    "x": 2994.8,
+    "z": 1332.3
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 29.9,
+    "x": 1542.9,
+    "z": 709.7
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 29.2,
+    "x": 2988.7,
+    "z": 1472.7
+   },
+   {
+    "classe": "residential",
+    "nom": "Allée Jacques Montagne",
+    "longueur_m": 26.1,
+    "x": -390.0,
+    "z": 2996.9
+   },
+   {
+    "classe": "service",
+    "nom": "Chemin de Soudanas",
+    "longueur_m": 25.8,
+    "x": 2994.1,
+    "z": 2001.2
+   },
+   {
+    "classe": "primary",
+    "nom": "Rue Henri Matisse",
+    "longueur_m": 21.1,
+    "x": 2994.7,
+    "z": -513.3
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue de la Conque",
+    "longueur_m": 19.9,
+    "x": 40.7,
+    "z": 2999.3
+   },
+   {
+    "classe": "residential",
+    "nom": "Rue de la Conque",
+    "longueur_m": 18.9,
+    "x": 49.9,
+    "z": 2996.2
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 17.7,
+    "x": 2989.5,
+    "z": -1037.1
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 17.4,
+    "x": 2955.9,
+    "z": -1025.0
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 17.1,
+    "x": 2973.0,
+    "z": -1031.4
+   },
+   {
+    "classe": "service",
+    "nom": null,
+    "longueur_m": 14.5,
+    "x": 2583.3,
+    "z": 2993.3
+   }
+  ]
+ },
+ "altitude": {
+  "ecart_median_m": 0.115,
+  "ecart_p95_m": 0.526,
+  "points_hors_1m": 1849,
+  "routes_signalees": 352,
+  "liste": [
+   {
+    "route": 6587,
+    "ecart_m": -6.04,
+    "x": 2107.9,
+    "z": -2247.2
+   },
+   {
+    "route": 6580,
+    "ecart_m": -5.79,
+    "x": 2107.9,
+    "z": -2247.2
+   },
+   {
+    "route": 6582,
+    "ecart_m": -5.1,
+    "x": 2107.9,
+    "z": -2247.2
+   },
+   {
+    "route": 3929,
+    "ecart_m": 5.07,
+    "x": -682.1,
+    "z": 1706.0
+   },
+   {
+    "route": 2763,
+    "ecart_m": 4.92,
+    "x": -413.8,
+    "z": 1375.2
+   },
+   {
+    "route": 3962,
+    "ecart_m": 4.53,
+    "x": -677.4,
+    "z": 1685.3
+   },
+   {
+    "route": 6588,
+    "ecart_m": 4.07,
+    "x": 2109.8,
+    "z": -2293.6
+   },
+   {
+    "route": 6590,
+    "ecart_m": -4.03,
+    "x": 2105.8,
+    "z": -2334.4
+   },
+   {
+    "route": 2155,
+    "ecart_m": 4.02,
+    "x": 2726.0,
+    "z": 1262.2
+   },
+   {
+    "route": 5743,
+    "ecart_m": 3.98,
+    "x": 2746.4,
+    "z": 2371.9
+   },
+   {
+    "route": 2153,
+    "ecart_m": 3.86,
+    "x": 2741.5,
+    "z": 1246.1
+   },
+   {
+    "route": 3220,
+    "ecart_m": 3.71,
+    "x": 2663.4,
+    "z": 1966.0
+   },
+   {
+    "route": 6589,
+    "ecart_m": 3.7,
+    "x": 2108.2,
+    "z": -2256.7
+   },
+   {
+    "route": 6949,
+    "ecart_m": 3.69,
+    "x": 93.5,
+    "z": 2692.2
+   },
+   {
+    "route": 2129,
+    "ecart_m": 3.57,
+    "x": 2871.3,
+    "z": 636.1
+   },
+   {
+    "route": 2154,
+    "ecart_m": 3.52,
+    "x": 2751.0,
+    "z": 1236.2
+   },
+   {
+    "route": 2491,
+    "ecart_m": 3.52,
+    "x": 1643.3,
+    "z": 1074.8
+   },
+   {
+    "route": 2135,
+    "ecart_m": 3.49,
+    "x": 2913.1,
+    "z": 625.8
+   },
+   {
+    "route": 7280,
+    "ecart_m": 3.39,
+    "x": 2676.9,
+    "z": 1315.4
+   },
+   {
+    "route": 2119,
+    "ecart_m": 3.05,
+    "x": 2751.0,
+    "z": 1236.2
+   },
+   {
+    "route": 2123,
+    "ecart_m": 3.0,
+    "x": 2869.2,
+    "z": 638.6
+   },
+   {
+    "route": 6900,
+    "ecart_m": 2.97,
+    "x": 606.1,
+    "z": 2264.1
+   },
+   {
+    "route": 7422,
+    "ecart_m": 2.89,
+    "x": 2005.9,
+    "z": 1282.6
+   },
+   {
+    "route": 1645,
+    "ecart_m": 2.85,
+    "x": 1595.9,
+    "z": 403.3
+   },
+   {
+    "route": 4948,
+    "ecart_m": 2.75,
+    "x": -1587.8,
+    "z": 2733.0
+   },
+   {
+    "route": 2481,
+    "ecart_m": 2.7,
+    "x": 1640.4,
+    "z": 1074.0
+   },
+   {
+    "route": 2244,
+    "ecart_m": -2.69,
+    "x": 2555.7,
+    "z": 1244.2
+   },
+   {
+    "route": 5742,
+    "ecart_m": 2.68,
+    "x": 2787.9,
+    "z": 2394.0
+   },
+   {
+    "route": 3131,
+    "ecart_m": 2.67,
+    "x": 2706.3,
+    "z": 2005.9
+   },
+   {
+    "route": 6696,
+    "ecart_m": 2.54,
+    "x": 1134.5,
+    "z": 307.3
+   },
+   {
+    "route": 3999,
+    "ecart_m": 2.53,
+    "x": -1413.3,
+    "z": 2171.9
+   },
+   {
+    "route": 4172,
+    "ecart_m": -2.53,
+    "x": 2754.9,
+    "z": 2363.6
+   },
+   {
+    "route": 5316,
+    "ecart_m": 2.51,
+    "x": 2572.0,
+    "z": 2494.1
+   },
+   {
+    "route": 2137,
+    "ecart_m": 2.47,
+    "x": 2690.1,
+    "z": 1309.9
+   },
+   {
+    "route": 4293,
+    "ecart_m": 2.47,
+    "x": 2004.3,
+    "z": 2303.1
+   },
+   {
+    "route": 6814,
+    "ecart_m": 2.46,
+    "x": 517.8,
+    "z": 909.8
+   },
+   {
+    "route": 2517,
+    "ecart_m": 2.45,
+    "x": 1640.4,
+    "z": 1074.0
+   },
+   {
+    "route": 4962,
+    "ecart_m": 2.44,
+    "x": -1590.8,
+    "z": 2733.0
+   },
+   {
+    "route": 6595,
+    "ecart_m": 2.43,
+    "x": 2094.1,
+    "z": -2248.2
+   },
+   {
+    "route": 6684,
+    "ecart_m": 2.43,
+    "x": 1136.4,
+    "z": 228.6
+   },
+   {
+    "route": 848,
+    "ecart_m": 2.42,
+    "x": 2834.6,
+    "z": -834.2
+   },
+   {
+    "route": 723,
+    "ecart_m": -2.36,
+    "x": 1085.4,
+    "z": -1202.4
+   },
+   {
+    "route": 7530,
+    "ecart_m": 2.31,
+    "x": 2124.1,
+    "z": -135.8
+   },
+   {
+    "route": 2975,
+    "ecart_m": 2.3,
+    "x": -1077.2,
+    "z": 1273.6
+   },
+   {
+    "route": 2541,
+    "ecart_m": 2.28,
+    "x": 1377.4,
+    "z": 684.2
+   },
+   {
+    "route": 452,
+    "ecart_m": 2.25,
+    "x": 2732.8,
+    "z": -1464.5
+   },
+   {
+    "route": 4151,
+    "ecart_m": 2.25,
+    "x": 2783.5,
+    "z": 2344.7
+   },
+   {
+    "route": 5952,
+    "ecart_m": 2.24,
+    "x": -2609.8,
+    "z": 1444.2
+   },
+   {
+    "route": 4349,
+    "ecart_m": 2.23,
+    "x": 2392.6,
+    "z": 2867.2
+   },
+   {
+    "route": 6880,
+    "ecart_m": 2.19,
+    "x": 1093.8,
+    "z": 1527.1
+   },
+   {
+    "route": 2889,
+    "ecart_m": 2.18,
+    "x": -1436.5,
+    "z": 778.4
+   },
+   {
+    "route": 770,
+    "ecart_m": 2.16,
+    "x": -1225.9,
+    "z": -1509.9
+   },
+   {
+    "route": 5563,
+    "ecart_m": 2.14,
+    "x": 1687.4,
+    "z": -553.3
+   },
+   {
+    "route": 3120,
+    "ecart_m": 2.13,
+    "x": 2770.9,
+    "z": 1774.8
+   },
+   {
+    "route": 7353,
+    "ecart_m": 2.12,
+    "x": 2077.4,
+    "z": 2886.0
+   },
+   {
+    "route": 2976,
+    "ecart_m": 2.11,
+    "x": -1079.3,
+    "z": 1281.9
+   },
+   {
+    "route": 2867,
+    "ecart_m": 2.1,
+    "x": -1154.6,
+    "z": 935.8
+   },
+   {
+    "route": 2940,
+    "ecart_m": 2.1,
+    "x": -796.5,
+    "z": 822.3
+   },
+   {
+    "route": 3032,
+    "ecart_m": 2.1,
+    "x": -1436.5,
+    "z": 778.4
+   },
+   {
+    "route": 4163,
+    "ecart_m": -2.1,
+    "x": 2657.1,
+    "z": 2337.4
+   },
+   {
+    "route": 2859,
+    "ecart_m": 2.06,
+    "x": -1267.3,
+    "z": 632.1
+   },
+   {
+    "route": 3862,
+    "ecart_m": 2.06,
+    "x": 153.7,
+    "z": 2094.6
+   },
+   {
+    "route": 560,
+    "ecart_m": 2.05,
+    "x": 1975.8,
+    "z": -1593.9
+   },
+   {
+    "route": 7183,
+    "ecart_m": 2.05,
+    "x": 2882.5,
+    "z": 782.2
+   },
+   {
+    "route": 4261,
+    "ecart_m": 2.04,
+    "x": 2062.6,
+    "z": 2436.2
+   },
+   {
+    "route": 406,
+    "ecart_m": 2.02,
+    "x": -693.5,
+    "z": -2505.4
+   },
+   {
+    "route": 5375,
+    "ecart_m": 2.0,
+    "x": 1614.9,
+    "z": 2770.4
+   },
+   {
+    "route": 3138,
+    "ecart_m": 1.98,
+    "x": 2934.1,
+    "z": 2111.4
+   },
+   {
+    "route": 4939,
+    "ecart_m": 1.98,
+    "x": -1590.4,
+    "z": 2723.5
+   },
+   {
+    "route": 2176,
+    "ecart_m": 1.97,
+    "x": 2405.4,
+    "z": 704.8
+   },
+   {
+    "route": 2284,
+    "ecart_m": 1.96,
+    "x": 2558.5,
+    "z": 1227.8
+   },
+   {
+    "route": 4161,
+    "ecart_m": 1.96,
+    "x": 2751.0,
+    "z": 2347.2
+   },
+   {
+    "route": 2127,
+    "ecart_m": 1.95,
+    "x": 2734.4,
+    "z": 1253.5
+   },
+   {
+    "route": 3772,
+    "ecart_m": 1.94,
+    "x": 763.8,
+    "z": 1712.0
+   },
+   {
+    "route": 7427,
+    "ecart_m": 1.92,
+    "x": 1751.3,
+    "z": 1552.2
+   },
+   {
+    "route": 3431,
+    "ecart_m": 1.91,
+    "x": 1554.7,
+    "z": 2063.6
+   },
+   {
+    "route": 7076,
+    "ecart_m": 1.91,
+    "x": -241.2,
+    "z": 1543.3
+   },
+   {
+    "route": 6339,
+    "ecart_m": 1.87,
+    "x": 2694.0,
+    "z": -2207.1
+   },
+   {
+    "route": 4366,
+    "ecart_m": 1.86,
+    "x": 1514.6,
+    "z": 2384.8
+   },
+   {
+    "route": 1364,
+    "ecart_m": 1.85,
+    "x": 2887.0,
+    "z": 597.9
+   },
+   {
+    "route": 6312,
+    "ecart_m": 1.84,
+    "x": -185.1,
+    "z": 975.2
+   },
+   {
+    "route": 7208,
+    "ecart_m": 1.84,
+    "x": 2712.7,
+    "z": 947.4
+   },
+   {
+    "route": 7641,
+    "ecart_m": 1.84,
+    "x": 2852.5,
+    "z": -2413.9
+   },
+   {
+    "route": 3241,
+    "ecart_m": 1.83,
+    "x": 2667.4,
+    "z": 1297.3
+   },
+   {
+    "route": 7273,
+    "ecart_m": 1.83,
+    "x": 2642.4,
+    "z": 1496.5
+   },
+   {
+    "route": 698,
+    "ecart_m": 1.82,
+    "x": 806.0,
+    "z": -1035.9
+   },
+   {
+    "route": 3165,
+    "ecart_m": 1.82,
+    "x": 2178.7,
+    "z": 2242.4
+   },
+   {
+    "route": 6584,
+    "ecart_m": 1.82,
+    "x": 2111.7,
+    "z": -2333.5
+   },
+   {
+    "route": 365,
+    "ecart_m": 1.8,
+    "x": 196.3,
+    "z": -2137.6
+   },
+   {
+    "route": 354,
+    "ecart_m": 1.79,
+    "x": -354.8,
+    "z": -1943.2
+   },
+   {
+    "route": 2149,
+    "ecart_m": 1.79,
+    "x": 2869.2,
+    "z": 638.6
+   },
+   {
+    "route": 5285,
+    "ecart_m": 1.79,
+    "x": 1980.7,
+    "z": 2267.3
+   },
+   {
+    "route": 6717,
+    "ecart_m": 1.79,
+    "x": 1246.6,
+    "z": 949.8
+   },
+   {
+    "route": 3031,
+    "ecart_m": 1.78,
+    "x": -1598.5,
+    "z": 508.1
+   },
+   {
+    "route": 3740,
+    "ecart_m": 1.78,
+    "x": 1016.2,
+    "z": 1817.5
+   },
+   {
+    "route": 5323,
+    "ecart_m": 1.78,
+    "x": 2405.4,
+    "z": 707.9
+   },
+   {
+    "route": 3125,
+    "ecart_m": 1.77,
+    "x": 2934.1,
+    "z": 2111.4
+   },
+   {
+    "route": 5142,
+    "ecart_m": 1.77,
+    "x": -1210.1,
+    "z": -1501.7
+   },
+   {
+    "route": 2297,
+    "ecart_m": 1.76,
+    "x": 2300.5,
+    "z": 817.9
+   },
+   {
+    "route": 5950,
+    "ecart_m": 1.76,
+    "x": -2290.3,
+    "z": 1504.2
+   },
+   {
+    "route": 7332,
+    "ecart_m": 1.76,
+    "x": 2237.3,
+    "z": 2428.3
+   },
+   {
+    "route": 4955,
+    "ecart_m": 1.75,
+    "x": -1590.4,
+    "z": 2723.5
+   },
+   {
+    "route": 7440,
+    "ecart_m": 1.75,
+    "x": 2058.6,
+    "z": 415.9
+   },
+   {
+    "route": 778,
+    "ecart_m": 1.73,
+    "x": -1210.6,
+    "z": -1500.2
+   },
+   {
+    "route": 1619,
+    "ecart_m": 1.73,
+    "x": 1446.3,
+    "z": 118.5
+   },
+   {
+    "route": 2529,
+    "ecart_m": 1.73,
+    "x": 1327.8,
+    "z": 910.1
+   },
+   {
+    "route": 4456,
+    "ecart_m": 1.73,
+    "x": 1550.2,
+    "z": 2264.2
+   },
+   {
+    "route": 392,
+    "ecart_m": 1.72,
+    "x": -763.7,
+    "z": -2557.9
+   },
+   {
+    "route": 393,
+    "ecart_m": 1.72,
+    "x": -383.2,
+    "z": -2048.0
+   },
+   {
+    "route": 3129,
+    "ecart_m": 1.72,
+    "x": 2645.5,
+    "z": 1806.3
+   },
+   {
+    "route": 451,
+    "ecart_m": 1.7,
+    "x": 2736.1,
+    "z": -1378.3
+   },
+   {
+    "route": 7149,
+    "ecart_m": 1.68,
+    "x": -1418.7,
+    "z": 1256.3
+   },
+   {
+    "route": 2925,
+    "ecart_m": 1.67,
+    "x": -802.7,
+    "z": 820.7
+   },
+   {
+    "route": 7384,
+    "ecart_m": 1.67,
+    "x": 1465.4,
+    "z": 2386.0
+   },
+   {
+    "route": 6351,
+    "ecart_m": 1.66,
+    "x": 2985.3,
+    "z": -2045.4
+   },
+   {
+    "route": 6669,
+    "ecart_m": 1.65,
+    "x": 1279.8,
+    "z": -583.1
+   },
+   {
+    "route": 2894,
+    "ecart_m": 1.64,
+    "x": -1175.9,
+    "z": 834.0
+   },
+   {
+    "route": 7259,
+    "ecart_m": 1.64,
+    "x": 2526.1,
+    "z": 1874.1
+   },
+   {
+    "route": 7553,
+    "ecart_m": 1.64,
+    "x": 2750.9,
+    "z": -289.9
+   },
+   {
+    "route": 485,
+    "ecart_m": 1.63,
+    "x": 1975.8,
+    "z": -1593.9
+   },
+   {
+    "route": 3639,
+    "ecart_m": 1.63,
+    "x": 1528.0,
+    "z": 1828.3
+   },
+   {
+    "route": 6526,
+    "ecart_m": 1.62,
+    "x": 661.9,
+    "z": -1023.9
+   },
+   {
+    "route": 7264,
+    "ecart_m": 1.62,
+    "x": 2706.8,
+    "z": 1786.3
+   },
+   {
+    "route": 2916,
+    "ecart_m": 1.61,
+    "x": -1121.6,
+    "z": 848.0
+   },
+   {
+    "route": 4633,
+    "ecart_m": 1.61,
+    "x": 110.8,
+    "z": 2263.6
+   },
+   {
+    "route": 5406,
+    "ecart_m": 1.6,
+    "x": 2552.9,
+    "z": 1225.6
+   },
+   {
+    "route": 6841,
+    "ecart_m": 1.59,
+    "x": 46.5,
+    "z": 1784.7
+   },
+   {
+    "route": 7387,
+    "ecart_m": 1.59,
+    "x": 1553.2,
+    "z": 2057.5
+   },
+   {
+    "route": 538,
+    "ecart_m": 1.58,
+    "x": 1972.2,
+    "z": -1382.6
+   },
+   {
+    "route": 2165,
+    "ecart_m": 1.58,
+    "x": 2869.3,
+    "z": 794.3
+   },
+   {
+    "route": 2319,
+    "ecart_m": 1.58,
+    "x": 2220.4,
+    "z": 837.8
+   },
+   {
+    "route": 68,
+    "ecart_m": 1.56,
+    "x": -669.3,
+    "z": -2904.9
+   },
+   {
+    "route": 7351,
+    "ecart_m": 1.56,
+    "x": 1937.9,
+    "z": 2581.2
+   },
+   {
+    "route": 578,
+    "ecart_m": 1.55,
+    "x": 2115.4,
+    "z": -1316.3
+   },
+   {
+    "route": 4938,
+    "ecart_m": 1.54,
+    "x": -1400.9,
+    "z": 2711.4
+   },
+   {
+    "route": 4134,
+    "ecart_m": -1.53,
+    "x": 2654.6,
+    "z": 2335.7
+   },
+   {
+    "route": 6962,
+    "ecart_m": 1.53,
+    "x": 386.1,
+    "z": 2749.4
+   },
+   {
+    "route": 1989,
+    "ecart_m": 1.52,
+    "x": -575.3,
+    "z": -84.1
+   },
+   {
+    "route": 4227,
+    "ecart_m": 1.52,
+    "x": 1918.7,
+    "z": 2962.3
+   },
+   {
+    "route": 1736,
+    "ecart_m": 1.51,
+    "x": 1285.9,
+    "z": 225.8
+   },
+   {
+    "route": 5275,
+    "ecart_m": 1.5,
+    "x": 2011.7,
+    "z": 2156.8
+   },
+   {
+    "route": 6594,
+    "ecart_m": 1.5,
+    "x": 2094.1,
+    "z": -2248.2
+   },
+   {
+    "route": 7532,
+    "ecart_m": 1.5,
+    "x": 2220.8,
+    "z": -96.9
+   },
+   {
+    "route": 1268,
+    "ecart_m": 1.49,
+    "x": -1095.1,
+    "z": -903.9
+   },
+   {
+    "route": 2954,
+    "ecart_m": 1.49,
+    "x": -1012.2,
+    "z": 634.9
+   },
+   {
+    "route": 4108,
+    "ecart_m": 1.49,
+    "x": -2819.6,
+    "z": 1856.6
+   },
+   {
+    "route": 4268,
+    "ecart_m": 1.49,
+    "x": 2287.3,
+    "z": 2746.4
+   },
+   {
+    "route": 6614,
+    "ecart_m": 1.49,
+    "x": 2455.9,
+    "z": 2691.1
+   },
+   {
+    "route": 3208,
+    "ecart_m": 1.48,
+    "x": 1906.8,
+    "z": 1569.5
+   },
+   {
+    "route": 4387,
+    "ecart_m": 1.48,
+    "x": 1301.2,
+    "z": 2246.6
+   },
+   {
+    "route": 7274,
+    "ecart_m": 1.48,
+    "x": 2666.2,
+    "z": 1505.1
+   },
+   {
+    "route": 1260,
+    "ecart_m": 1.47,
+    "x": -934.1,
+    "z": -1043.6
+   },
+   {
+    "route": 3363,
+    "ecart_m": 1.47,
+    "x": 2404.9,
+    "z": 2063.4
+   },
+   {
+    "route": 5378,
+    "ecart_m": 1.47,
+    "x": 1983.8,
+    "z": 2862.0
+   },
+   {
+    "route": 454,
+    "ecart_m": 1.46,
+    "x": 2825.5,
+    "z": -1818.7
+   },
+   {
+    "route": 1236,
+    "ecart_m": 1.46,
+    "x": 264.6,
+    "z": -1149.0
+   },
+   {
+    "route": 1598,
+    "ecart_m": 1.46,
+    "x": 1156.1,
+    "z": 219.8
+   },
+   {
+    "route": 1395,
+    "ecart_m": 1.45,
+    "x": 2353.9,
+    "z": 474.2
+   },
+   {
+    "route": 2915,
+    "ecart_m": 1.45,
+    "x": -1075.5,
+    "z": 961.8
+   },
+   {
+    "route": 4463,
+    "ecart_m": -1.45,
+    "x": 641.3,
+    "z": 2803.9
+   },
+   {
+    "route": 5333,
+    "ecart_m": 1.45,
+    "x": 2250.5,
+    "z": 678.3
+   },
+   {
+    "route": 6133,
+    "ecart_m": 1.45,
+    "x": -1533.7,
+    "z": 1577.1
+   },
+   {
+    "route": 6909,
+    "ecart_m": -1.45,
+    "x": 925.4,
+    "z": 2453.2
+   },
+   {
+    "route": 629,
+    "ecart_m": 1.44,
+    "x": 1666.5,
+    "z": -1234.8
+   },
+   {
+    "route": 3534,
+    "ecart_m": 1.44,
+    "x": 1797.0,
+    "z": 1737.2
+   },
+   {
+    "route": 654,
+    "ecart_m": 1.43,
+    "x": 1438.1,
+    "z": -1048.5
+   },
+   {
+    "route": 7284,
+    "ecart_m": 1.43,
+    "x": 2684.6,
+    "z": 1368.9
+   },
+   {
+    "route": 1055,
+    "ecart_m": 1.41,
+    "x": 1123.1,
+    "z": -1042.8
+   },
+   {
+    "route": 2568,
+    "ecart_m": 1.4,
+    "x": 963.6,
+    "z": 1113.4
+   },
+   {
+    "route": 4969,
+    "ecart_m": 1.4,
+    "x": -1508.8,
+    "z": 2577.2
+   },
+   {
+    "route": 2038,
+    "ecart_m": 1.39,
+    "x": -1705.3,
+    "z": 134.2
+   },
+   {
+    "route": 2533,
+    "ecart_m": 1.39,
+    "x": 1376.0,
+    "z": 761.7
+   },
+   {
+    "route": 6205,
+    "ecart_m": 1.39,
+    "x": 2505.7,
+    "z": -1044.8
+   },
+   {
+    "route": 2328,
+    "ecart_m": 1.38,
+    "x": 2555.1,
+    "z": 1223.5
+   },
+   {
+    "route": 2499,
+    "ecart_m": 1.38,
+    "x": 1215.0,
+    "z": 1104.5
+   },
+   {
+    "route": 3590,
+    "ecart_m": 1.38,
+    "x": 1797.3,
+    "z": 1740.2
+   },
+   {
+    "route": 4495,
+    "ecart_m": 1.38,
+    "x": 1073.0,
+    "z": 2563.3
+   },
+   {
+    "route": 5635,
+    "ecart_m": 1.38,
+    "x": -1400.4,
+    "z": 2185.9
+   },
+   {
+    "route": 2902,
+    "ecart_m": 1.37,
+    "x": -1110.6,
+    "z": 854.1
+   },
+   {
+    "route": 4203,
+    "ecart_m": 1.37,
+    "x": 2576.6,
+    "z": 2356.7
+   },
+   {
+    "route": 483,
+    "ecart_m": 1.36,
+    "x": 1949.3,
+    "z": -1586.3
+   },
+   {
+    "route": 804,
+    "ecart_m": 1.36,
+    "x": -2205.7,
+    "z": -1805.9
+   },
+   {
+    "route": 1308,
+    "ecart_m": 1.36,
+    "x": -1634.3,
+    "z": -833.8
+   },
+   {
+    "route": 3587,
+    "ecart_m": 1.36,
+    "x": 1820.8,
+    "z": 1691.0
+   },
+   {
+    "route": 4067,
+    "ecart_m": 1.36,
+    "x": -1515.9,
+    "z": 1618.7
+   },
+   {
+    "route": 57,
+    "ecart_m": 1.35,
+    "x": -507.2,
+    "z": -2934.3
+   },
+   {
+    "route": 3103,
+    "ecart_m": 1.35,
+    "x": 2723.0,
+    "z": 1974.0
+   },
+   {
+    "route": 5373,
+    "ecart_m": 1.35,
+    "x": 2364.9,
+    "z": 955.2
+   },
+   {
+    "route": 7118,
+    "ecart_m": 1.35,
+    "x": -326.0,
+    "z": 481.9
+   },
+   {
+    "route": 7507,
+    "ecart_m": 1.35,
+    "x": 1775.6,
+    "z": -1048.0
+   },
+   {
+    "route": 3441,
+    "ecart_m": 1.34,
+    "x": 1823.2,
+    "z": 1754.6
+   },
+   {
+    "route": 4637,
+    "ecart_m": 1.34,
+    "x": 66.7,
+    "z": 2707.4
+   },
+   {
+    "route": 7260,
+    "ecart_m": 1.33,
+    "x": 2641.0,
+    "z": 1954.1
+   },
+   {
+    "route": 296,
+    "ecart_m": 1.32,
+    "x": 241.2,
+    "z": -2417.8
+   },
+   {
+    "route": 4056,
+    "ecart_m": 1.32,
+    "x": -1515.6,
+    "z": 1431.3
+   },
+   {
+    "route": 6731,
+    "ecart_m": 1.32,
+    "x": 1114.3,
+    "z": 785.0
+   },
+   {
+    "route": 148,
+    "ecart_m": 1.31,
+    "x": 2256.2,
+    "z": -1984.5
+   },
+   {
+    "route": 463,
+    "ecart_m": 1.31,
+    "x": 2743.4,
+    "z": -1781.0
+   },
+   {
+    "route": 2956,
+    "ecart_m": -1.31,
+    "x": -1075.0,
+    "z": 1303.8
+   },
+   {
+    "route": 3813,
+    "ecart_m": 1.31,
+    "x": -565.0,
+    "z": 1635.4
+   }
+  ]
+ },
+ "connexions": {
+  "noeuds": 7191,
+  "troncons": 8774,
+  "composantes": 215,
+  "plus_grande": 6686,
+  "petites_composantes": 205,
+  "impasses_proches_d_une_route": 114,
+  "liste_impasses": [
+   {
+    "x": 186.0,
+    "z": -2876.5,
+    "distance_m": 4.71
+   },
+   {
+    "x": 2534.5,
+    "z": -2509.5,
+    "distance_m": 0.64
+   },
+   {
+    "x": 2702.0,
+    "z": -1742.5,
+    "distance_m": 7.69
+   },
+   {
+    "x": 2454.0,
+    "z": -486.0,
+    "distance_m": 1.74
+   },
+   {
+    "x": 810.5,
+    "z": -270.5,
+    "distance_m": 2.18
+   },
+   {
+    "x": 2866.5,
+    "z": 803.0,
+    "distance_m": 4.82
+   },
+   {
+    "x": 1050.5,
+    "z": 983.0,
+    "distance_m": 2.31
+   },
+   {
+    "x": 1373.0,
+    "z": 639.0,
+    "distance_m": 1.15
+   },
+   {
+    "x": 707.5,
+    "z": 1305.5,
+    "distance_m": 1.18
+   },
+   {
+    "x": 45.0,
+    "z": 616.0,
+    "distance_m": 5.23
+   },
+   {
+    "x": -938.5,
+    "z": 1003.0,
+    "distance_m": 3.47
+   },
+   {
+    "x": -1926.0,
+    "z": 1109.5,
+    "distance_m": 1.58
+   },
+   {
+    "x": 2898.0,
+    "z": 1731.5,
+    "distance_m": 1.0
+   },
+   {
+    "x": 2197.5,
+    "z": 1497.5,
+    "distance_m": 0.67
+   },
+   {
+    "x": 1197.5,
+    "z": 1656.5,
+    "distance_m": 1.79
+   },
+   {
+    "x": 1509.0,
+    "z": 1819.0,
+    "distance_m": 5.98
+   },
+   {
+    "x": 472.5,
+    "z": 1574.0,
+    "distance_m": 2.46
+   },
+   {
+    "x": 2316.0,
+    "z": 2592.5,
+    "distance_m": 4.87
+   },
+   {
+    "x": 1654.5,
+    "z": 2633.0,
+    "distance_m": 1.91
+   },
+   {
+    "x": 921.5,
+    "z": 2416.0,
+    "distance_m": 6.33
+   },
+   {
+    "x": -519.0,
+    "z": 2210.0,
+    "distance_m": 7.64
+   },
+   {
+    "x": -645.5,
+    "z": 2239.5,
+    "distance_m": 4.93
+   },
+   {
+    "x": -949.5,
+    "z": 60.5,
+    "distance_m": 5.21
+   },
+   {
+    "x": -859.5,
+    "z": 114.5,
+    "distance_m": 5.89
+   },
+   {
+    "x": -1188.5,
+    "z": 1774.5,
+    "distance_m": 5.66
+   },
+   {
+    "x": 73.5,
+    "z": 2937.0,
+    "distance_m": 3.62
+   },
+   {
+    "x": 1184.5,
+    "z": 1949.0,
+    "distance_m": 5.78
+   },
+   {
+    "x": 2985.5,
+    "z": 1340.0,
+    "distance_m": 5.32
+   },
+   {
+    "x": 2500.5,
+    "z": 1302.5,
+    "distance_m": 7.0
+   },
+   {
+    "x": 2363.5,
+    "z": 994.0,
+    "distance_m": 7.67
+   },
+   {
+    "x": 2667.0,
+    "z": 1595.5,
+    "distance_m": 3.05
+   },
+   {
+    "x": 1955.0,
+    "z": 2422.0,
+    "distance_m": 4.49
+   },
+   {
+    "x": 1237.5,
+    "z": -0.0,
+    "distance_m": 5.12
+   },
+   {
+    "x": 995.5,
+    "z": -150.5,
+    "distance_m": 0.86
+   },
+   {
+    "x": 1548.5,
+    "z": -592.0,
+    "distance_m": 0.81
+   },
+   {
+    "x": 1666.5,
+    "z": 379.5,
+    "distance_m": 4.71
+   },
+   {
+    "x": 1785.0,
+    "z": 384.5,
+    "distance_m": 2.24
+   },
+   {
+    "x": 1772.0,
+    "z": 387.5,
+    "distance_m": 3.34
+   },
+   {
+    "x": 1674.5,
+    "z": 390.0,
+    "distance_m": 3.71
+   },
+   {
+    "x": 349.0,
+    "z": -1913.5,
+    "distance_m": 7.93
+   },
+   {
+    "x": -2228.0,
+    "z": 972.5,
+    "distance_m": 5.94
+   },
+   {
+    "x": 2623.0,
+    "z": -2930.0,
+    "distance_m": 0.96
+   },
+   {
+    "x": -1552.0,
+    "z": 1637.0,
+    "distance_m": 3.2
+   },
+   {
+    "x": -1660.0,
+    "z": 1643.0,
+    "distance_m": 7.01
+   },
+   {
+    "x": -1260.0,
+    "z": 1806.5,
+    "distance_m": 7.84
+   },
+   {
+    "x": -1527.5,
+    "z": 1454.5,
+    "distance_m": 3.36
+   },
+   {
+    "x": -1067.0,
+    "z": 1435.5,
+    "distance_m": 1.12
+   },
+   {
+    "x": 2516.0,
+    "z": 2695.0,
+    "distance_m": 6.3
+   },
+   {
+    "x": 416.0,
+    "z": -2087.0,
+    "distance_m": 0.7
+   },
+   {
+    "x": 132.5,
+    "z": -402.0,
+    "distance_m": 1.25
+   },
+   {
+    "x": 1043.0,
+    "z": 367.0,
+    "distance_m": 0.84
+   },
+   {
+    "x": 1131.0,
+    "z": 587.5,
+    "distance_m": 6.16
+   },
+   {
+    "x": 1356.0,
+    "z": 1057.5,
+    "distance_m": 0.62
+   },
+   {
+    "x": 594.5,
+    "z": 953.0,
+    "distance_m": 0.64
+   },
+   {
+    "x": 715.0,
+    "z": 542.0,
+    "distance_m": 3.5
+   },
+   {
+    "x": 960.0,
+    "z": 662.0,
+    "distance_m": 0.95
+   },
+   {
+    "x": 909.5,
+    "z": 498.0,
+    "distance_m": 0.73
+   },
+   {
+    "x": 1019.5,
+    "z": 401.0,
+    "distance_m": 0.82
+   },
+   {
+    "x": 270.5,
+    "z": 321.0,
+    "distance_m": 7.24
+   },
+   {
+    "x": -216.5,
+    "z": 466.0,
+    "distance_m": 1.12
+   },
+   {
+    "x": 138.5,
+    "z": 833.0,
+    "distance_m": 0.82
+   },
+   {
+    "x": -135.5,
+    "z": 903.0,
+    "distance_m": 0.81
+   },
+   {
+    "x": -142.5,
+    "z": 1931.0,
+    "distance_m": 4.88
+   },
+   {
+    "x": 1094.0,
+    "z": 1531.5,
+    "distance_m": 3.01
+   },
+   {
+    "x": 913.5,
+    "z": 2428.0,
+    "distance_m": 0.65
+   },
+   {
+    "x": -596.5,
+    "z": 2342.0,
+    "distance_m": 6.02
+   },
+   {
+    "x": -614.5,
+    "z": 2201.5,
+    "distance_m": 1.29
+   },
+   {
+    "x": -540.5,
+    "z": 2156.5,
+    "distance_m": 1.0
+   },
+   {
+    "x": -657.5,
+    "z": 2549.5,
+    "distance_m": 1.12
+   },
+   {
+    "x": -626.0,
+    "z": 2544.5,
+    "distance_m": 5.96
+   },
+   {
+    "x": -659.5,
+    "z": 2567.5,
+    "distance_m": 0.69
+   },
+   {
+    "x": -796.0,
+    "z": 2812.0,
+    "distance_m": 1.0
+   },
+   {
+    "x": -276.0,
+    "z": 2925.5,
+    "distance_m": 0.71
+   },
+   {
+    "x": -693.0,
+    "z": 2929.5,
+    "distance_m": 0.9
+   },
+   {
+    "x": -340.5,
+    "z": 488.5,
+    "distance_m": 3.37
+   },
+   {
+    "x": -365.0,
+    "z": 443.0,
+    "distance_m": 0.64
+   },
+   {
+    "x": -1922.0,
+    "z": 1112.5,
+    "distance_m": 1.16
+   },
+   {
+    "x": 2927.0,
+    "z": 1151.5,
+    "distance_m": 0.66
+   },
+   {
+    "x": 2874.0,
+    "z": 1044.0,
+    "distance_m": 0.88
+   },
+   {
+    "x": 2847.0,
+    "z": 1163.5,
+    "distance_m": 0.65
+   },
+   {
+    "x": 2825.5,
+    "z": 1016.0,
+    "distance_m": 1.0
+   },
+   {
+    "x": 2771.5,
+    "z": 1137.5,
+    "distance_m": 5.05
+   },
+   {
+    "x": 2752.5,
+    "z": 1177.5,
+    "distance_m": 0.64
+   },
+   {
+    "x": 2663.0,
+    "z": 968.5,
+    "distance_m": 7.35
+   },
+   {
+    "x": 2686.0,
+    "z": 610.5,
+    "distance_m": 1.11
+   },
+   {
+    "x": 2582.5,
+    "z": 1099.0,
+    "distance_m": 1.05
+   },
+   {
+    "x": 2705.5,
+    "z": 1861.5,
+    "distance_m": 1.0
+   },
+   {
+    "x": 2642.5,
+    "z": 1496.5,
+    "distance_m": 6.04
+   },
+   {
+    "x": 2570.5,
+    "z": 2555.5,
+    "distance_m": 0.81
+   },
+   {
+    "x": 2472.0,
+    "z": 2780.0,
+    "distance_m": 3.58
+   },
+   {
+    "x": 2298.0,
+    "z": 2480.5,
+    "distance_m": 1.09
+   },
+   {
+    "x": 2145.0,
+    "z": 2384.0,
+    "distance_m": 0.79
+   },
+   {
+    "x": 2154.0,
+    "z": 2396.5,
+    "distance_m": 1.23
+   },
+   {
+    "x": 1448.5,
+    "z": 2641.5,
+    "distance_m": 0.77
+   },
+   {
+    "x": 1703.0,
+    "z": 2435.0,
+    "distance_m": 3.67
+   },
+   {
+    "x": 1465.5,
+    "z": 2383.0,
+    "distance_m": 4.03
+   },
+   {
+    "x": 1392.0,
+    "z": 958.0,
+    "distance_m": 1.25
+   },
+   {
+    "x": 1482.0,
+    "z": 427.0,
+    "distance_m": 0.71
+   },
+   {
+    "x": 2675.5,
+    "z": -932.5,
+    "distance_m": 5.88
+   },
+   {
+    "x": 2564.0,
+    "z": -1155.5,
+    "distance_m": 0.7
+   },
+   {
+    "x": 2561.0,
+    "z": -1053.5,
+    "distance_m": 1.0
+   },
+   {
+    "x": 2392.0,
+    "z": -1964.5,
+    "distance_m": 0.98
+   },
+   {
+    "x": 2883.5,
+    "z": -2281.0,
+    "distance_m": 1.0
+   },
+   {
+    "x": 2892.0,
+    "z": -2340.0,
+    "distance_m": 1.32
+   },
+   {
+    "x": 2803.0,
+    "z": -2319.5,
+    "distance_m": 1.15
+   },
+   {
+    "x": 2748.0,
+    "z": -2488.0,
+    "distance_m": 0.86
+   },
+   {
+    "x": 2847.0,
+    "z": -2424.5,
+    "distance_m": 1.26
+   },
+   {
+    "x": 2663.5,
+    "z": -2935.0,
+    "distance_m": 0.69
+   },
+   {
+    "x": 2703.0,
+    "z": -2503.0,
+    "distance_m": 1.26
+   },
+   {
+    "x": 2389.0,
+    "z": -2449.5,
+    "distance_m": 0.81
+   },
+   {
+    "x": 2381.5,
+    "z": -2564.0,
+    "distance_m": 0.92
+   },
+   {
+    "x": 2343.5,
+    "z": -2453.5,
+    "distance_m": 6.2
+   },
+   {
+    "x": 2319.0,
+    "z": -2530.0,
+    "distance_m": 0.6
+   },
+   {
+    "x": 2234.0,
+    "z": -2671.0,
+    "distance_m": 0.95
+   }
+  ]
+ },
+ "geometrie": {
+  "axes_couverts_par_la_chaussee_moyenne": 0.989,
+  "axes_couverts_a_moins_de_90pc": 287,
+  "largeur_mediane_m": 7.5
+ }
+}

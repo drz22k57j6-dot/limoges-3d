@@ -221,7 +221,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=16';
+const V = '?v=17';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1100,15 +1100,15 @@ let terrainRoot = null;
 let lastStreet = '', streetT = 0;
 async function main() {
   try {
-    const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, signs, names] = await Promise.all([
+    const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, signs, names, pontsBuf, kerbBuf] = await Promise.all([
       loadGLB('data/terrain.wasm', 't'), loadGLB('data/objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
       loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'), loadBin('data/arbres.wasm', 'r2'), loadBin('data/routes_v3.wasm', 'v3').catch(() => null), loadBin('data/routes_deco.wasm', 'dc').catch(() => null), fetch('data/signalisation.json' + V).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch('data/routes_noms.json' + V).then(r => r.json())]);
+      fetch('data/routes_noms.json' + V).then(r => r.json()), loadBin('data/routes_ponts.wasm', 'p').catch(() => null), loadBin('data/routes_bordures.wasm', 'k').catch(() => null)]);
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
-    { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : []) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
+    { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
     applyTime(); applyQuality();
     respawn(true);
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);

@@ -9,6 +9,55 @@ from shapely.ops import unary_union, polygonize
 from shapely import STRtree
 
 R3 = {'fillet': 3.0, 'densify': 4.0, 'chunk': 500.0}
+# ---------------- roads that exist in OpenStreetMap (Overture) but not in the IGN network: added, marked as OSM
+import pyarrow.parquet as _pq, shapely.wkb as _swkb
+from pyproj import Transformer as _Tr
+from shapely import STRtree as _STR
+_tr = _Tr.from_crs(4326, 2154, always_xy=True)
+_ign = _STR([LineString(l['P']) for l in LINES])
+_ign_l = [LineString(l['P']) for l in LINES]
+OSMW = {'motorway': (9.0, 1), 'trunk': (8.0, 2), 'primary': (7.5, 2), 'secondary': (7.0, 3), 'tertiary': (6.5, 4), 'residential': (5.5, 5), 'unclassified': (5.0, 5), 'living_street': (4.5, 5), 'service': (3.5, 6)}
+n_osm = 0
+for r in _pq.read_table(f"{D}/overture_segments.parquet").to_pylist():
+    if r['subtype'] != 'road' or r['class'] not in OSMW: continue
+    fl = [v for f in (r['road_flags'] or []) for v in (f.get('values') or [])]
+    if 'is_bridge' in fl or 'is_tunnel' in fl: continue
+    g = _swkb.loads(r['geometry']); xs, ys = _tr.transform(*zip(*g.coords)); ln = LineString(list(zip(xs, ys)))
+    if ln.length < 8 or abs(ln.centroid.x - X0) > 2950 or abs(ln.centroid.y - Y0) > 2950: continue
+    pts = [ln.interpolate(t) for t in np.linspace(0, ln.length, max(2, int(ln.length / 5)))]
+    if np.mean([_ign_l[_ign.nearest(p)].distance(p) < 7 for p in pts]) >= 0.5: continue
+    w, imp = OSMW[r['class']]
+    # snap both ends onto the network (IGN roads and OSM roads added before) when it is close: no gaps at junctions
+    cs = list(ln.coords); att = []
+    for end in (0, -1):
+        p = Point(cs[end])
+        j = _ign.nearest(p); best = _ign_l[j]; dd = best.distance(p); tgt = ('ign', j)
+        for o in (LINES[len(LINES) - n_osm:] if n_osm else []):
+            d2 = o['geom_tmp'].distance(p)
+            if d2 < dd: dd, best, tgt = d2, o['geom_tmp'], ('osm', o['id_tmp'])
+        if 0.05 < dd < 12:
+            q = best.interpolate(best.project(p)); att.append((end, tgt, best.project(p)))
+            if end == 0: cs.insert(0, (q.x, q.y))
+            else: cs.append((q.x, q.y))
+        elif dd <= 0.05: att.append((end, tgt, best.project(p)))
+    ln = LineString(cs)
+    nseg = max(1, int(ln.length / 3)); ds = np.linspace(0, ln.length, nseg + 1)
+    P = np.array([ln.interpolate(t).coords[0] for t in ds])
+    tg = np.gradient(P, axis=0); tg /= np.linalg.norm(tg, axis=1, keepdims=True) + 1e-9
+    nr = np.stack([-tg[:, 1], tg[:, 0]], -1)
+    zg = mesh_h(P[:, 0], P[:, 1])
+    if np.isnan(zg).any(): continue
+    zl = mesh_h(*(P + nr * w / 2).T); zr = mesh_h(*(P - nr * w / 2).T)
+    zm = np.maximum(np.maximum(zl, zr), zg) + 0.22
+    k = 7 if len(zm) >= 7 else max(1, len(zm) | 1)
+    if k > 1:
+        pad = np.r_[np.full(k // 2, zm[0]), zm, np.full(k // 2, zm[-1])]
+        zm = np.maximum(np.convolve(pad, np.ones(k) / k, mode='valid'), zm - 0.15)
+    LINES.append(dict(P=P, nr=nr, w=w, nat='OSM ' + r['class'], pos='0', z=zm, ds=ds, name=((r['names'] or {}).get('primary') or '').upper(), bridge=False,
+                      imp=imp, sens='Double sens', voies=0, urbain=True, osm=True, attach=att, geom_tmp=ln, id_tmp=len(LINES)))
+    n_osm += 1
+print('roads added from OpenStreetMap', n_osm)
+for l in LINES: l.setdefault('sw', np.zeros((len(l['P']), 2)))
 print('roads v3: lines', len(LINES))
 from PIL import Image
 for i, l in enumerate(LINES):
@@ -98,6 +147,7 @@ U = U.buffer(R3['fillet'], join_style=1, quad_segs=4).buffer(-R3['fillet'], join
 U = U.simplify(0.15)
 polys = list(U.geoms) if isinstance(U, MultiPolygon) else [U]
 print('asphalt polygons', len(polys), 'area m2', int(U.area))
+import shapely.wkb as _w; open(OUTD + '/chaussee_v3.wkb', 'wb').write(_w.dumps(U))
 
 # lookups
 segs, segInfo = [], []
@@ -331,5 +381,6 @@ db += struct.pack('<II', len(IP), len(II)) + np.asarray(IP, np.float32).tobytes(
 open(OUTD + '/routes_deco.bin', 'wb').write(db)
 print('deco MB', len(db) / 1e6)
 
+exec(open('/home/claude/scripts/roads_extra.py').read())
 # axes for the game: widths now measured
 CL[:] = [(NAMES.setdefault(l['name'], len(NAMES)), l['w'], l['P'], l['z'], l['sw']) for l in LINES]
