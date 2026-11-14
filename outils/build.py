@@ -1,4 +1,4 @@
-import json, struct, io, math, sys, random
+import json, struct, io, math, sys, random, os
 import numpy as np, tifffile
 from PIL import Image, ImageDraw
 from shapely.geometry import shape, Polygon, MultiPolygon, LineString
@@ -237,6 +237,10 @@ M_ROOF_T = G.material('toit_tuiles', tex=ftex('tuiles'), rough=0.75); M_ROOF_S =
 import os
 FAC = json.load(open(D+'/facades.json')) if os.path.exists(D+'/facades.json') else {}
 # buildings checked against reference photos supplied by the user
+# buildings reconstructed in detail by the Building Appearance Engine: removed from the generic mesh only (rollback = remove from the list)
+_BI = os.environ.get('BAE_INDEX', '')
+DETAIL = set(json.load(open(_BI))['batiments']) if _BI and os.path.exists(_BI) else set()
+DETAIL_DONE = []
 STYLE = {'BATIMENT0000000224596718': ('barre', (212, 182, 162), 'référence photo utilisateur (All. Le Gréco)'),
          'BATIMENT0000000224596725': ('tour', (198, 56, 50), 'référence photo utilisateur (All. Émile Kahn)')}
 INFO = []
@@ -292,6 +296,7 @@ for f in B:
         usage = p.get('usage_1') or 'Indifférencié'
         bid = p.get('cleabs')
         sty = STYLE.get(bid)
+        if bid in DETAIL: DETAIL_DONE.append(bid); continue   # drawn by the Building Appearance Engine (data/batiments_detail), collision kept
         if sty:
             tint = np.array(sty[1], float); src = sty[2]
         elif bid in FAC:

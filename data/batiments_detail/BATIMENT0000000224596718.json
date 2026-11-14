@@ -1,0 +1,1048 @@
+{
+ "id": "BATIMENT0000000224596718",
+ "version": 1,
+ "nom": "1-31 allée Le Gréco — Résidence Corgnac (barre incurvée, 1971, réhab. 2005)",
+ "empreinte": [
+  [
+   -5.7,
+   -19.7
+  ],
+  [
+   -13.9,
+   -6.6
+  ],
+  [
+   -24.5,
+   7.1
+  ],
+  [
+   -36.2,
+   19.6
+  ],
+  [
+   -42.3,
+   25.2
+  ],
+  [
+   -53.3,
+   34.2
+  ],
+  [
+   -64.9,
+   42.4
+  ],
+  [
+   -95.0,
+   59.6
+  ],
+  [
+   -101.2,
+   63.4
+  ],
+  [
+   -108.7,
+   68.8
+  ],
+  [
+   -125.1,
+   82.0
+  ],
+  [
+   -134.6,
+   91.5
+  ],
+  [
+   -144.2,
+   102.3
+  ],
+  [
+   -154.0,
+   115.6
+  ],
+  [
+   -163.1,
+   130.3
+  ],
+  [
+   -173.1,
+   150.7
+  ],
+  [
+   -178.9,
+   166.4
+  ],
+  [
+   -181.4,
+   174.9
+  ],
+  [
+   -184.7,
+   188.9
+  ],
+  [
+   -186.3,
+   197.9
+  ],
+  [
+   -175.0,
+   199.5
+  ],
+  [
+   -171.5,
+   182.2
+  ],
+  [
+   -168.8,
+   172.1
+  ],
+  [
+   -166.2,
+   164.4
+  ],
+  [
+   -158.9,
+   146.9
+  ],
+  [
+   -155.2,
+   139.3
+  ],
+  [
+   -146.1,
+   124.1
+  ],
+  [
+   -132.7,
+   106.4
+  ],
+  [
+   -119.2,
+   92.2
+  ],
+  [
+   -111.5,
+   85.3
+  ],
+  [
+   -102.1,
+   77.8
+  ],
+  [
+   -91.5,
+   70.6
+  ],
+  [
+   -82.1,
+   65.1
+  ],
+  [
+   -66.1,
+   56.7
+  ],
+  [
+   -56.7,
+   50.7
+  ],
+  [
+   -41.4,
+   39.4
+  ],
+  [
+   -30.5,
+   29.8
+  ],
+  [
+   -22.2,
+   21.4
+  ],
+  [
+   -10.2,
+   7.5
+  ],
+  [
+   -4.0,
+   -1.2
+  ],
+  [
+   4.1,
+   -13.9
+  ]
+ ],
+ "sol_par_sommet": [
+  291.54,
+  291.53,
+  290.94,
+  290.62,
+  289.98,
+  289.92,
+  289.65,
+  289.16,
+  289.0,
+  288.79,
+  288.19,
+  288.32,
+  287.42,
+  287.13,
+  286.6,
+  286.55,
+  286.56,
+  286.54,
+  286.45,
+  286.19,
+  287.47,
+  288.59,
+  288.66,
+  288.52,
+  288.71,
+  289.0,
+  289.21,
+  289.01,
+  290.49,
+  290.98,
+  291.09,
+  291.6,
+  291.95,
+  293.97,
+  294.13,
+  295.0,
+  296.07,
+  296.6,
+  296.63,
+  296.55,
+  295.69
+ ],
+ "toit_alt": 310.73,
+ "niveaux": 9,
+ "hauteur_niveau": 2.66,
+ "base_alt": 286.19,
+ "facades": [
+  {
+   "sommets": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40
+   ],
+   "longueur_m": 287.9,
+   "role": "entrees",
+   "statut": "observé"
+  },
+  {
+   "sommets": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "longueur_m": 292.4,
+   "role": "arriere",
+   "statut": "non observé (grammaire de la façade principale reprise)"
+  },
+  {
+   "sommets": [
+    19,
+    20
+   ],
+   "role": "pignon",
+   "longueur_m": 11.4,
+   "statut": "observé (bardage blanc à joints horizontaux, colonne de grilles d'aération)"
+  },
+  {
+   "sommets": [
+    40,
+    0
+   ],
+   "role": "pignon",
+   "longueur_m": 11.4,
+   "statut": "observé (bardage blanc à joints horizontaux, colonne de grilles d'aération)"
+  }
+ ],
+ "entrees": [
+  {
+   "numero": 1,
+   "s": 11.89,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 3,
+   "s": 25.99,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 5,
+   "s": 43.59,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 7,
+   "s": 61.86,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 9,
+   "s": 77.91,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 11,
+   "s": 97.73,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 13,
+   "s": 114.28,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 15,
+   "s": 131.38,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 17,
+   "s": 149.33,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 19,
+   "s": 166.89,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 21,
+   "s": 185.64,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 23,
+   "s": 204.2,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 25,
+   "s": 222.67,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 27,
+   "s": 240.55,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 29,
+   "s": 259.61,
+   "statut": "mesuré (adresse BAN projetée)"
+  },
+  {
+   "numero": 31,
+   "s": 274.66,
+   "statut": "mesuré (adresse BAN projetée)"
+  }
+ ],
+ "grammaire": {
+  "module": [
+   {
+    "type": "panneau",
+    "baies": 3,
+    "largeur_baie_m": 2.0,
+    "statut": "observé : 3 fenêtres par panneau coloré ; largeur estimée"
+   },
+   {
+    "type": "loggia",
+    "baies": 2,
+    "largeur_baie_m": 1.4,
+    "statut": "observé : loggias fermées vitrées à menuiseries grises ; largeur estimée"
+   }
+  ],
+  "modules_par_entree": 2,
+  "fenetre": {
+   "largeur_m": 1.2,
+   "hauteur_m": 1.35,
+   "allege_m": 0.95,
+   "profondeur_tableau_m": 0.16,
+   "volet_roulant": true,
+   "statut": "observé (fenêtres blanches à volets roulants blancs) ; dimensions estimées"
+  },
+  "loggia": {
+   "retrait_m": 0.35,
+   "allege_opaque_m": 1.0,
+   "meneaux_m": 0.7,
+   "statut": "observé (vitrage en petits carreaux, allèges grises) ; dimensions estimées"
+  },
+  "bandeau_haut": {
+   "hauteur_m": 0.7,
+   "rgb": [
+    238,
+    238,
+    236
+   ],
+   "statut": "observé : bandeau blanc continu en tête de façade"
+  },
+  "rdc": {
+   "porche_largeur_m": 4.0,
+   "profondeur_m": 1.6,
+   "statut": "observé : porches d'entrée en retrait entre poteaux blancs ; position = adresse BAN"
+  },
+  "joints_niveau": true
+ },
+ "couleurs_depuis_fin": false,
+ "couleurs_modules": {
+  "statut_observe": "observé sur la capture (couleur apparente au soleil, corrigée −8 %)",
+  "observes": [
+   [
+    206,
+    188,
+    166
+   ],
+   [
+    206,
+    188,
+    166
+   ],
+   [
+    214,
+    200,
+    186
+   ],
+   [
+    214,
+    200,
+    186
+   ],
+   [
+    206,
+    188,
+    166
+   ],
+   [
+    206,
+    188,
+    166
+   ],
+   [
+    166,
+    184,
+    176
+   ],
+   [
+    166,
+    184,
+    176
+   ],
+   [
+    226,
+    226,
+    224
+   ],
+   [
+    226,
+    226,
+    224
+   ],
+   [
+    226,
+    226,
+    224
+   ]
+  ],
+  "defaut": [
+   226,
+   226,
+   224
+  ],
+  "statut_defaut": "non observé : blanc par défaut (teinte la plus courante vue sur la capture)",
+  "loggia_menuiserie": [
+   140,
+   148,
+   154
+  ],
+  "loggia_allege": [
+   150,
+   156,
+   160
+  ]
+ },
+ "pignon": {
+  "rgb": [
+   222,
+   221,
+   218
+  ],
+  "joints_m": 0.62,
+  "grilles": true,
+  "statut": "observé (bardage blanc à joints horizontaux, colonne de grilles d'aération)"
+ },
+ "toit": {
+  "rgb": [
+   187,
+   184,
+   180
+  ],
+  "statut": "mesuré (BD ORTHO)"
+ },
+ "equipements": [
+  {
+   "x": -180.3,
+   "z": 190.25,
+   "long_m": 1.61,
+   "larg_m": 0.93,
+   "haut_m": 2.91,
+   "angle": 2.588,
+   "cellules": 4
+  },
+  {
+   "x": -176.57,
+   "z": 185.78,
+   "long_m": 4.03,
+   "larg_m": 3.07,
+   "haut_m": 2.47,
+   "angle": -0.08,
+   "cellules": 39
+  },
+  {
+   "x": -178.55,
+   "z": 182.0,
+   "long_m": 1.5,
+   "larg_m": 1.0,
+   "haut_m": 2.64,
+   "angle": 1.571,
+   "cellules": 6
+  },
+  {
+   "x": -177.09,
+   "z": 176.14,
+   "long_m": 2.06,
+   "larg_m": 1.14,
+   "haut_m": 2.83,
+   "angle": 1.425,
+   "cellules": 7
+  },
+  {
+   "x": -173.44,
+   "z": 173.52,
+   "long_m": 3.66,
+   "larg_m": 3.66,
+   "haut_m": 2.48,
+   "angle": -0.322,
+   "cellules": 37
+  },
+  {
+   "x": -167.55,
+   "z": 159.5,
+   "long_m": 1.61,
+   "larg_m": 0.93,
+   "haut_m": 2.83,
+   "angle": 1.017,
+   "cellules": 4
+  },
+  {
+   "x": -171.61,
+   "z": 158.56,
+   "long_m": 2.3,
+   "larg_m": 1.37,
+   "haut_m": 2.74,
+   "angle": 0.951,
+   "cellules": 8
+  },
+  {
+   "x": -166.66,
+   "z": 154.93,
+   "long_m": 4.39,
+   "larg_m": 3.19,
+   "haut_m": 2.48,
+   "angle": 2.752,
+   "cellules": 40
+  },
+  {
+   "x": -164.8,
+   "z": 153.0,
+   "long_m": 1.5,
+   "larg_m": 1.5,
+   "haut_m": 2.48,
+   "angle": -3.142,
+   "cellules": 5
+  },
+  {
+   "x": -160.63,
+   "z": 142.83,
+   "long_m": 1.21,
+   "larg_m": 0.85,
+   "haut_m": 2.58,
+   "angle": -0.785,
+   "cellules": 3
+  },
+  {
+   "x": -160.09,
+   "z": 140.11,
+   "long_m": 4.52,
+   "larg_m": 3.19,
+   "haut_m": 2.48,
+   "angle": 2.709,
+   "cellules": 42
+  },
+  {
+   "x": -151.5,
+   "z": 127.6,
+   "long_m": 1.61,
+   "larg_m": 1.13,
+   "haut_m": 1.96,
+   "angle": 1.249,
+   "cellules": 5
+  },
+  {
+   "x": -155.61,
+   "z": 125.75,
+   "long_m": 2.29,
+   "larg_m": 1.28,
+   "haut_m": 2.93,
+   "angle": 0.683,
+   "cellules": 8
+  },
+  {
+   "x": -150.0,
+   "z": 122.87,
+   "long_m": 4.1,
+   "larg_m": 3.57,
+   "haut_m": 2.44,
+   "angle": -0.612,
+   "cellules": 41
+  },
+  {
+   "x": -147.88,
+   "z": 121.41,
+   "long_m": 1.56,
+   "larg_m": 1.21,
+   "haut_m": 2.68,
+   "angle": 2.356,
+   "cellules": 6
+  },
+  {
+   "x": -150.9,
+   "z": 118.9,
+   "long_m": 1.91,
+   "larg_m": 0.85,
+   "haut_m": 2.91,
+   "angle": 0.785,
+   "cellules": 5
+  },
+  {
+   "x": -141.3,
+   "z": 112.25,
+   "long_m": 2.0,
+   "larg_m": 0.5,
+   "haut_m": 2.9,
+   "angle": 1.571,
+   "cellules": 4
+  },
+  {
+   "x": -140.41,
+   "z": 109.7,
+   "long_m": 4.54,
+   "larg_m": 3.52,
+   "haut_m": 2.48,
+   "angle": 2.258,
+   "cellules": 42
+  },
+  {
+   "x": -144.88,
+   "z": 110.33,
+   "long_m": 1.62,
+   "larg_m": 1.39,
+   "haut_m": 2.94,
+   "angle": 1.107,
+   "cellules": 6
+  },
+  {
+   "x": -137.16,
+   "z": 107.0,
+   "long_m": 1.5,
+   "larg_m": 1.5,
+   "haut_m": 2.78,
+   "angle": 1.571,
+   "cellules": 7
+  },
+  {
+   "x": -140.17,
+   "z": 104.37,
+   "long_m": 1.61,
+   "larg_m": 0.97,
+   "haut_m": 2.76,
+   "angle": -1.893,
+   "cellules": 4
+  },
+  {
+   "x": -129.55,
+   "z": 98.75,
+   "long_m": 1.0,
+   "larg_m": 1.0,
+   "haut_m": 2.43,
+   "angle": 0.0,
+   "cellules": 4
+  },
+  {
+   "x": -132.92,
+   "z": 96.25,
+   "long_m": 2.06,
+   "larg_m": 1.56,
+   "haut_m": 2.91,
+   "angle": 1.422,
+   "cellules": 8
+  },
+  {
+   "x": -127.42,
+   "z": 94.57,
+   "long_m": 4.18,
+   "larg_m": 3.14,
+   "haut_m": 2.45,
+   "angle": 2.426,
+   "cellules": 43
+  },
+  {
+   "x": -115.54,
+   "z": 83.46,
+   "long_m": 4.33,
+   "larg_m": 3.08,
+   "haut_m": 2.46,
+   "angle": 2.245,
+   "cellules": 38
+  },
+  {
+   "x": -120.3,
+   "z": 83.4,
+   "long_m": 1.61,
+   "larg_m": 1.19,
+   "haut_m": 2.82,
+   "angle": 0.976,
+   "cellules": 5
+  },
+  {
+   "x": -113.3,
+   "z": 77.64,
+   "long_m": 1.5,
+   "larg_m": 1.5,
+   "haut_m": 2.97,
+   "angle": 0.0,
+   "cellules": 7
+  },
+  {
+   "x": -102.63,
+   "z": 74.66,
+   "long_m": 1.21,
+   "larg_m": 0.85,
+   "haut_m": 2.63,
+   "angle": 0.785,
+   "cellules": 3
+  },
+  {
+   "x": -99.76,
+   "z": 71.42,
+   "long_m": 4.08,
+   "larg_m": 3.43,
+   "haut_m": 2.43,
+   "angle": 2.277,
+   "cellules": 41
+  },
+  {
+   "x": -105.97,
+   "z": 72.0,
+   "long_m": 2.0,
+   "larg_m": 1.5,
+   "haut_m": 2.93,
+   "angle": -3.142,
+   "cellules": 6
+  },
+  {
+   "x": -97.13,
+   "z": 70.66,
+   "long_m": 1.21,
+   "larg_m": 0.85,
+   "haut_m": 2.17,
+   "angle": 0.785,
+   "cellules": 3
+  },
+  {
+   "x": -98.9,
+   "z": 66.9,
+   "long_m": 1.91,
+   "larg_m": 0.85,
+   "haut_m": 2.66,
+   "angle": 0.785,
+   "cellules": 5
+  },
+  {
+   "x": -86.43,
+   "z": 62.92,
+   "long_m": 5.3,
+   "larg_m": 3.73,
+   "haut_m": 2.45,
+   "angle": 1.381,
+   "cellules": 47
+  },
+  {
+   "x": -90.8,
+   "z": 61.58,
+   "long_m": 1.9,
+   "larg_m": 1.2,
+   "haut_m": 2.88,
+   "angle": 0.644,
+   "cellules": 6
+  },
+  {
+   "x": -82.05,
+   "z": 61.25,
+   "long_m": 1.0,
+   "larg_m": 1.0,
+   "haut_m": 2.48,
+   "angle": 0.0,
+   "cellules": 4
+  },
+  {
+   "x": -83.5,
+   "z": 57.3,
+   "long_m": 2.08,
+   "larg_m": 0.97,
+   "haut_m": 2.79,
+   "angle": 0.366,
+   "cellules": 5
+  },
+  {
+   "x": -71.92,
+   "z": 56.12,
+   "long_m": 1.61,
+   "larg_m": 0.97,
+   "haut_m": 2.34,
+   "angle": 0.322,
+   "cellules": 4
+  },
+  {
+   "x": -68.63,
+   "z": 53.07,
+   "long_m": 4.26,
+   "larg_m": 3.1,
+   "haut_m": 2.47,
+   "angle": 2.132,
+   "cellules": 38
+  },
+  {
+   "x": -75.1,
+   "z": 53.1,
+   "long_m": 1.99,
+   "larg_m": 1.04,
+   "haut_m": 2.81,
+   "angle": 0.09,
+   "cellules": 5
+  },
+  {
+   "x": -65.97,
+   "z": 52.83,
+   "long_m": 1.21,
+   "larg_m": 0.85,
+   "haut_m": 2.73,
+   "angle": 0.785,
+   "cellules": 3
+  },
+  {
+   "x": -67.55,
+   "z": 48.66,
+   "long_m": 2.0,
+   "larg_m": 1.0,
+   "haut_m": 2.89,
+   "angle": 0.0,
+   "cellules": 6
+  },
+  {
+   "x": -56.3,
+   "z": 46.62,
+   "long_m": 1.5,
+   "larg_m": 1.0,
+   "haut_m": 2.42,
+   "angle": -3.142,
+   "cellules": 4
+  },
+  {
+   "x": -54.81,
+   "z": 44.32,
+   "long_m": 4.1,
+   "larg_m": 3.32,
+   "haut_m": 2.48,
+   "angle": 2.205,
+   "cellules": 41
+  },
+  {
+   "x": -59.3,
+   "z": 43.6,
+   "long_m": 1.61,
+   "larg_m": 1.19,
+   "haut_m": 2.8,
+   "angle": 0.976,
+   "cellules": 5
+  },
+  {
+   "x": -52.55,
+   "z": 38.75,
+   "long_m": 2.08,
+   "larg_m": 1.13,
+   "haut_m": 2.87,
+   "angle": -1.893,
+   "cellules": 6
+  },
+  {
+   "x": -45.2,
+   "z": 33.3,
+   "long_m": 1.61,
+   "larg_m": 1.13,
+   "haut_m": 2.77,
+   "angle": 0.322,
+   "cellules": 5
+  },
+  {
+   "x": -36.13,
+   "z": 31.16,
+   "long_m": 1.21,
+   "larg_m": 0.85,
+   "haut_m": 2.67,
+   "angle": 0.785,
+   "cellules": 3
+  },
+  {
+   "x": -38.59,
+   "z": 27.64,
+   "long_m": 2.06,
+   "larg_m": 1.14,
+   "haut_m": 2.92,
+   "angle": 1.425,
+   "cellules": 7
+  },
+  {
+   "x": -28.05,
+   "z": 23.75,
+   "long_m": 1.0,
+   "larg_m": 1.0,
+   "haut_m": 2.48,
+   "angle": 0.0,
+   "cellules": 4
+  },
+  {
+   "x": -31.67,
+   "z": 20.87,
+   "long_m": 3.0,
+   "larg_m": 1.06,
+   "haut_m": 2.64,
+   "angle": 0.586,
+   "cellules": 8
+  },
+  {
+   "x": -23.17,
+   "z": 18.5,
+   "long_m": 1.5,
+   "larg_m": 1.0,
+   "haut_m": 2.64,
+   "angle": -1.571,
+   "cellules": 4
+  },
+  {
+   "x": -26.13,
+   "z": 15.08,
+   "long_m": 1.62,
+   "larg_m": 1.39,
+   "haut_m": 2.52,
+   "angle": 0.464,
+   "cellules": 6
+  },
+  {
+   "x": -16.3,
+   "z": 9.87,
+   "long_m": 1.5,
+   "larg_m": 1.0,
+   "haut_m": 2.32,
+   "angle": 0.0,
+   "cellules": 4
+  },
+  {
+   "x": -19.4,
+   "z": 7.9,
+   "long_m": 1.91,
+   "larg_m": 0.85,
+   "haut_m": 2.54,
+   "angle": 0.785,
+   "cellules": 5
+  },
+  {
+   "x": -14.47,
+   "z": 1.33,
+   "long_m": 1.21,
+   "larg_m": 0.85,
+   "haut_m": 3.24,
+   "angle": 0.785,
+   "cellules": 3
+  },
+  {
+   "x": -10.8,
+   "z": -4.0,
+   "long_m": 1.5,
+   "larg_m": 0.5,
+   "haut_m": 2.44,
+   "angle": -1.571,
+   "cellules": 3
+  },
+  {
+   "x": -6.3,
+   "z": -10.5,
+   "long_m": 1.5,
+   "larg_m": 0.5,
+   "haut_m": 2.7,
+   "angle": -1.571,
+   "cellules": 3
+  }
+ ],
+ "provenance": {
+  "empreinte": "IGN BD TOPO batiment (Licence Ouverte 2.0), simplifiée 0,3 m — mesuré",
+  "hauteur": "IGN LiDAR HD MNS/MNT 0,5 m (Licence Ouverte 2.0) : toit 310.73 m, sol le plus bas 286.19 m — mesuré ; BD TOPO dit 22.8 m, la fiche PSS ≈25,5 m (estimation)",
+  "niveaux": "BD TOPO nombre_d_etages = 9 et fiche PSS « R+8 » — concordants",
+  "hauteur_niveau": "calculée = (toit LiDAR − dalle/acrotère estimée − sol le plus bas) / niveaux — estimé",
+  "equipements_toit": "IGN LiDAR HD MNS 0,5 m, objets > 1 m au-dessus du toit — mesuré (forme = boîte englobante)",
+  "entrees": "Base Adresse Nationale via géocodeur Géoplateforme (Licence Ouverte 2.0) — position de l'adresse, pas forcément la porte",
+  "facade": "Capture d'écran fournie par l'utilisateur (vue depuis la rue Trésaguet, mars 2025), regardée uniquement pour relever la composition ; aucun pixel n'est réutilisé comme texture. Fiche PSS-archi #20184 (R+8, 235 logements, architectes C. Tambuté 1971 / F. Lévêque 2005).",
+  "textures": "Poly Haven « concrete_slab_wall » / enduit (CC0) pour le relief et la rugosité, teintés par la couleur observée ; motifs de joints procéduraux. Aucune photo réelle utilisée comme texture."
+ },
+ "non_verifie": [
+  "façade arrière (ouest) : jamais photographiée dans nos sources — grammaire de la façade principale reprise",
+  "couleurs des modules au-delà du 6e module depuis la rue Trésaguet",
+  "dimensions exactes des fenêtres et des loggias (aucun relevé)",
+  "positions des volets roulants (générées, état variable observé)",
+  "intérieurs des logements (fond sombre neutre)"
+ ]
+}
