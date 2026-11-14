@@ -94,6 +94,12 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (isTouch) document.documentElement.classList.add('is-touch');
@@ -111,16 +117,49 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(62, 1, 0.3, 5000);
 
 const QUALITIES = [
-  { name: 'ULTRA', dpr: 2, shadow: 2048, shadowAll: true, far: 2600, trees: 2600 },
-  { name: 'HAUTE', dpr: 1.5, shadow: 2048, shadowAll: false, far: 2000, trees: 1500 },
-  { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800 },
+  { name: 'ULTRA', dpr: 2, shadow: 2048, shadowAll: true, far: 2600, trees: 2600, post: true, ao: true },
+  { name: 'HAUTE', dpr: 1.5, shadow: 2048, shadowAll: false, far: 2000, trees: 1500, post: true, ao: false },
+  { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
 let qi = isTouch ? 1 : 0;
+// ---------------- cinematic post-processing ----------------
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, sat: { value: 1.14 }, contrast: { value: 1.07 }, vig: { value: 0.32 }, grain: { value: 0.022 }, warm: { value: new THREE.Vector3(1.03, 1.0, 0.96) } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float time, sat, contrast, vig, grain; uniform vec3 warm; varying vec2 vUv;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)) + time) * 43758.5453); }
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      float l = dot(c, vec3(0.2126,0.7152,0.0722));
+      c = mix(vec3(l), c, sat);                         // richer colours
+      c = (c - 0.5) * contrast + 0.5;                   // filmic contrast
+      c *= warm;                                        // slightly warm sunlight grade
+      c = mix(c, c * vec3(0.92,0.97,1.06), smoothstep(0.55, 0.0, l) * 0.35); // cool shadows
+      vec2 d = vUv - 0.5; c *= 1.0 - vig * dot(d, d) * 1.6; // vignette
+      c += (h(vUv * 917.0) - 0.5) * grain;              // film grain
+      gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+    }`
+};
+let composer = null, bloomPass = null, aoPass = null, gradePass = null;
+function buildComposer() {
+  const q = QUALITIES[qi];
+  if (composer) { composer.dispose(); composer = null; }
+  if (!q.post) return;
+  const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+  composer = new EffectComposer(renderer, rt);
+  composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  if (q.ao) { aoPass = new GTAOPass(scene, camera, innerWidth, innerHeight); aoPass.blendIntensity = 0.75; aoPass.updateGtaoMaterial({ radius: 0.5, distanceExponent: 1.5, thickness: 1.5, scale: 1.0, samples: 12 }); composer.addPass(aoPass); }
+  composer.addPass(new OutputPass());
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.18, 0.45, 0.93); composer.addPass(bloomPass); // after tone mapping: only real highlights glow
+  gradePass = new ShaderPass(GradeShader); composer.addPass(gradePass);
+}
 function resize() {
   const q = QUALITIES[qi];
   renderer.setPixelRatio(Math.min(devicePixelRatio, q.dpr));
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight); }
 }
 addEventListener('resize', resize); resize();
 
@@ -180,7 +219,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=7';
+const V = '?v=8';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -715,7 +754,7 @@ $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'
 $('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 0.3; PL.spd = 0; PL.vy = 0; } else respawn(); };
 $('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
 function applyQuality() {
-  const q = QUALITIES[qi]; resize(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = [6, 12, 20][qi];
+  const q = QUALITIES[qi]; resize(); buildComposer(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = TILE_ERR[qi];
   sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
   chunks.forEach(c => c.obj.traverse(o => { if (o.isMesh) o.castShadow = q.shadowAll && !c.roads; }));
   treeChunks.forEach(c => c.obj.castShadow = q.shadowAll);
@@ -884,6 +923,7 @@ function setMode(m) {
 
 
 // ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
+const TILE_ERR = [2, 5, 12]; // lower = sharper photo city
 const ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IlVEOVV6R05CSWVjTHZrMkUiLCJqdGkiOiIzMzU1MWMwNS1mOTI4LTRkZjItOTFlMy1mNTY0ZDVhMzY1MzMiLCJpZCI6NTQ5MjIzLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3OTQ2NTU2Njd9.36tL2NsuqQYEqQ66NQYshABW3ACnL4ldZv1p0eWrst0';
 const ORIGIN = { lat: 45.84646501496012, lon: 1.233611398108212, ellHeight: 0 }; // 31 allée Le Gréco
 let tiles = null, tilesRoot = null, cityMode = 'ign', tilesCalib = { t: 0, n: 0 };
@@ -900,13 +940,13 @@ async function startGoogleCity() {
     tiles.registerPlugin(new P.TileCompressionPlugin());
     // the plugin puts the address at the origin with X west / Z north: we turn it to X east / -Z north
     tiles.registerPlugin(new P.ReorientationPlugin({ lat: ORIGIN.lat * Math.PI / 180, lon: ORIGIN.lon * Math.PI / 180, height: H0 + 49.5, recenter: true }));
-    tiles.errorTarget = [6, 12, 20][qi];
+    tiles.errorTarget = TILE_ERR[qi];
     tiles.addEventListener('load-model', ({ scene: sc }) => {
       sc.traverse(o => {
         if (!o.isMesh) return;
         const old = o.material; // photogrammetry already contains the real light: draw it unlit
         o.material = new THREE.MeshBasicMaterial({ map: old.map || null, color: old.map ? 0xffffff : old.color, fog: true });
-        if (o.material.map) o.material.map.anisotropy = 4;
+        if (o.material.map) o.material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
         old.dispose();
       });
     });
@@ -1013,7 +1053,7 @@ function loop(now) {
     if (!nm && lastStreet) { lastStreet = ''; $('street').style.opacity = 0; }
   }
   drawMap(); updateAudio();
-  renderer.render(scene, camera);
+  if (composer) { gradePass.uniforms.time.value = t % 100; bloomPass.strength = TIMES[ti].night ? 0.55 : 0.18; bloomPass.threshold = TIMES[ti].night ? 0.7 : 0.93; composer.render(dt); } else renderer.render(scene, camera);
   frames++; fpsT += dt; if (fpsT > 1) { window.__fps = frames / fpsT; frames = 0; fpsT = 0; }
 }
 main();
