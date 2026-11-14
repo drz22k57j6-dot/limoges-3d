@@ -136,7 +136,7 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 let envRT = null;
 
 const TIMES = [
-  { name: 'JOUR', elev: 48, az: 150, sun: 3.0, hemi: 1.35, fog: 0xc4d6e8, exp: 1.05, night: 0 },
+  { name: 'JOUR', elev: 48, az: 150, sun: 2.5, hemi: 1.05, fog: 0xc4d6e8, exp: 1.05, night: 0 },
   { name: 'GOLDEN', elev: 6, az: 250, sun: 2.8, hemi: 0.8, fog: 0xe0b48a, exp: 0.9, night: 0.15 },
   { name: 'NUIT', elev: -8, az: 300, sun: 0.0, hemi: 0.3, fog: 0x0b1020, exp: 1.0, night: 1 },
 ];
@@ -156,7 +156,7 @@ function applyTime() {
   const es = new THREE.Scene(); const s2 = sky.clone(); s2.material = sky.material; es.add(s2);
   if (envRT) envRT.dispose();
   envRT = pmrem.fromScene(es, 0, 1, 6000); scene.environment = envRT.texture;
-  scene.environmentIntensity = t.night ? 0.06 : 0.3;
+  scene.environmentIntensity = t.night ? 0.02 : 0.06; // sky PMREM is very bright HDR
   scene.background = null;
   if (t.night) { scene.background = new THREE.Color(0x05070d); sky.visible = false; } else sky.visible = true;
   nightMats.forEach(m => { m.emissiveIntensity = t.night ? 1.0 : (t.night === 0 ? 0 : 0.2); });
@@ -298,7 +298,7 @@ function buildTrees(buf) {
   for (let i = 0; i < p.count; i++) { const r = 0.85 + 0.3 * Math.abs(Math.sin(p.getX(i) * 5.1 + p.getY(i) * 3.7 + p.getZ(i) * 4.3)); p.setXYZ(i, p.getX(i) * r, 0.64 + p.getY(i) * 0.36 * r, p.getZ(i) * r); }
   crownG.computeVertexNormals();
   const trunkG = new THREE.CylinderGeometry(0.045, 0.07, 0.42, 6); trunkG.translate(0, 0.21, 0);
-  const crownM = new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true, envMapIntensity: 0.08 });
+  const crownM = new THREE.MeshStandardMaterial({ roughness: 1, flatShading: true, envMapIntensity: 1 });
   const trunkM = new THREE.MeshStandardMaterial({ color: 0x5a4636, roughness: 1 });
   const buckets = new Map();
   for (let i = 0; i < n; i++) {
@@ -313,7 +313,7 @@ function buildTrees(buf) {
       Q.setFromAxisAngle(Y, f[6 * i + 5]);
       M.compose(new THREE.Vector3(f[6 * i], f[6 * i + 1], f[6 * i + 2]), Q, new THREE.Vector3(r, h, r));
       cm.setMatrixAt(j, M); tm.setMatrixAt(j, M);
-      col.setRGB(c[4 * i] / 255, c[4 * i + 1] / 255, c[4 * i + 2] / 255, THREE.SRGBColorSpace); col.getHSL(hsl); col.setHSL(THREE.MathUtils.clamp(hsl.h, 0.16, 0.33), Math.min(1, hsl.s * 1.2 + 0.05), Math.min(0.42, hsl.l * 1.05)); cm.setColorAt(j, col);
+      col.setRGB(c[4 * i] / 255, c[4 * i + 1] / 255, c[4 * i + 2] / 255, THREE.SRGBColorSpace); col.getHSL(hsl); col.setHSL(THREE.MathUtils.clamp(hsl.h, 0.16, 0.33), Math.min(1, hsl.s * 1.2 + 0.05), Math.min(0.45, hsl.l * 1.3 + 0.02)); cm.setColorAt(j, col);
     });
     for (const m of [cm, tm]) { m.computeBoundingSphere(); m.castShadow = true; scene.add(m); treeChunks.push({ obj: m, c: m.boundingSphere.center.clone() }); }
   }
@@ -324,7 +324,7 @@ function setupCity(gT, gO) {
     if (!o.isMesh) return;
     const old = o.material;
     o.geometry.computeVertexNormals();
-    o.material = new THREE.MeshLambertMaterial({ map: old.map, reflectivity: 0, combine: THREE.MixOperation, color: 0xffffff });
+    o.material = new THREE.MeshLambertMaterial({ map: old.map, reflectivity: 0, combine: THREE.MixOperation }); o.material.color.setScalar(1.22);
     o.material.onBeforeCompile = sh => {
       sh.uniforms.detailMap = { value: detail };
       sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
@@ -370,12 +370,12 @@ function setupCity(gT, gO) {
         m.normalMap = fix(texLoader.load('data/tex/' + tn + '_n.jpg')); m.normalScale.set(0.9, 0.9);
         m.roughnessMap = fix(texLoader.load('data/tex/' + tn + '_r.jpg'));
         if (!/facade|mur/.test(m.name)) m.color.setScalar(1.22); // albedo detail textures are normalised to 0.8
-        m.envMapIntensity = m.name === 'bitume' ? 0.12 : 0.3; m.needsUpdate = true;
+        m.envMapIntensity = m.name === 'bitume' ? 0.6 : 1; m.needsUpdate = true;
       }
-      if (/facade|mur/.test(m.name)) { m.color.multiplyScalar(0.74); m.envMapIntensity = 0.35; }
+      if (/facade|mur/.test(m.name)) { m.color.multiplyScalar(0.95); m.envMapIntensity = 1; }
       if (m.name === 'eau') {
         m.normalMap = waterNormal; waterNormal.offset.copy(m.map.offset); waterNormal.repeat.copy(m.map.repeat);
-        m.map = null; m.color.set(0x2c4a46); m.roughness = 0.06; m.metalness = 0.0; m.envMapIntensity = 1.4; m.normalScale.set(0.35, 0.35);
+        m.map = null; m.color.set(0x2c4a46); m.roughness = 0.06; m.metalness = 0.0; m.envMapIntensity = 14; m.normalScale.set(0.35, 0.35);
         o.receiveShadow = true; o.castShadow = false; m.needsUpdate = true;
       }
       if (m.name === 'marquage') { m.emissive = new THREE.Color(0x222222); }
@@ -419,7 +419,7 @@ function setupCar(g) {
   const root = g.scene;
   root.traverse(o => {
     if (/License|Emblem/i.test(o.name)) o.visible = false;
-    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material.envMapIntensity !== undefined) o.material.envMapIntensity = 1.2; }
+    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material.envMapIntensity !== undefined) o.material.envMapIntensity = 16; }
   });
   root.updateMatrixWorld(true);
   // orient: find length axis and front direction (headlights)

@@ -156,7 +156,7 @@ for bi, lst in obs.items():
     med = np.median(C[np.abs(C.mean(1)-C[m].mean()) < 35], 0) if len(C) > 2 else C[m]
     # photos of walls are usually in shade/overcast: lift brightness slightly, keep hue
     lum = med.mean(); gain = np.clip(185/lum, 1.0, 1.45) if lum < 185 else 1.0
-    rgb = np.clip(med*gain, 0, 255)
+    rgb = med*gain; mu = rgb.mean(); rgb = np.clip(mu + (rgb-mu)*1.45, 0, 255)  # photos are hazy/overcast: restore saturation
     out[ids[bi]] = {'rgb': [int(v) for v in rgb], 'src': f'photo Panoramax ({nviews} vue{"s" if nviews > 1 else ""})',
                     'vues': nviews, 'photos': sorted(set(i for _, _, i in lst))[:5]}
 # ---- estimate unmeasured pilot buildings from measured neighbours of the same kind
