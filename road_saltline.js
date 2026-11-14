@@ -217,5 +217,68 @@ normal = normalize(mat3(viewMatrix) * normalize(nW + vec3(-gNxz.x, 0.0, -gNxz.y)
     }
     return out;
   }
-  return { material, build, uniforms };
+  /** routes_v3 (compact): chunks of the merged asphalt with road coordinates per vertex. */
+  function buildV3(buf) {
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x52445634) return [];
+    const n = dv.getUint32(4, true); let o = 8; const out = [];
+    for (let c = 0; c < n; c++) {
+      const nV = dv.getUint32(o, true), nI = dv.getUint32(o + 4, true), big = dv.getUint8(o + 8);
+      const ox = dv.getFloat32(o + 9, true), oy = dv.getFloat32(o + 13, true), oz = dv.getFloat32(o + 17, true); o += 24;
+      const q = new Uint16Array(buf.slice(o, o + nV * 6)); o += nV * 6;
+      const s = new Float32Array(buf.slice(o, o + nV * 4)); o += nV * 4;
+      const lat = new Int16Array(buf.slice(o, o + nV * 2)); o += nV * 2;
+      const hl = new Uint8Array(buf.slice(o, o + nV * 2)); o += nV * 2;
+      const ln = new Uint8Array(buf.slice(o, o + nV * 4)); o += nV * 4;
+      const idx = big ? new Uint32Array(buf.slice(o, o + nI * 4)) : new Uint16Array(buf.slice(o, o + nI * 2)); o += nI * (big ? 4 : 2);
+      while (o % 4) o++;
+      const pos = new Float32Array(nV * 3), road = new Float32Array(nV * 4), line = new Float32Array(nV * 3);
+      for (let i = 0; i < nV; i++) {
+        pos[3 * i] = ox + q[3 * i] * 0.02; pos[3 * i + 1] = oy + q[3 * i + 1] * 0.02; pos[3 * i + 2] = oz + q[3 * i + 2] * 0.02;
+        road[4 * i] = s[i]; road[4 * i + 1] = lat[i] / 100; road[4 * i + 2] = hl[2 * i] / 10; road[4 * i + 3] = hl[2 * i + 1];
+        line[3 * i] = ln[4 * i] / 100; line[3 * i + 1] = Math.min(1, ln[4 * i + 1] / 100); line[3 * i + 2] = ln[4 * i + 2] / 100;
+      }
+      const g = new T.BufferGeometry();
+      g.setAttribute('position', new T.BufferAttribute(pos, 3));
+      g.setAttribute('aRoad', new T.BufferAttribute(road, 4));
+      g.setAttribute('aLine', new T.BufferAttribute(line, 3));
+      g.setIndex(new T.BufferAttribute(idx, 1));
+      g.computeVertexNormals();
+      const nr = g.attributes.normal; for (let i = 0; i < nr.count; i++) if (nr.getY(i) < 0) nr.setXYZ(i, -nr.getX(i), -nr.getY(i), -nr.getZ(i));
+      g.computeBoundingSphere();
+      const mesh = new T.Mesh(g, material); mesh.receiveShadow = true; mesh.name = 'route_v3'; out.push(mesh);
+    }
+    return out;
+  }
+  /** paint decals (give-way, zebras, arrows) and roundabout islands. */
+  function buildDeco(buf) {
+    const dv = new DataView(buf); let o = 0; const out = [];
+    const nP = dv.getUint32(o, true), nI = dv.getUint32(o + 4, true); o += 8;
+    const P = new Float32Array(buf.slice(o, o + nP * 12)); o += nP * 12;
+    const I = new Uint32Array(buf.slice(o, o + nI * 4)); o += nI * 4;
+    if (nP) {
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(P, 3)); g.setIndex(new T.BufferAttribute(I, 1));
+      const nrm = new Float32Array(nP * 3); for (let i = 0; i < nP; i++) nrm[3 * i + 1] = 1; g.setAttribute('normal', new T.BufferAttribute(nrm, 3));
+      g.computeBoundingSphere();
+      const m = new T.MeshStandardMaterial({ color: new T.Color().setRGB(0.47, 0.47, 0.44), roughness: 0.62, metalness: 0, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+      m.name = 'peinture'; const mesh = new T.Mesh(g, m); mesh.receiveShadow = true; out.push(mesh);
+    }
+    const nQ = dv.getUint32(o, true), nJ = dv.getUint32(o + 4, true); o += 8;
+    if (nQ) {
+      const A = new Float32Array(buf.slice(o, o + nQ * 16)); o += nQ * 16;
+      const J = new Uint32Array(buf.slice(o, o + nJ * 4));
+      const pos = new Float32Array(nQ * 3), col = new Float32Array(nQ * 3);
+      for (let i = 0; i < nQ; i++) {
+        pos[3 * i] = A[4 * i]; pos[3 * i + 1] = A[4 * i + 1]; pos[3 * i + 2] = A[4 * i + 2];
+        const kerb = A[4 * i + 3] > 0.5; const c = kerb ? [0.55, 0.55, 0.53] : [0.2, 0.32, 0.1];
+        col[3 * i] = c[0]; col[3 * i + 1] = c[1]; col[3 * i + 2] = c[2];
+      }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('color', new T.BufferAttribute(col, 3)); g.setIndex(new T.BufferAttribute(J, 1));
+      g.computeVertexNormals(); g.computeBoundingSphere();
+      const m = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: T.DoubleSide, flatShading: true }); m.name = 'ilots';
+      const mesh = new T.Mesh(g, m); mesh.receiveShadow = true; mesh.castShadow = true; out.push(mesh);
+    }
+    return out;
+  }
+  return { material, build, buildV3, buildDeco, uniforms };
 }

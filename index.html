@@ -212,7 +212,7 @@ const nightMats = [];
 const manager = new THREE.LoadingManager();
 const loader = new GLTFLoader(manager); loader.setMeshoptDecoder(MeshoptDecoder);
 const prog = {};
-function setProg(k, v) { prog[k] = v; const tot = Object.values(prog).reduce((a, b) => a + b, 0) / 8; $('bar').firstElementChild.style.width = (tot * 100).toFixed(0) + '%'; }
+function setProg(k, v) { prog[k] = v; const tot = Object.values(prog).reduce((a, b) => a + b, 0) / 10; $('bar').firstElementChild.style.width = (tot * 100).toFixed(0) + '%'; }
 async function fetchProg(url, key) {
   const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status);
   const total = +r.headers.get('content-length') || 0;
@@ -221,7 +221,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=13';
+const V = '?v=14';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -325,7 +325,7 @@ function surfaceH(x, z) {
       if (d > hw + 4) continue;
       const hh = r.h[k] + (r.h[k + 1] - r.h[k]) * t;
       let c;
-      if (d <= hw + 0.04) c = hh;
+      if (d <= hw + 3.5) c = hh;
       else {
         const sw = (dx * (z - az) - dz * (x - ax)) < 0 ? r.sl : r.sr, wv = sw[k] + (sw[k + 1] - sw[k]) * t;
         continue; // no pavements for now
@@ -1058,7 +1058,6 @@ function setCity(m) {
   if (tilesRoot) tilesRoot.visible = g;
   terrainRoot && (terrainRoot.visible = !g);
   chunks.forEach(c => c.hiddenByCity = g);
-  treeChunks.forEach(c => c.hiddenByCity = g);
   carBlob.visible = g;
   $('bVille').textContent = g ? 'VILLE PHOTO' : 'VILLE IGN';
   $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0'
@@ -1094,15 +1093,15 @@ let terrainRoot = null;
 let lastStreet = '', streetT = 0;
 async function main() {
   try {
-    const [gT, gO, gC, rel, bat, rds, treesBuf, names] = await Promise.all([
+    const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, names] = await Promise.all([
       loadGLB('data/terrain.wasm', 't'), loadGLB('data/objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
-      loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'), loadBin('data/arbres.wasm', 'r2'),
+      loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'), loadBin('data/arbres.wasm', 'r2'), loadBin('data/routes_v3.wasm', 'v3').catch(() => null), loadBin('data/routes_deco.wasm', 'dc').catch(() => null),
       fetch('data/routes_noms.json' + V).then(r => r.json())]);
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
-    { const SR = createSaltlineRoads(THREE); for (const m of SR.build(roads)) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
+    { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(SR.buildDeco(decoBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
     applyTime(); applyQuality();
     respawn(true);
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
@@ -1134,7 +1133,7 @@ function loop(now) {
   const far = QUALITIES[qi].far + 600, tf = QUALITIES[qi].trees;
   for (const c of chunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
-  updateTrees(dt, camera.position.x, camera.position.z, cityMode === 'google');
+  updateTrees(dt, camera.position.x, camera.position.z, false); // the same 3D trees in both cities
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : S.vf) * 3.6);

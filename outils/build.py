@@ -408,100 +408,18 @@ for f in Rd:
             pad = np.r_[np.full(k//2, zm[0]), zm, np.full(k//2, zm[-1])]
             sm = np.convolve(pad, np.ones(k)/k, mode='valid')
             zm = np.maximum(sm, zm-0.15)
-        LINES.append(dict(P=P, nr=nr, w=w, nat=nat, pos=pos_sol, z=zm, ds=ds, name=p.get('nom_collaboratif_gauche') or '', bridge=bridge))
+        LINES.append(dict(P=P, nr=nr, w=w, nat=nat, pos=pos_sol, z=zm, ds=ds, name=p.get('nom_collaboratif_gauche') or '', bridge=bridge,
+                          imp=int(p.get('importance') or 5) if str(p.get('importance') or '5').isdigit() else 5, sens=p.get('sens_de_circulation') or 'Double sens', voies=int(p.get('nombre_de_voies') or 0), urbain=bool(p.get('urbain'))))
 print('road lines', len(LINES))
 
-# ---- pass 2: sidewalks = public space between the carriageway and the cadastre parcels
-PARC = []
-for f in json.load(open(f"{D}/parcelles.json"))['features']:
-    g = shape(f['geometry'])
-    for poly in (g.geoms if isinstance(g, MultiPolygon) else [g]):
-        if poly.is_valid: PARC.append(Polygon([(x, y) for x, y, *_ in poly.exterior.coords]))
-ptree = STRtree(PARC)
-CARR = [LineString(l['P']).buffer(l['w']/2, cap_style=2) for l in LINES]
-ctree = STRtree(CARR)
-OFFS = np.arange(0.3, 4.21, 0.3)
-for li, l in enumerate(LINES):
-    l['sw'] = np.zeros((len(l['P']), 2))
-    if l['nat'] == 'Chemin' or l['w'] < 4 or l['bridge']: continue
-    for si, sg in enumerate((1, -1)):
-        base = l['P'] + l['nr'] * sg * l['w']/2
-        pts = base[:, None, :] + (l['nr'] * sg)[:, None, :] * OFFS[None, :, None]
-        flat = [Point(x, y) for x, y in pts.reshape(-1, 2)]
-        hitP = np.zeros(len(flat), bool); hitC = np.zeros(len(flat), bool)
-        q = ptree.query(flat, predicate='intersects'); hitP[q[0]] = True
-        q = ctree.query(flat, predicate='intersects'); own = q[1] == li; hitC[q[0][~own]] = True
-        hit = (hitP | hitC).reshape(len(base), len(OFFS))
-        near = np.zeros(len(base), bool)
-        q = ptree.query([Point(x, y) for x, y in base], predicate='dwithin', distance=12.0); near[np.unique(q[0])] = True
-        first = np.where(hit.any(1), hit.argmax(1), -1)
-        wid = np.where(first >= 0, OFFS[np.maximum(first, 0)] - 0.3, np.where(near, 3.0, 0.0))
-        wid = np.minimum(wid, 3.5)
-        # grass verges are not pavement
-        mid = base + l['nr'] * sg * np.maximum(wid, 0.5)[:, None] * 0.5
-        oc = ortho_rgb(mid[:, 0], mid[:, 1])
-        green = (oc[:, 1] > oc[:, 0]*1.06) & (oc[:, 1] > oc[:, 2]*1.08)
-        wid[green] = 0
-        wid[wid < 0.9] = 0
-        # tidy: a median over 5 samples removes single holes and spikes
-        if len(wid) >= 5:
-            pad = np.r_[wid[:2], wid, wid[-2:]]
-            wid = np.median(np.lib.stride_tricks.sliding_window_view(pad, 5), 1)
-        l['sw'][:, si] = wid
-print('sidewalks done')
-
+for l in LINES: l['sw'] = np.zeros((len(l['P']), 2))
 # ---- pass 3: meshes
 M_ROAD = G.material('bitume', tex=ftex('bitume'), rough=0.95); M_MARK = G.material('marquage', color=(0.95, 0.95, 0.92, 1))
 M_SIDE = G.material('trottoir', tex=ftex('trottoir'), rough=0.9)
 CURB = 0.14
 for l in LINES:
-    P, nr, w, zs, ds = l['P'], l['nr'], l['w'], l['z'], l['ds']
-    n = len(P); Lp = P+nr*w/2; Rp = P-nr*w/2
-    cell = (int((P[n//2, 0]-XMIN)//CH), int((P[n//2, 1]-(Y0-R))//CH))
-    ra = RA.setdefault(cell, {'rp': [], 'ri': [], 'rc': [], 'ru': [], 'mp': [], 'mi': [], 'rn': 0, 'mn': 0, 'sp': [], 'si': [], 'su': [], 'sn': 0})
-    CL.append((NAMES.setdefault(l['name'], len(NAMES)), w, P, zs, l['sw']))
-    pos = np.vstack([L(Lp[:, 0], Lp[:, 1], zs), L(Rp[:, 0], Rp[:, 1], zs)])
-    e = np.arange(n-1); idx = np.stack([e, n+e, n+e+1, e, n+e+1, e+1], -1).ravel()
-    smp = ortho_rgb(P[:, 0], P[:, 1])
-    sat = smp.max(1)-smp.min(1); okp = (sat < 28) & (smp.mean(1) > 45)
-    base = np.median(smp[okp], 0) if okp.sum() >= 3 else np.array([98, 98, 100.]) if l['nat'] != 'Chemin' else np.array([140, 132, 120.])
-    c = np.r_[np.clip(base*0.95, 0, 255), 255].astype(np.uint8)
-    ruv = np.vstack([np.stack([np.zeros(n), ds/3.5], -1), np.stack([np.full(n, w/3.5), ds/3.5], -1)])
-    ra['rp'].append(pos); ra['ri'].append(idx+ra['rn']); ra['rc'].append(np.tile(c, (2*n, 1))); ra['ru'].append(ruv); ra['rn'] += 2*n
-    def mark(qx, zq):
-        ra['mp'].append(L(qx[:, 0], qx[:, 1], zq)); ra['mi'].append(np.array([0, 1, 2, 0, 2, 3])+ra['mn']); ra['mn'] += 4
-    if w >= 5 and l['nat'] != 'Chemin':
-        for k in range(0, n-1, 2):   # dashed centre line
-            a_, b_ = P[k], P[k+1]; nn = nr[k]*0.07
-            mark(np.array([a_+nn, a_-nn, b_-nn, b_+nn]), np.array([zs[k], zs[k], zs[k+1], zs[k+1]])+0.025)
-        if w >= 6.5:                 # continuous edge lines
-            for sg in (1, -1):
-                for k in range(n-1):
-                    a_, b_ = P[k]+nr[k]*sg*(w/2-0.35), P[k+1]+nr[k+1]*sg*(w/2-0.35); na, nb = nr[k]*0.06, nr[k+1]*0.06
-                    mark(np.array([a_+na, a_-na, b_-nb, b_+nb]), np.array([zs[k], zs[k], zs[k+1], zs[k+1]])+0.025)
-    # sidewalks: walking surface, kerb face and an outer skirt, one strip per side where the width is > 0
-    for si, sg in enumerate((1, -1)):
-        sw = l['sw'][:, si]
-        if not (sw > 0).any(): continue
-        for k in range(n-1):
-            if sw[k] <= 0 or sw[k+1] <= 0: continue
-            i0 = P[k]+nr[k]*sg*w/2; i1 = P[k+1]+nr[k+1]*sg*w/2
-            o0 = i0+nr[k]*sg*sw[k]; o1 = i1+nr[k+1]*sg*sw[k+1]
-            zt0, zt1 = zs[k]+CURB, zs[k+1]+CURB
-            V = [L(*i0, zt0), L(*i1, zt1), L(*o1, zt1), L(*o0, zt0),           # top
-                 L(*i0, zs[k]-0.05), L(*i1, zs[k+1]-0.05),                    # kerb foot
-                 L(*o0, zt0-0.5), L(*o1, zt1-0.5)]                            # skirt foot
-            V = np.vstack(V)
-            I = np.array([0, 1, 2, 0, 2, 3, 4, 5, 1, 4, 1, 0, 3, 2, 7, 3, 7, 6]) if sg == 1 else np.array([0, 2, 1, 0, 3, 2, 4, 1, 5, 4, 0, 1, 3, 7, 2, 3, 6, 7])
-            U = np.array([[0, ds[k]], [0, ds[k+1]], [sw[k+1], ds[k+1]], [sw[k], ds[k]], [-0.2, ds[k]], [-0.2, ds[k+1]], [sw[k]+0.5, ds[k]], [sw[k+1]+0.5, ds[k+1]]])/1.6
-            ra['sp'].append(V); ra['si'].append(I+ra['sn']); ra['su'].append(U); ra['sn'] += 8
-for cell, ra in sorted(RA.items()):
-    pr = [G.prim(np.vstack(ra['rp']), np.concatenate(ra['ri']), M_ROAD, uv=np.vstack(ra['ru']), col=np.vstack(ra['rc']))]
-    if ra['mp']: pr.append(G.prim(np.vstack(ra['mp']), np.concatenate(ra['mi']), M_MARK))
-    if ra['sp']:
-        SP = np.vstack(ra['sp'])
-        pr.append(G.prim(SP, np.concatenate(ra['si']), M_SIDE, uv=np.vstack(ra['su']), col=np.tile(np.array([214, 211, 204, 255], np.uint8), (len(SP), 1))))
-    G.node(f'Routes_{cell[0]}_{cell[1]}', pr)
+    CL.append((NAMES.setdefault(l['name'], len(NAMES)), l['w'], l['P'], l['z'], l['sw']))
+exec(open('/home/claude/scripts/roads_v3.py').read())
 # road axes v2: x, z, surface height, sidewalk widths left/right per vertex
 rb = bytearray(struct.pack('<II', 0x52445632, len(CL)))
 for nid, w, P, zs, sw in CL:
