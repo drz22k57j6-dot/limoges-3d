@@ -10,6 +10,7 @@ from shapely import STRtree
 
 R3 = {'fillet': 3.0, 'densify': 4.0, 'chunk': 500.0}
 print('roads v3: lines', len(LINES))
+from PIL import Image
 for i, l in enumerate(LINES):
     l['id'] = i
     l['geom'] = LineString(l['P'])
@@ -33,6 +34,60 @@ for k, ends in JN.items():
     rmax = max(LINES[i]['w'] / 2 for i, _ in ends)
     for i, e in ends: LINES[i]['fade'][e] = rmax + 2.5
 
+# ---------------- measured width: asphalt runs across the road on the orthophoto (0.49 m)
+OM = np.zeros((6144 * 2, 6144 * 2, 3), np.uint8) if False else None
+_tiles = {}
+def _ortho_tile(i, j):
+    if (i, j) not in _tiles: _tiles[(i, j)] = np.asarray(Image.open(f"{D}/ortho_{i}_{j}.jpg").convert('RGB'))
+    return _tiles[(i, j)]
+def ortho_many(x, y):
+    x = np.asarray(x, float); y = np.asarray(y, float); out = np.zeros((len(x), 3), np.int16)
+    i = np.clip(((x - XMIN) // 2000).astype(int), 0, 2); j = np.clip(((y - (Y0 - R)) // 2000).astype(int), 0, 2)
+    for ii in range(3):
+        for jj in range(3):
+            m = (i == ii) & (j == jj)
+            if not m.any(): continue
+            t = _ortho_tile(ii, jj)
+            px_ = np.clip(((x[m] - (XMIN + ii * 2000)) / 2000 * 4096).astype(int), 0, 4095)
+            py_ = np.clip(((Y0 - R + (jj + 1) * 2000 - y[m]) / 2000 * 4096).astype(int), 0, 4095)
+            out[m] = t[py_, px_]
+    return out
+STEPS = np.arange(0.5, 11.01, 0.5)
+def is_asph(c):
+    lum = c.mean(-1); sat = c.max(-1) - c.min(-1)
+    return ((sat <= 11) & (lum > 80) & (lum < 205)) | ((sat <= 8) & (lum > 30) & (lum <= 80))
+n_meas = 0
+for l in LINES:
+    P, nr = l['P'], l['nr']
+    ext = np.zeros((len(P), 2)); ok = np.zeros((len(P), 2), bool)
+    for si, sg in enumerate((1, -1)):
+        pts = P[:, None, :] + (nr * sg)[:, None, :] * STEPS[None, :, None]
+        A = is_asph(ortho_many(pts[..., 0].ravel(), pts[..., 1].ravel())).reshape(len(P), len(STEPS))
+        # run of asphalt from the axis, allowing one isolated gap (a marking, a car's edge)
+        run = np.zeros(len(P))
+        for k in range(len(P)):
+            r_ = 0.0; gap = 0
+            for t in range(len(STEPS)):
+                if A[k, t]: r_ = STEPS[t]; gap = 0
+                else:
+                    gap += 1
+                    if gap >= 2: break
+            run[k] = r_
+        ext[:, si] = run; ok[:, si] = A[:, 0] & A[:, 1]
+    good = ok.all(1)
+    # typical French carriageway for this kind of road (BD TOPO importance), the photo moves it within a range
+    typ = {1: 9.0, 2: 8.0, 3: 7.5, 4: 7.0, 5: 6.0, 6: 3.5}.get(l['imp'], 6.0)
+    if l['nat'] == 'Chemin' or l['imp'] >= 6: typ = 3.5
+    if l['nat'] == 'Route à 2 chaussées': typ = 7.0
+    if l['nat'] == 'Rond-point': typ = 7.5
+    if l['nat'] == 'Bretelle': typ = 5.0
+    typ = max(typ, l['w'] if l['w'] <= typ * 1.4 else typ)
+    l['w_ign'] = l['w']; l['w'] = typ
+    if good.mean() >= 0.3 and good.sum() >= 3:
+        half = np.median(ext[good], 0) + 0.25
+        wm = float(np.clip(half.sum(), 0.85 * typ, 1.25 * typ))
+        l['w'] = wm; n_meas += 1
+print('widths measured on the photo', n_meas, 'of', len(LINES))
 # ---------------- asphalt surface
 surf = []
 for l in LINES:
@@ -181,41 +236,50 @@ def frame(l, s):
     tx, ty = b.x - a.x, b.y - a.y; tl = math.hypot(tx, ty) or 1
     return (q.x, q.y), tx / tl, ty / tl, float(np.interp(s, l['ds'], l['z']))
 
-n_give = n_zebra = n_arrow = 0
-for k, ends in JN.items():
-    imps = [LINES[i]['imp'] for i, _ in ends]
-    ring_here = any(LINES[i]['ring'] for i, _ in ends)
-    for i, e in ends:
-        l = LINES[i]
-        if l['ring'] or l['bridge'] or l['nat'] == 'Chemin' or l['len'] < 12: continue
-        others = [LINES[j]['imp'] for j, _ in ends if j != i]
-        minor = ring_here or (others and l['imp'] > min(others))
-        d = l['fade'][e] - 1.0
-        s = d if e == 0 else l['len'] - d
-        if s < 0 or s > l['len']: continue
-        c, tx, ty, z = frame(l, s)
-        if e == 0: tx, ty = -tx, -ty                     # direction of travel toward the junction
-        rx_, ry_ = ty, -tx                                # right-hand side of that direction
-        hw = l['w'] / 2
-        if minor and not (l['oneway'] and l['sens'] == ('Sens direct' if e == 0 else 'Sens inverse')):
-            # give-way line (cédez le passage): 0.5 m dashes across the lane(s) that enter
-            span0, span1 = (0.15, hw - 0.15) if not l['oneway'] else (-hw + 0.15, hw - 0.15)
-            x = span0
-            while x + 0.5 <= span1 + 1e-6:
-                cc = (c[0] + rx_ * (x + 0.25), c[1] + ry_ * (x + 0.25))
-                paint_quad(cc, rx_, ry_, 0.25, 0.25, z); x += 1.0
+n_give = n_zebra = n_arrow = n_stop = 0
+# real positions from OpenStreetMap (Overture): crossings, stop and give-way signs, traffic signals
+import pyarrow.parquet as pq, shapely.wkb as swkb
+from pyproj import Transformer
+_tr = Transformer.from_crs(4326, 2154, always_xy=True)
+OPOI = []
+for r in pq.read_table(f"{D}/overture_infra.parquet").to_pylist():
+    if r['subtype'] != 'transportation' or r['class'] not in ('crossing', 'stop', 'give_way', 'traffic_signals'): continue
+    g = swkb.loads(r['geometry'])
+    if g.geom_type != 'Point': continue
+    x, y = _tr.transform(g.x, g.y)
+    OPOI.append((r['class'], x, y))
+print('overture road points', len(OPOI))
+SIGNALS = []
+for cls, x, y in OPOI:
+    pt = Point(x, y)
+    j = stree.nearest(pt); l = segL[j]
+    if l['geom'].distance(pt) > 9 or l['bridge']: continue
+    s0 = l['geom'].project(pt)
+    c, tx, ty, z = frame(l, s0); hw = l['w'] / 2; nx_, ny_ = -ty, tx
+    if cls == 'crossing':
+        if hw < 2: continue
+        x_ = -hw + 0.5
+        while x_ + 0.5 <= hw - 0.3:
+            cc = (c[0] + nx_ * (x_ + 0.25), c[1] + ny_ * (x_ + 0.25))
+            paint_quad(cc, tx, ty, 1.25, 0.25, z); x_ += 1.0
+        n_zebra += 1
+    elif cls in ('stop', 'give_way'):
+        # the line sits across the lane that arrives at the nearest junction end of this road
+        e = 1 if (l['len'] - s0) < s0 else 0
+        dirx, diry = (tx, ty) if e == 1 else (-tx, -ty)
+        rx_, ry_ = diry, -dirx
+        span0, span1 = (0.15, hw - 0.15) if not l['oneway'] else (-hw + 0.15, hw - 0.15)
+        if cls == 'stop':
+            mid = (span0 + span1) / 2
+            paint_quad((c[0] + rx_ * mid, c[1] + ry_ * mid), rx_, ry_, (span1 - span0) / 2, 0.25, z); n_stop += 1
+        else:
+            x_ = span0
+            while x_ + 0.5 <= span1 + 1e-6:
+                paint_quad((c[0] + rx_ * (x_ + 0.25), c[1] + ry_ * (x_ + 0.25)), rx_, ry_, 0.25, 0.25, z); x_ += 1.0
             n_give += 1
-        # zebra crossing before the junction on urban roads at least 5 m wide
-        if l['urbain'] and l['w'] >= 5 and l['len'] > 25:
-            sz = s - 3.5 if e == 1 else s + 3.5
-            if 0 < sz < l['len']:
-                c2, tx2, ty2, z2 = frame(l, sz)
-                nx_, ny_ = -ty2, tx2
-                x = -hw + 0.5
-                while x + 0.5 <= hw - 0.3:
-                    cc = (c2[0] + nx_ * (x + 0.25), c2[1] + ny_ * (x + 0.25))
-                    paint_quad(cc, tx2, ty2, 1.25, 0.25, z2); x += 1.0
-                n_zebra += 1
+        SIGNALS.append((cls, c[0] + rx_ * (hw + 1.2), c[1] + ry_ * (hw + 1.2), z, math.atan2(dirx, diry)))
+    else:
+        SIGNALS.append((cls, x, y, float(np.interp(s0, l['ds'], l['z'])), math.atan2(tx, ty)))
 # one-way arrows every 60 m
 for l in LINES:
     if not l['oneway'] or l['ring'] or l['bridge'] or l['len'] < 30: continue
@@ -227,7 +291,8 @@ for l in LINES:
         P_ = lambda a, b: (c[0] + tx * a + nx_ * b, c[1] + ty * a + ny_ * b)
         paint_poly([P_(-2.5, -0.15), P_(1.0, -0.15), P_(1.0, -0.45), P_(2.5, 0.0), P_(1.0, 0.45), P_(1.0, 0.15), P_(-2.5, 0.15)], z)
         n_arrow += 1; s += 60.0
-print('give-way', n_give, 'zebra', n_zebra, 'arrows', n_arrow)
+print('give-way', n_give, 'stop', n_stop, 'zebra', n_zebra, 'arrows', n_arrow, 'signals', len(SIGNALS))
+json.dump([[c, round(x - X0, 2), round(z - H0, 2), round(-(y - Y0), 2), round(h, 3)] for c, x, y, z, h in SIGNALS], open(OUTD + '/signalisation.json', 'w'))
 
 # roundabout islands: holes of the asphalt enclosed by roundabout rings
 ring_lines = [l['geom'] for l in LINES if l['ring']]
@@ -265,3 +330,6 @@ db += np.asarray(DP, np.float32).tobytes() + np.asarray(DI, np.uint32).tobytes()
 db += struct.pack('<II', len(IP), len(II)) + np.asarray(IP, np.float32).tobytes() + np.asarray(II, np.uint32).tobytes()
 open(OUTD + '/routes_deco.bin', 'wb').write(db)
 print('deco MB', len(db) / 1e6)
+
+# axes for the game: widths now measured
+CL[:] = [(NAMES.setdefault(l['name'], len(NAMES)), l['w'], l['P'], l['z'], l['sw']) for l in LINES]

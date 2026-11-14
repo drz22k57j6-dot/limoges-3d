@@ -280,5 +280,49 @@ normal = normalize(mat3(viewMatrix) * normalize(nW + vec3(-gNxz.x, 0.0, -gNxz.y)
     }
     return out;
   }
-  return { material, build, buildV3, buildDeco, uniforms };
+  /** Road signs and traffic lights at their OpenStreetMap places: [[kind, x, y, z, heading], ...]. */
+  function buildSignals(list) {
+    const out = [], M = new T.Matrix4(), Q = new T.Quaternion(), Y = new T.Vector3(0, 1, 0), P = new T.Vector3(), S1 = new T.Vector3(1, 1, 1);
+    const mkFace = (draw) => { const c = document.createElement('canvas'); c.width = c.height = 128; draw(c.getContext('2d')); const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t; };
+    const stopTex = mkFace((g) => {
+      g.fillStyle = '#fff'; g.beginPath(); for (let k = 0; k < 8; k++) { const a = Math.PI / 8 + k * Math.PI / 4; g.lineTo(64 + 63 * Math.cos(a), 64 + 63 * Math.sin(a)); } g.fill();
+      g.fillStyle = '#c4161c'; g.beginPath(); for (let k = 0; k < 8; k++) { const a = Math.PI / 8 + k * Math.PI / 4; g.lineTo(64 + 57 * Math.cos(a), 64 + 57 * Math.sin(a)); } g.fill();
+      g.fillStyle = '#fff'; g.font = 'bold 40px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STOP', 64, 66);
+    });
+    const giveTex = mkFace((g) => {
+      g.fillStyle = '#c4161c'; g.beginPath(); g.moveTo(4, 14); g.lineTo(124, 14); g.lineTo(64, 118); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); g.moveTo(26, 26); g.lineTo(102, 26); g.lineTo(64, 92); g.fill();
+    });
+    const pole = new T.CylinderGeometry(0.035, 0.035, 2.6, 8); pole.translate(0, 1.3, 0);
+    const poleMat = new T.MeshStandardMaterial({ color: 0x8d9296, metalness: 0.6, roughness: 0.45 });
+    const plate = new T.PlaneGeometry(0.8, 0.8); plate.translate(0, 2.25, 0.045);
+    const back = new T.CircleGeometry(0.42, 8); back.rotateY(Math.PI); back.translate(0, 2.25, 0.04);
+    const kinds = { stop: [], give_way: [], traffic_signals: [] };
+    for (const [k, x, y, z, h] of list) if (kinds[k]) kinds[k].push([x, y, z, h]);
+    const inst = (geo, mat, items, cast = true) => {
+      if (!items.length) return;
+      const im = new T.InstancedMesh(geo, mat, items.length);
+      items.forEach(([x, y, z, h], i) => { Q.setFromAxisAngle(Y, -h); im.setMatrixAt(i, M.compose(P.set(x, y, z), Q, S1)); });
+      im.castShadow = cast; im.receiveShadow = true; im.computeBoundingSphere(); out.push(im);
+    };
+    const backMat = new T.MeshStandardMaterial({ color: 0x9aa0a4, metalness: 0.5, roughness: 0.5 });
+    for (const [k, tex] of [['stop', stopTex], ['give_way', giveTex]]) {
+      inst(pole, poleMat, kinds[k]);
+      inst(plate, new T.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.5, roughness: 0.5 }), kinds[k]);
+      inst(back, backMat, kinds[k]);
+    }
+    // traffic light: pole, dark housing with three lenses (red lit), on the kerb
+    const tlPole = new T.CylinderGeometry(0.05, 0.06, 3.0, 8); tlPole.translate(0, 1.5, 0);
+    const box = new T.BoxGeometry(0.32, 0.9, 0.22); box.translate(0, 2.75, 0.12);
+    const hood = [];
+    const lens = (y, col) => { const g = new T.CircleGeometry(0.09, 16); g.translate(0, y, 0.235); return g; };
+    const houseMat = new T.MeshStandardMaterial({ color: 0x1d2124, roughness: 0.6 });
+    const ts = kinds.traffic_signals.map(([x, y, z, h]) => [x, y, z, h]);
+    inst(tlPole, poleMat, ts); inst(box, houseMat, ts);
+    inst(lens(3.02, 0), new T.MeshBasicMaterial({ color: 0xff2a1a }), ts, false);
+    inst(lens(2.75, 0), new T.MeshStandardMaterial({ color: 0x3a2a08, roughness: 0.3 }), ts, false);
+    inst(lens(2.48, 0), new T.MeshStandardMaterial({ color: 0x0b2a14, roughness: 0.3 }), ts, false);
+    return out;
+  }
+  return { material, build, buildV3, buildDeco, buildSignals, uniforms };
 }
