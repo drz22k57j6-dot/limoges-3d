@@ -361,8 +361,26 @@ function setupCity(gT, gO) {
             #endif`);
         };
         nightMats.push(m);
+        if (/barre|tour/.test(m.name)) {
+          // texture alpha = where the building's own colour applies (panels, accents); the rest keeps the texture colour
+          const prev = m.onBeforeCompile;
+          m.onBeforeCompile = (sh, r) => {
+            prev(sh, r);
+            sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `
+              #if defined( USE_COLOR_ALPHA )
+                vec3 vcol = vColor.rgb;
+              #elif defined( USE_COLOR )
+                vec3 vcol = vColor;
+              #else
+                vec3 vcol = vec3(1.0);
+              #endif
+              float facMask = texture2D( map, vMapUv ).a;
+              diffuseColor.rgb *= mix( vec3(1.0), vcol, facMask );
+              diffuseColor.a = opacity;`);
+          };
+        }
       }
-      const PBR = { bitume: 'bitume', toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit' };
+      const PBR = { bitume: 'bitume', toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit', facade_barre: 'enduit', facade_tour: 'enduit', pignon: 'enduit' };
       const tn = PBR[m.name];
       if (tn) {
         const ref = m.map;

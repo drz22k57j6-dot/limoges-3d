@@ -90,8 +90,12 @@ class GLB:
             a["min"] = [float(x) for x in arr.min(0)]; a["max"] = [float(x) for x in arr.max(0)]
         s.g["accessors"].append(a); return len(s.g["accessors"])-1
     def image(s, pil, q=85):
-        b = io.BytesIO(); pil.convert('RGB').save(b, 'JPEG', quality=q, optimize=True)
-        v = s.view(b.getvalue()); s.g["images"].append({"bufferView": v, "mimeType": "image/jpeg"})
+        b = io.BytesIO()
+        if pil.mode == 'RGBA':
+            pil.save(b, 'PNG', optimize=True); mime = 'image/png'
+        else:
+            pil.convert('RGB').save(b, 'JPEG', quality=q, optimize=True); mime = 'image/jpeg'
+        v = s.view(b.getvalue()); s.g["images"].append({"bufferView": v, "mimeType": mime})
         return len(s.g["images"])-1
     def texture(s, pil, sampler=0, q=85):
         s.g["textures"].append({"sampler": sampler, "source": s.image(pil, q)}); return len(s.g["textures"])-1
@@ -179,7 +183,52 @@ def facade(kind):
         for xx in range(0, W, 64): d.line([xx, 80, xx, 180], fill=(170, 170, 170), width=4)
         d.rectangle([0, 236, W, W], fill=(225, 225, 225))
     return im
+def facade_barre():
+    # 4 bays (3 m each) x 1 floor (2.8 m) of a 1960-70s 'grand ensemble' slab:
+    # tinted panels with white-framed windows, grey glazed loggias, a sage loggia. Alpha = where the building colour applies.
+    W, H = 1024, 256
+    im = Image.new('RGBA', (W, H), (255, 255, 255, 255)); d = ImageDraw.Draw(im)
+    def panel(x0):
+        d.rectangle([x0, 0, x0+255, H], fill=(255, 255, 255, 255))
+        d.rectangle([x0+58, 52, x0+198, 206], fill=(246, 246, 244, 0))          # white frame
+        d.rectangle([x0+68, 62, x0+188, 196], fill=(92, 104, 116, 0))           # glass
+        d.rectangle([x0+68, 62, x0+188, 112], fill=(236, 236, 232, 0))          # roller shutter half down
+        d.line([x0+128, 112, x0+128, 196], fill=(246, 246, 244, 0), width=5)
+        d.rectangle([x0+52, 206, x0+204, 214], fill=(225, 225, 222, 0))         # sill
+    def loggia(x0, frame, glass):
+        d.rectangle([x0, 0, x0+255, H], fill=frame + (0,))
+        for k in range(3):
+            gx = x0+14+k*80; d.rectangle([gx, 30, gx+66, 216], fill=glass + (0,))
+            d.line([gx+4, 40, gx+30, 200], fill=tuple(min(255, c+40) for c in glass) + (0,), width=6)  # reflection
+        d.rectangle([x0, 216, x0+255, 232], fill=(170, 172, 174, 0))            # balcony rail
+    panel(0); loggia(256, (128, 134, 140), (96, 112, 126)); panel(512); loggia(768, (150, 176, 166), (104, 124, 128))
+    d.rectangle([0, 240, W, H], fill=(238, 238, 236, 0))                          # floor slab
+    return im
+def facade_tour():
+    # point tower: white panels and windows, one recessed balcony column + floor stripes in the accent colour (alpha = accent)
+    W, H = 1280, 256
+    im = Image.new('RGBA', (W, H), (246, 246, 243, 0)); d = ImageDraw.Draw(im)
+    for b in range(5):
+        x0 = b*256
+        if b == 2:
+            d.rectangle([x0, 0, x0+255, H], fill=(255, 255, 255, 255))
+            d.rectangle([x0+40, 40, x0+215, 200], fill=(70, 70, 72, 0))       # recessed balcony opening
+            d.rectangle([x0+40, 170, x0+215, 200], fill=(255, 255, 255, 255))  # balcony front
+            d.line([x0+60, 150, x0+200, 150], fill=(60, 60, 60, 0), width=3)
+        else:
+            for wx in (x0+40, x0+140):
+                d.rectangle([wx, 48, wx+76, 206], fill=(235, 235, 232, 0))
+                d.rectangle([wx+6, 54, wx+70, 200], fill=(88, 100, 112, 0))
+                d.rectangle([wx+6, 54, wx+70, 100], fill=(228, 228, 224, 0))
+    d.rectangle([0, 238, W, 252], fill=(255, 255, 255, 255))                    # accent floor stripe
+    return im
+def pignon():
+    im = Image.new('RGB', (256, 256), (246, 246, 243)); d = ImageDraw.Draw(im)
+    for y in (0, 128): d.line([0, y, 256, y], fill=(205, 205, 205), width=3)
+    d.line([128, 0, 128, 256], fill=(222, 222, 222), width=2)
+    return im
 TEX_RES = G.texture(facade('res')); TEX_COM = G.texture(facade('com'))
+M_BARRE = G.material('facade_barre', tex=G.texture(facade_barre())); M_TOUR = G.material('facade_tour', tex=G.texture(facade_tour())); M_PIGNON = G.material('pignon', tex=G.texture(pignon()))
 M_RES = G.material('facade_logements', tex=TEX_RES); M_COM = G.material('facade_activites', tex=TEX_COM)
 M_PLAIN = G.material('mur_simple')
 TXD = '/home/claude/game/pub/data/tex/'
@@ -187,6 +236,9 @@ def ftex(n): return G.texture(Image.open(TXD+n+'_d.jpg').convert('RGB'), q=84)
 M_ROOF_T = G.material('toit_tuiles', tex=ftex('tuiles'), rough=0.75); M_ROOF_S = G.material('toit_ardoise', tex=ftex('ardoise'), rough=0.6); M_ROOF_F = G.material('toit_plat', tex=ftex('toit_plat'), rough=0.9)
 import os
 FAC = json.load(open(D+'/facades.json')) if os.path.exists(D+'/facades.json') else {}
+# buildings checked against reference photos supplied by the user
+STYLE = {'BATIMENT0000000224596718': ('barre', (212, 182, 162), 'référence photo utilisateur (All. Le Gréco)'),
+         'BATIMENT0000000224596725': ('tour', (198, 56, 50), 'référence photo utilisateur (All. Émile Kahn)')}
 INFO = []
 
 # ---------- buildings ----------
@@ -197,13 +249,13 @@ CUR = [None]
 def push(k, p, uv, c, idx):
     a = ACC.setdefault((CUR[0], k), {'p': [], 'uv': [], 'c': [], 'i': [], 'n': 0}); a['p'].append(p); a['uv'].append(uv); a['c'].append(c); a['i'].append(idx+a['n']); a['n'] += len(p)
 
-def walls(k, ring_xy, zb, zt, ground, col):
+def walls(k, ring_xy, zb, zt, ground, col, ubay=3.0, u0=0.0):
     # ring closed (first==last), zt per vertex
     P = np.asarray(ring_xy); n = len(P)
     seg = np.r_[0, np.cumsum(np.hypot(*np.diff(P, axis=0).T))]
     bot = L(P[:, 0], P[:, 1], np.full(n, zb)); top = L(P[:, 0], P[:, 1], zt)
     pos = np.vstack([bot, top])
-    uv = np.vstack([np.stack([seg/3.0, -(zb-ground)/2.8*np.ones(n)], -1), np.stack([seg/3.0, -(zt-ground)/2.8], -1)])
+    uv = np.vstack([np.stack([u0+seg/ubay, -(zb-ground)/2.8*np.ones(n)], -1), np.stack([u0+seg/ubay, -(zt-ground)/2.8], -1)])
     e = np.arange(n-1)
     idx = np.stack([e, e+1, n+e+1, e, n+e+1, n+e], -1).ravel()
     push(k, pos, uv, np.tile(col, (2*n, 1)), idx)
@@ -239,7 +291,10 @@ for f in B:
         h = max(2.5, float(h)); zt = ground+h; FOOT[-1][1] = zt-H0
         usage = p.get('usage_1') or 'Indifférencié'
         bid = p.get('cleabs')
-        if bid in FAC:
+        sty = STYLE.get(bid)
+        if sty:
+            tint = np.array(sty[1], float); src = sty[2]
+        elif bid in FAC:
             tint = np.array(FAC[bid]['rgb'], float); src = FAC[bid]['src']
         else:
             tint = np.array(wall_tint.get(usage, (226, 220, 208)), float)*rng.uniform(0.92, 1.04); src = 'estimation'
@@ -279,7 +334,17 @@ for f in B:
                  np.array([0, 1, 2, 0, 2, 3, 4, 5, 3, 4, 3, 2]))
             gables += 1
         else:
-            walls(k, ex, zb, np.full(len(ex), zt), ground, col)
+            if sty and sty[0] == 'tour':
+                walls('tour', ex, zb, np.full(len(ex), zt), ground, col, ubay=15.0)
+            elif (k == 'res' and h >= 12) or (sty and sty[0] == 'barre'):
+                # slab: long walls get the bay facade, short gable ends are plain white
+                for a_, b_ in zip(ex[:-1], ex[1:]):
+                    Ls = math.hypot(*(b_-a_))
+                    if Ls < 0.5: continue
+                    if Ls < 16: walls('pignon', np.array([a_, b_]), zb, np.full(2, zt), ground, np.array([255, 255, 255, 255], np.uint8), ubay=3.0)
+                    else: walls('barre', np.array([a_, b_]), zb, np.full(2, zt), ground, col, ubay=12.0)
+            else:
+                walls(k, ex, zb, np.full(len(ex), zt), ground, col)
             for r in poly.interiors:
                 ri = np.asarray(r.coords); walls(k, ri, zb, np.full(len(ri), zt), ground, col)
             # parapet look: roof slightly darker grey mixed with ortho
@@ -290,7 +355,7 @@ json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
 
 for cell in sorted(set(c for c, k in ACC)):
     prims_b = []
-    for k, m in (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F)):
+    for k, m in (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F)):
         a = ACC.get((cell, k))
         if not a: continue
         P = np.vstack(a['p']); I = np.concatenate(a['i']); UV = np.vstack(a['uv']); C = np.vstack(a['c'])
