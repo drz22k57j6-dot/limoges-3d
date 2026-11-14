@@ -4,6 +4,7 @@ import { normalizePolygon, centroid, bboxOf, perimeter, ringArea, minAreaRect, m
 import * as IGN from '../sources/ign.js';
 import * as PX from '../sources/panoramax.js';
 import * as IMG from '../sources/images.js';
+import { neighbourhoodStyle, inferColor, robustColor } from './style.js';
 import { analyseRoof, groundAlongOutline } from './roof.js';
 import * as FA from './facade.js';
 import { Provenance } from '../provenance.js';
@@ -181,11 +182,28 @@ export class Reconstruction {
     const cov = this.groups.reduce((s, g) => s + g.photoPx, 0) / Math.max(1, total);
     this.coverage = cov;
     const a = this.b.attrs, mat = (a.murs || []).find(m => MUR_RGB[m]);
-    this.wallColorKind = rgb[0].length > 500 ? 'photographiee' : mat ? 'deduite' : a.couleur ? 'mesuree' : 'generee';
-    if (rgb[0].length > 500) { this.wallColor = rgb.map(v => Math.round(median(v))); pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + this.wallColor + ')', 'photographiee', Math.min(0.8, 0.4 + cov), this.photos.length ? 'panoramax' : 'perso', 'médiane des pixels de façade photographiés (balance des blancs non corrigée)'); }
+    this.wallColorKind = rgb[0].length > 500 ? 'photographiee' : mat ? 'deduite' : a.couleur ? 'mesuree' : 'generee'; this.wallColor = null;
+    // couleur des murs, par ordre de fiabilité : photos du bâtiment > photos de rue mesurées sur lui > bâtiments semblables du quartier > cadastre
+    let own = rgb[0].length > 500 ? robustColor(rgb[0].map((r, i) => [r, rgb[1][i], rgb[2][i]])) : null;
+    if (!own && this.o.style !== false && this.b.crs === 'EPSG:2154') {
+      try {
+        if (!this.style) this.style = await neighbourhoodStyle(this, { mapillaryToken: this.o.mapillaryToken, log: this.log, progress: f => this.step(5, 'run', `couleurs du quartier ${Math.round(f * 100)} %`) });
+        const me = this.style && this.style.measured.find(b => b.id === this.b.id);
+        if (me) { this.wallColor = me.color; this.wallColorKind = 'photographiee'; pv.source('rue', 'Photos de rue (Panoramax, Mapillary)', 'licences des photos');
+          pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + me.color + ')', 'photographiee', me.conf, 'rue', `mesurée sur ${me.photos.size} photo(s) de rue, ${me.samples.length} points de façade non masqués (LiDAR)`); }
+        else if (this.style) {
+          const a2 = this.b.attrs, inf = inferColor(this.style, { id: this.b.id, center: this.origin, usage: a2.usage, annee: a2.date ? +String(a2.date).slice(0, 4) : null, h: a2.hauteur || this.top, murs: a2.murs });
+          if (inf) { this.wallColor = inf.color; this.wallColorKind = 'deduite'; this.colorFrom = inf.from;
+            pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + inf.color + ')', 'deduite', inf.conf, 'rue', `aucune photo de ce bâtiment : copiée des ${inf.from.length} bâtiments photographiés les plus semblables du quartier (âge, usage, hauteur, matériau, distance) sur ${this.style.measured.length} mesurés`); }
+        }
+      } catch (er) { this.log('Style du quartier : ' + er.message); }
+    }
+    if (this.wallColor && (this.wallColorKind === 'photographiee' || this.wallColorKind === 'deduite') && !own) { /* déjà fixée par le style du quartier */ }
+    else if (own) { this.wallColor = own; pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + this.wallColor + ')', 'photographiee', Math.min(0.8, 0.4 + cov), this.photos.length ? 'panoramax' : 'perso', 'médiane des pixels de façade photographiés (balance des blancs non corrigée)'); }
     else if (mat) { this.wallColor = MUR_RGB[mat]; pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + this.wallColor + ')', 'deduite', 0.3, this.b.source, `teinte type pour « ${a.murs.join(' + ')} » (fichiers fonciers) — aucune photo de façade exploitable`); }
     else if (a.couleur) { this.wallColor = cssToRgb(a.couleur); pv.set('mur_couleur', 'Couleur des murs', a.couleur, 'mesuree', 0.4, this.b.source, 'tag OSM building:colour'); }
     else { this.wallColor = [212, 205, 192]; pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + this.wallColor + ')', 'generee', 0.1, '-', 'enduit clair par défaut'); }
+    if (this.manualColor) { this.wallColor = this.manualColor; this.wallColorKind = 'deduite'; pv.set('mur_couleur', 'Couleur des murs', 'rgb(' + this.wallColor + ')', 'deduite', 0.5, 'perso', 'choisie à l\'œil par l\'utilisateur'); }
     if (a.murs) pv.set('mat_murs', 'Matériau des murs (cadastre)', a.murs.join(' + '), 'mesuree', 0.5, this.b.source, 'déclaration fiscale (fichiers fonciers)');
     pv.set('facade_texture', 'Texture des façades', `${(cov * 100).toFixed(0)} % photographiée`, cov > 0.05 ? 'photographiee' : 'generee', cov > 0.05 ? Math.min(0.75, cov) : 0.05, cov > 0.05 ? 'panoramax' : '-',
       cov > 0.05 ? 'photos projetées sur la façade à l\'échelle (position caméra GPS ± quelques mètres) ; le reste est une texture d\'enduit générée' : 'aucune photo : enduit générique teinté — ce n\'est PAS l\'aspect réel de la façade');

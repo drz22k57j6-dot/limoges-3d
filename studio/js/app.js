@@ -163,9 +163,13 @@ function renderFacades() {
   <p class="note">Trame des fenêtres déduites (utilisée là où aucune photo ne permet de les détecter) :</p>
   <div class="row">entraxe <input type="number" step="0.1" id="fSp" value="${f.spacing}"> largeur <input type="number" step="0.1" id="fW" value="${f.width}"> hauteur <input type="number" step="0.1" id="fH" value="${f.height}"> allège <input type="number" step="0.05" id="fSi" value="${f.sill}"></div>
   <div class="row"><button class="btn" id="fApply">Appliquer et régénérer</button></div>
+  <hr style="border-color:var(--line)"><p class="note"><b>Couleur des murs</b> — actuelle : <span class="tag t-${R.wallColorKind}">${KINDS[R.wallColorKind]?.label || ''}</span>. Vous pouvez regarder le bâtiment sur Google Street View (lien officiel, rien n'est copié automatiquement) et corriger la teinte à l'œil.</p>
+  <div class="row"><a class="btn" target="_blank" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${R.lonlat[1]},${R.lonlat[0]}">Voir sur Street View ↗</a><input type="color" id="fCol" value="#${(R.wallColor || [210, 205, 195]).map(v => v.toString(16).padStart(2, '0')).join('')}" style="width:56px;height:40px;border:0;background:none"><button class="btn" id="fColOk">Utiliser cette couleur</button></div>
   <hr style="border-color:var(--line)"><p class="note"><b>Ajouter ma photo</b> (la vôtre, ou une photo libre de droits) : choisissez la façade, puis touchez ses 4 coins sur la photo (bas-gauche, bas-droite, haut-droite, haut-gauche, vus de face). La photo est redressée à l'échelle et marquée « Photographiée ».</p>
   <div class="row"><select id="upG">${R.groups.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('')}</select><input type="file" id="upF" accept="image/*"></div>`;
   $('sFac').querySelectorAll('[data-bal]').forEach(c => (c.onchange = () => { R.settings.balcons[c.dataset.bal] = c.checked; }));
+  $('fColOk').onclick = async () => { const h = $('fCol').value; R.wallColor = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); R.wallColorKind = 'deduite'; R.manualColor = R.wallColor;
+    R.prov.set('mur_couleur', 'Couleur des murs', 'rgb(' + R.wallColor + ')', 'deduite', 0.5, 'perso', 'choisie à l\'œil par l\'utilisateur (aucune donnée extraite automatiquement)'); renderProv(); await generate(); };
   $('fApply').onclick = async () => { R.settings.fenetres = { spacing: +$('fSp').value, width: +$('fW').value, height: +$('fH').value, sill: +$('fSi').value }; await R.s7(); renderFacades(); await generate(); };
   $('upF').onchange = async e => { const file = e.target.files[0]; if (!file) return; const g = R.groups[+$('upG').value]; const pix = await fileToPixels(file); const corners = await askCorners(pix); if (!corners) return; R.userPhotos.push({ group: g.id, pix, corners }); const FA = await import('./pipeline/facade.js'); FA.applyUserPhoto(g, pix, corners); R.prov.source('perso', 'Photos fournies par l\'utilisateur', 'droits de l\'utilisateur'); await R.s6(); await R.s7(); renderFacades(); renderProv(); await generate(); };
 }
@@ -202,6 +206,19 @@ function renderCompare() {
   if (dev) {
     const d = card('Toit : écart modèle ↔ LiDAR (MNS)', `<table><tr><td class="k">Écart médian</td><td>${(dev.median * 100).toFixed(0)} cm</td></tr><tr><td class="k">95 % des points à moins de</td><td>${(dev.p95 * 100).toFixed(0)} cm</td></tr><tr><td class="k">Points à moins de 30 cm</td><td>${(dev.within30 * 100).toFixed(0)} %</td></tr>${fp ? `<tr><td class="k">Emprise couverte par du « haut » LiDAR</td><td>${(fp.insideHigh * 100).toFixed(0)} %</td></tr><tr><td class="k">IoU emprise ↔ LiDAR > 2,5 m</td><td>${(fp.iou * 100).toFixed(0)} % <span class="note">(${fp.note})</span></td></tr>` : ''}</table><div class="note">Rouge : LiDAR plus haut que le modèle · bleu : plus bas · blanc : identique (échelle ±1 m).</div>`);
     dev.canvas.style.cssText = 'width:100%;max-width:720px;image-rendering:pixelated;border-radius:8px;background:#000;margin-top:6px'; d.appendChild(dev.canvas);
+  }
+  if (R.style) {
+    const sw = c => `<span style="display:inline-block;width:22px;height:22px;border-radius:5px;vertical-align:middle;border:1px solid #0006;background:rgb(${c})"></span>`;
+    const me = R.style.measured.find(b => b.id === R.b.id);
+    const d = card('Couleurs réelles du quartier', `<div class="row">${sw(R.wallColor)} <b>Couleur retenue</b> <span class="tag t-${R.wallColorKind}">${KINDS[R.wallColorKind]?.label || ''}</span></div>
+      <div class="note">${R.style.measured.length} façades voisines mesurées sur ${R.style.photosUsed} photos de rue (sur ${R.style.photosFound} trouvées dans ${R.style.radius} m), en retirant ombres, vitres, ciel et tout ce que le LiDAR montre devant (arbres…).</div>
+      ${me ? '<div class="note">Ce bâtiment est lui-même visible sur des photos : couleur mesurée directement.</div>' : (R.colorFrom || []).map(f => `<div class="row">${sw(f.color)} <span class="note">${esc(f.usage || '')} ${f.annee || ''} · ressemblance ${(f.s * 100).toFixed(0)} %</span></div>`).join('')}
+      <div class="row"><button class="btn" id="styleMap">Voir les couleurs mesurées sur la carte</button></div>`);
+    d.querySelector('#styleMap').onclick = () => {
+      if (S.styleLayer) map.removeLayer(S.styleLayer);
+      S.styleLayer = L.layerGroup(R.style.measured.map(b => L.polygon(b.ring.map(p => fromL93(p[0], p[1]).reverse()), { color: '#000', weight: 1, fillColor: `rgb(${b.color})`, fillOpacity: 0.95 }))).addTo(map);
+      view('map'); map.fitBounds(L.featureGroup(S.styleLayer.getLayers()).getBounds());
+    };
   }
   const ph = (R.photos || []);
   const d = card('Photos réelles ↔ modèle', ph.length ? '' : `<div class="note">Aucune photo de rue exploitable dans ${R.o.maxDist} m (Panoramax). Ajoutez la vôtre dans l'onglet Façades.</div>`);

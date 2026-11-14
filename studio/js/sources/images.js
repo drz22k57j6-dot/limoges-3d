@@ -15,13 +15,13 @@ export async function commons(lon, lat, radius = 500) {
 }
 
 // ---- Mapillary (Meta) : photos de rue CC-BY-SA, position et cap calculés. Jeton gratuit à créer sur mapillary.com/developer ----
-export async function mapillary(w, s, e, n, token) {
+export async function mapillary(w, s, e, n, token, thumb = 'thumb_2048_url') {
   const u = 'https://graph.mapillary.com/images?' + new URLSearchParams({ access_token: token, bbox: [w, s, e, n].join(','), limit: 200,
-    fields: 'id,computed_geometry,geometry,computed_compass_angle,compass_angle,thumb_256_url,thumb_2048_url,camera_type,captured_at,creator' });
+    fields: `id,computed_geometry,geometry,computed_compass_angle,compass_angle,thumb_256_url,${thumb},camera_type,captured_at,creator` });
   const r = await fetch(u); if (!r.ok) throw new Error('Mapillary HTTP ' + r.status + (r.status === 401 ? ' (jeton invalide)' : ''));
   const d = await r.json();
   return (d.data || []).map(x => { const g = (x.computed_geometry || x.geometry).coordinates; const sph = /spherical|equirect/.test(x.camera_type || '');
-    return { id: 'mly-' + x.id, source: 'Mapillary', thumb: x.thumb_256_url, full: x.thumb_2048_url, lon: g[0], lat: g[1], azimuth: x.computed_compass_angle ?? x.compass_angle, fov: sph ? 360 : 70, spherical: sph,
+    return { id: 'mly-' + x.id, source: 'Mapillary', thumb: x.thumb_256_url, full: x[thumb], lon: g[0], lat: g[1], azimuth: x.computed_compass_angle ?? x.compass_angle, fov: sph ? 360 : 70, spherical: sph,
       licence: 'CC-BY-SA 4.0', auteur: x.creator?.username || 'Mapillary', page: 'https://www.mapillary.com/app/?pKey=' + x.id, date: x.captured_at ? new Date(x.captured_at).toISOString() : '', pose: 'auto' }; });
 }
 
