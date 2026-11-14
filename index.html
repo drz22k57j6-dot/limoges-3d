@@ -62,6 +62,7 @@
   <button class="b" id="bCam">CAMÉRA</button>
   <button class="b" id="bTime">JOUR</button>
   <button class="b" id="bQ">HAUTE</button>
+  <button class="b" id="bVille">VILLE…</button>
   <button class="b" id="bPlane">AVION ✈</button>
   <button class="b" id="bReset">↺</button>
 </div>
@@ -92,6 +93,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { Sky } from 'three/addons/objects/Sky.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (isTouch) document.documentElement.classList.add('is-touch');
@@ -178,7 +180,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=6';
+const V = '?v=7';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -340,7 +342,7 @@ function setupCity(gT, gO) {
     o.receiveShadow = true;
     o.matrixAutoUpdate = false; o.updateMatrix();
   });
-  scene.add(gT.scene);
+  scene.add(gT.scene); terrainRoot = gT.scene;
   // facade night glow
   const seen = new Set();
   gO.scene.traverse(o => {
@@ -709,10 +711,11 @@ function toast(s) { const e = $('toast'); e.textContent = s; e.style.opacity = 1
 $('bCam').onclick = () => { nextCam(); startAudio(); };
 $('bTime').onclick = () => { ti = (ti + 1) % TIMES.length; applyTime(); };
 $('bQ').onclick = () => { qi = (qi + 1) % QUALITIES.length; applyQuality(); };
+$('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
 $('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 0.3; PL.spd = 0; PL.vy = 0; } else respawn(); };
 $('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
 function applyQuality() {
-  const q = QUALITIES[qi]; resize(); $('bQ').textContent = q.name;
+  const q = QUALITIES[qi]; resize(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = [6, 12, 20][qi];
   sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
   chunks.forEach(c => c.obj.traverse(o => { if (o.isMesh) o.castShadow = q.shadowAll && !c.roads; }));
   treeChunks.forEach(c => c.obj.castShadow = q.shadowAll);
@@ -879,6 +882,79 @@ function setMode(m) {
   }
 }
 
+
+// ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
+const ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IlVEOVV6R05CSWVjTHZrMkUiLCJqdGkiOiIzMzU1MWMwNS1mOTI4LTRkZjItOTFlMy1mNTY0ZDVhMzY1MzMiLCJpZCI6NTQ5MjIzLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3OTQ2NTU2Njd9.36tL2NsuqQYEqQ66NQYshABW3ACnL4ldZv1p0eWrst0';
+const ORIGIN = { lat: 45.84646501496012, lon: 1.233611398108212, ellHeight: 0 }; // 31 allée Le Gréco
+let tiles = null, tilesRoot = null, cityMode = 'ign', tilesCalib = { t: 0, n: 0 };
+const raycaster = new THREE.Raycaster();
+async function startGoogleCity() {
+  try {
+    const [{ TilesRenderer }, P] = await Promise.all([
+      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),
+      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
+    tiles = new TilesRenderer();
+    tiles.registerPlugin(new P.CesiumIonAuthPlugin({ apiToken: ION_TOKEN, assetId: '2275207', autoRefreshToken: true }));
+    const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/libs/draco/gltf/');
+    tiles.registerPlugin(new P.GLTFExtensionsPlugin({ dracoLoader: draco }));
+    tiles.registerPlugin(new P.TileCompressionPlugin());
+    // the plugin puts the address at the origin with X west / Z north: we turn it to X east / -Z north
+    tiles.registerPlugin(new P.ReorientationPlugin({ lat: ORIGIN.lat * Math.PI / 180, lon: ORIGIN.lon * Math.PI / 180, height: H0 + 49.5, recenter: true }));
+    tiles.errorTarget = [6, 12, 20][qi];
+    tiles.addEventListener('load-model', ({ scene: sc }) => {
+      sc.traverse(o => {
+        if (!o.isMesh) return;
+        const old = o.material; // photogrammetry already contains the real light: draw it unlit
+        o.material = new THREE.MeshBasicMaterial({ map: old.map || null, color: old.map ? 0xffffff : old.color, fog: true });
+        if (o.material.map) o.material.map.anisotropy = 4;
+        old.dispose();
+      });
+    });
+    tilesRoot = new THREE.Group(); tilesRoot.rotation.y = Math.PI; tilesRoot.add(tiles.group); scene.add(tilesRoot);
+    tiles.setCamera(camera); tiles.setResolutionFromRenderer(camera, renderer);
+    tiles.addEventListener('load-tile-set', () => { setCity('google'); });
+    setTimeout(() => { if (cityMode !== 'google' && !tiles.root) toast('Ville photo indisponible — ville IGN'); }, 15000);
+  } catch (e) { console.warn('Google 3D tiles', e); tiles = null; toast('Ville photo indisponible — ville IGN'); }
+}
+function setCity(m) {
+  if (m === 'google' && !tiles) return;
+  cityMode = m;
+  const g = m === 'google';
+  if (tilesRoot) tilesRoot.visible = g;
+  terrainRoot && (terrainRoot.visible = !g);
+  chunks.forEach(c => c.hiddenByCity = g);
+  treeChunks.forEach(c => c.hiddenByCity = g);
+  carBlob.visible = g;
+  $('bVille').textContent = g ? 'VILLE PHOTO' : 'VILLE IGN';
+  $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0'
+    : 'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0';
+}
+// keep the photo city at the right height: compare it with the LiDAR ground on roads around the player
+function calibrateTiles(F) {
+  if (!tiles || cityMode !== 'google') return;
+  const pts = [];
+  for (const [dx, dz] of [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12]]) {
+    const r = nearestRoad(F.x + dx, F.z + dz, 25); if (!r) continue;
+    raycaster.set(new THREE.Vector3(r.x, groundH(r.x, r.z) + 60, r.z), new THREE.Vector3(0, -1, 0)); raycaster.far = 140;
+    const hit = raycaster.intersectObject(tiles.group, true)[0];
+    if (hit) pts.push(groundH(r.x, r.z) - hit.point.y);
+  }
+  if (pts.length < 2) return;
+  pts.sort((a, b) => a - b); const d = pts[pts.length >> 1];
+  if (Math.abs(d) < 40) tilesRoot.position.y += d * (tilesCalib.n < 3 ? 1 : 0.4);
+  tilesCalib.n++;
+}
+// soft contact shadow under the car (the photo city cannot receive real-time shadows)
+const carBlob = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 8, 64, 64, 62); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 5.2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.y = 0.06; m.visible = false; m.renderOrder = 2; return m;
+})();
+car.add(carBlob);
+let terrainRoot = null;
+
 // ---------------- main ----------------
 let lastStreet = '', streetT = 0;
 async function main() {
@@ -902,6 +978,7 @@ async function main() {
     $('go').onclick = () => { startAudio(); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
     if (/autostart/.test(location.hash)) $('go').click();
     renderer.setAnimationLoop(loop);
+    startGoogleCity();
   } catch (e) { console.error(e); $('ltxt').textContent = 'Erreur de chargement : ' + e.message; }
 }
 let prev = performance.now(), acc = 0, frames = 0, fpsT = 0;
@@ -922,8 +999,9 @@ function loop(now) {
   waterNormal.offset.x = (t * 0.012) % 1; waterNormal.offset.y = (t * 0.007) % 1;
   // distance culling
   const far = QUALITIES[qi].far + 600, tf = QUALITIES[qi].trees;
-  for (const c of chunks) c.obj.visible = Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
-  for (const c of treeChunks) c.obj.visible = Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
+  for (const c of chunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
+  for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
+  if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : S.vf) * 3.6);
   $('spd').firstChild.nodeValue = kmh;
