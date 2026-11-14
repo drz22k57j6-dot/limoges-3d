@@ -178,8 +178,9 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const loadGLB = async (url, key) => { const buf = await fetchProg(url, key); return await loader.parseAsync(buf, ''); };
-const loadBin = async (url, key) => { const r = await fetch(url); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
+const V = '?v=6';
+const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
+const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
 let relief, H0;
 function parseRelief(buf) {
@@ -385,8 +386,8 @@ function setupCity(gT, gO) {
       if (tn) {
         const ref = m.map;
         const fix = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (ref) { t.offset.copy(ref.offset); t.repeat.copy(ref.repeat); t.rotation = ref.rotation; t.center.copy(ref.center); } return t; };
-        m.normalMap = fix(texLoader.load('data/tex/' + tn + '_n.jpg')); m.normalScale.set(0.9, 0.9);
-        m.roughnessMap = fix(texLoader.load('data/tex/' + tn + '_r.jpg'));
+        m.normalMap = fix(texLoader.load('data/tex/' + tn + '_n.jpg' + V)); m.normalScale.set(0.9, 0.9);
+        m.roughnessMap = fix(texLoader.load('data/tex/' + tn + '_r.jpg' + V));
         if (!/facade|mur/.test(m.name)) m.color.setScalar(1.22); // albedo detail textures are normalised to 0.8
         m.envMapIntensity = m.name === 'bitume' ? 0.6 : 1; m.needsUpdate = true;
       }
@@ -885,7 +886,7 @@ async function main() {
     const [gT, gO, gC, rel, bat, rds, treesBuf, names] = await Promise.all([
       loadGLB('data/terrain.wasm', 't'), loadGLB('data/objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
       loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'), loadBin('data/arbres.wasm', 'r2'),
-      fetch('data/routes_noms.json').then(r => r.json())]);
+      fetch('data/routes_noms.json' + V).then(r => r.json())]);
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
