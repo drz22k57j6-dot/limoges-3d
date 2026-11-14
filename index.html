@@ -100,6 +100,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createPlateauTrees } from './plateau_trees.js';
+import { createSaltlineRoads } from './road_saltline.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
@@ -220,7 +221,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=11';
+const V = '?v=12';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -478,6 +479,7 @@ function setupCity(gT, gO) {
   gO.scene.traverse(o => {
     if (!o.isMesh || o.isInstancedMesh) return;
     o.receiveShadow = true; o.castShadow = true;
+    if (o.material.name === 'bitume' || o.material.name === 'marquage') { o.visible = false; return; } // replaced by the Saltline road
     const m = o.material;
     if (!seen.has(m)) {
       seen.add(m);
@@ -529,7 +531,7 @@ function setupCity(gT, gO) {
         m.map = null; m.color.set(0x2c4a46); m.roughness = 0.06; m.metalness = 0.0; m.envMapIntensity = 14; m.normalScale.set(0.35, 0.35);
         o.receiveShadow = true; o.castShadow = false; m.needsUpdate = true;
       }
-      if (m.name === 'marquage') { m.emissive = new THREE.Color(0x222222); }
+
     }
   });
   const treeMeshes = [];
@@ -1099,7 +1101,8 @@ async function main() {
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
-    setupCity(gT, gO); buildTrees(treesBuf); setupCar(gC); buildMap(rings);
+    setupCity(gT, gO); buildTrees(treesBuf);
+    { const SR = createSaltlineRoads(THREE); for (const m of SR.build(roads)) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
     applyTime(); applyQuality();
     respawn(true);
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
