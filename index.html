@@ -220,7 +220,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=10';
+const V = '?v=11';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -278,11 +278,16 @@ function parseBuildings(buf) {
 }
 let roads = [], roadNames = [];
 function parseRoads(buf) {
-  const dv = new DataView(buf); const n = dv.getUint32(0, true); let o = 4;
+  const dv = new DataView(buf); const v2 = dv.getUint32(0, true) === 0x52445632; const n = dv.getUint32(v2 ? 4 : 0, true); let o = v2 ? 8 : 4;
   for (let i = 0; i < n; i++) {
     const nid = dv.getUint32(o, true), w = dv.getFloat32(o + 4, true), m = dv.getUint32(o + 8, true); o += 12;
-    const p = new Float32Array(buf.slice(o, o + m * 8)); o += m * 8;
-    const ri = roads.length; roads.push({ nid, w, p });
+    let p, h = null, sl = null, sr = null;
+    if (v2) {
+      const a = new Float32Array(buf.slice(o, o + m * 20)); o += m * 20;
+      p = new Float32Array(m * 2); h = new Float32Array(m); sl = new Float32Array(m); sr = new Float32Array(m);
+      for (let k = 0; k < m; k++) { p[2 * k] = a[5 * k]; p[2 * k + 1] = a[5 * k + 1]; h[k] = a[5 * k + 2]; sl[k] = a[5 * k + 3]; sr[k] = a[5 * k + 4]; }
+    } else { p = new Float32Array(buf.slice(o, o + m * 8)); o += m * 8; }
+    const ri = roads.length; roads.push({ nid, w, p, h, sl, sr });
     for (let k = 0; k < m - 1; k++) addTo(roadGrid, (p[2 * k] + p[2 * k + 2]) / 2, (p[2 * k + 1] + p[2 * k + 3]) / 2, ri * 4096 + k);
   }
 }
@@ -301,6 +306,33 @@ function nearestRoad(x, z, rad = 30) {
     }
   }
   return best;
+}
+
+// The surface the wheels stand on: the smoothed road surface, the raised pavement (kerb 14 cm), else the terrain.
+const KERB = 0.14;
+function surfaceH(x, z) {
+  let best = -1e9;
+  const ci = Math.floor(x / CELL), cj = Math.floor(z / CELL);
+  for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
+    const a = roadGrid.get(key(i, j)); if (!a) continue;
+    for (const v of a) {
+      const r = roads[(v / 4096) | 0]; if (!r.h) continue;
+      const k = v % 4096, p = r.p;
+      const ax = p[2 * k], az = p[2 * k + 1], dx = p[2 * k + 2] - ax, dz = p[2 * k + 3] - az, L2 = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
+      const d = Math.hypot(x - ax - t * dx, z - az - t * dz), hw = r.w / 2;
+      if (d > hw + 4) continue;
+      const hh = r.h[k] + (r.h[k + 1] - r.h[k]) * t;
+      let c;
+      if (d <= hw + 0.04) c = hh;
+      else {
+        const sw = (dx * (z - az) - dz * (x - ax)) < 0 ? r.sl : r.sr, wv = sw[k] + (sw[k + 1] - sw[k]) * t;
+        if (wv > 0 && d <= hw + wv) c = hh + KERB; else continue;
+      }
+      if (c > best) best = c;
+    }
+  }
+  return best > -1e8 ? best : groundH(x, z);
 }
 
 // ---------------- world ----------------
@@ -481,7 +513,7 @@ function setupCity(gT, gO) {
           };
         }
       }
-      const PBR = { bitume: 'bitume', toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit', facade_barre: 'enduit', facade_tour: 'enduit', pignon: 'enduit' };
+      const PBR = { trottoir: 'trottoir', bitume: 'bitume', toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit', facade_barre: 'enduit', facade_tour: 'enduit', pignon: 'enduit' };
       const tn = PBR[m.name];
       if (tn) {
         const ref = m.map;
@@ -605,7 +637,7 @@ function step(dt) {
     if (brk > 0) { if (vf > 0.6) a -= 13 * brk; else a -= 6 * brk * (vf > -9 ? 1 : 0); }
     if (hb) a -= Math.sign(vf) * 4;
     // slope (gravity along forward direction)
-    const hF = groundH(S.x + fx, S.z + fz), hB = groundH(S.x - fx, S.z - fz);
+    const hF = surfaceH(S.x + fx, S.z + fz), hB = surfaceH(S.x - fx, S.z - fz);
     a -= 9.81 * (hF - hB) / 2;
     // drag + rolling
     a -= 0.0042 * vf * Math.abs(vf) + 0.25 * Math.sign(vf) * (spd > 0.1 ? 1 : 0);
@@ -627,7 +659,7 @@ function step(dt) {
   const LIM = 2950; if (Math.abs(S.x) > LIM || Math.abs(S.z) > LIM) { S.x = Math.max(-LIM, Math.min(LIM, S.x)); S.z = Math.max(-LIM, Math.min(LIM, S.z)); S.vx *= -0.3; S.vz *= -0.3; }
   collide();
   // vertical
-  const g = groundH(S.x, S.z) + surfaceOffset;
+  const g = surfaceH(S.x, S.z);
   if (S.onGround) {
     S.vy = (g - S.lastG) / dt; S.y = g;
     if (S.vy > 0) S.vy *= 0.9;
@@ -635,7 +667,7 @@ function step(dt) {
   S.y += S.onGround ? 0 : S.vy * dt; if (!S.onGround) S.vy -= 9.81 * dt;
   if (!S.onGround && S.y <= g) { if (S.vy < -6) bump(Math.min(1, -S.vy / 15)); S.y = g; S.onGround = true; }
   else if (S.onGround) {
-    const g2 = groundH(S.x + S.vx * dt, S.z + S.vz * dt) + surfaceOffset;
+    const g2 = surfaceH(S.x + S.vx * dt, S.z + S.vz * dt);
     const curv = (g2 - g) / dt - S.vy;
     if (curv < -6 && spd > 12) { S.onGround = false; }
   }
@@ -684,7 +716,7 @@ function bump(k) { S.shake = Math.max(S.shake, k); $('flash').style.boxShadow = 
 function respawn(first) {
   const r = nearestRoad(S.x, S.z, first ? 400 : 250) || nearestRoad(S.x, S.z, 1500);
   if (r) { S.x = r.x; S.z = r.z; S.h = r.dir; }
-  S.vx = S.vz = S.yawRate = 0; S.y = S.lastG = groundH(S.x, S.z); S.onGround = true;
+  S.vx = S.vz = S.yawRate = 0; S.y = S.lastG = surfaceH(S.x, S.z); S.yv = S.y; S.onGround = true;
   if (!first) toast('Remis sur la route');
 }
 
@@ -725,10 +757,12 @@ function updateCamera(dt, t) {
 
 // ---------------- car visual ----------------
 function updateCarVisual(dt) {
-  car.position.set(S.x, S.y, S.z); car.rotation.set(0, S.h, 0);
+  if (S.yv === undefined || Math.abs(S.y - S.yv) > 1.5) S.yv = S.y;
+  S.yv += (S.y - S.yv) * Math.min(1, dt * 16); // the body follows kerbs and bumps through its springs
+  car.position.set(S.x, S.yv, S.z); car.rotation.set(0, S.h, 0);
   const fx = Math.sin(S.h), fz = Math.cos(S.h), rx = Math.cos(S.h), rz = -Math.sin(S.h);
-  const hf = groundH(S.x + fx * 1.35, S.z + fz * 1.35), hb = groundH(S.x - fx * 1.35, S.z - fz * 1.35);
-  const hl = groundH(S.x - rx * 0.8, S.z - rz * 0.8), hr = groundH(S.x + rx * 0.8, S.z + rz * 0.8);
+  const hf = surfaceH(S.x + fx * 1.35, S.z + fz * 1.35), hb = surfaceH(S.x - fx * 1.35, S.z - fz * 1.35);
+  const hl = surfaceH(S.x - rx * 0.8, S.z - rz * 0.8), hr = surfaceH(S.x + rx * 0.8, S.z + rz * 0.8);
   const accel = (S.vf - (S.pvf ?? S.vf)) / Math.max(dt, 1e-3); S.pvf = S.vf;
   const lat = S.yawRate * S.vf;
   const tp = S.onGround ? -Math.atan2(hf - hb, 2.7) + THREE.MathUtils.clamp(-accel * 0.004, -0.04, 0.04) : S.pitch;
@@ -878,7 +912,7 @@ const planeBody = new THREE.Group(); plane.add(planeBody);
 plane.visible = false;
 const PL = { x: 0, y: 0, z: 0, yaw: 0, spd: 0, vy: 0, bank: 0, pitch: 0, landed: true, t: 0 };
 function planeGround(x, z) {
-  let g = groundH(x, z);
+  let g = surfaceH(x, z);
   const a = ringGrid.get(key(Math.floor(x / CELL), Math.floor(z / CELL)));
   if (a) for (const i of a) {
     if (ringTop[i] <= g) continue;
@@ -1068,7 +1102,6 @@ async function main() {
     setupCity(gT, gO); buildTrees(treesBuf); setupCar(gC); buildMap(rings);
     applyTime(); applyQuality();
     respawn(true);
-    surfaceOffset = 0.2;
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
     updateCarVisual(0.016); updateCamera(0.016, 0);
     renderer.compile(scene, camera);
@@ -1087,8 +1120,6 @@ function loop(now) {
   acc += dt; const h = 1 / 120;
   while (acc >= h) { if (mode === 'plane') planeStep(h); else step(h); acc -= h; }
   // road surface offset (roads drawn 0.22 m above the terrain)
-  const nr = nearestRoad(S.x, S.z, 14);
-  surfaceOffset = nr && nr.d < nr.r.w / 2 + 0.6 ? 0.22 : 0.02;
   updateCarVisual(dt);
   if (mode === 'plane') { updatePlaneVisual(); updatePlaneCamera(dt, t); } else updateCamera(dt, t);
   const F = mode === 'plane' ? PL : S;

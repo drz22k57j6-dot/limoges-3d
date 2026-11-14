@@ -373,6 +373,10 @@ Rd = json.load(open(f"{D}/routes.json"))['features']
 W = {'Type autoroutier': 10, 'Route à 2 chaussées': 7, 'Route à 1 chaussée': 5.5, 'Rond-point': 7, 'Bretelle': 5,
      'Route empierrée': 3.5, 'Chemin': 3}
 RA = {}; CL = []; NAMES = {}
+from shapely import STRtree
+from shapely.geometry import Point
+# ---- pass 1: road centre lines, smoothed driving surface
+LINES = []
 for f in Rd:
     p = f['properties']; nat = p.get('nature')
     if nat not in W: continue
@@ -391,44 +395,117 @@ for f in Rd:
         Lp = P+nr*w/2; Rp = P-nr*w/2
         zgr = mesh_h(P[:, 0], P[:, 1])
         if np.isnan(zgr).any(): continue
-        zc = None
+        zl = mesh_h(Lp[:, 0], Lp[:, 1]); zr = mesh_h(Rp[:, 0], Rp[:, 1])
+        if np.isnan(zl).any() or np.isnan(zr).any(): continue
+        zm = np.maximum(np.maximum(zl, zr), zgr) + 0.22
+        bridge = False
         if pos_sol != '0' and cz.shape[1] == 3 and (cz[:, 2] > 0).all():
             zc = np.interp(ds, np.r_[0, np.cumsum(np.hypot(*np.diff(cz[:, :2], axis=0).T))], cz[:, 2]) + 0.3
-            if np.abs(zc-zgr).max() > 25: zc = None
-        if zc is not None:
-            zl = zr = np.maximum(zc, zgr+0.22)
-        else:
-            zl = mesh_h(Lp[:, 0], Lp[:, 1])+0.22; zr = mesh_h(Rp[:, 0], Rp[:, 1])+0.22
-            zc = mesh_h(P[:, 0], P[:, 1])+0.22
-            if np.isnan(zl).any() or np.isnan(zr).any(): continue
-            zm = np.maximum(np.maximum(zl, zr), zc); zl = zr = zm
-        cell = (int((P[len(P)//2, 0]-XMIN)//CH), int((P[len(P)//2, 1]-(Y0-R))//CH))
-        ra = RA.setdefault(cell, {'rp': [], 'ri': [], 'rc': [], 'ru': [], 'mp': [], 'mi': [], 'rn': 0, 'mn': 0})
-        nm = p.get('nom_collaboratif_gauche') or ''
-        CL.append((NAMES.setdefault(nm, len(NAMES)), w, P))
-        n = len(P); pos = np.vstack([L(Lp[:, 0], Lp[:, 1], zl), L(Rp[:, 0], Rp[:, 1], zr)])
-        e = np.arange(n-1); idx = np.stack([e, n+e, n+e+1, e, n+e+1, e+1], -1).ravel()
-        smp = ortho_rgb(P[:, 0], P[:, 1])
-        sat = smp.max(1)-smp.min(1); okp = (sat < 28) & (smp.mean(1) > 45)   # keep grey asphalt pixels (no trees/cars/shadows)
-        base = np.median(smp[okp], 0) if okp.sum() >= 3 else np.array([98, 98, 100.]) if nat != 'Chemin' else np.array([140, 132, 120.])
-        c = np.r_[np.clip(base*0.95, 0, 255), 255].astype(np.uint8)
-        dist = ds
-        ruv = np.vstack([np.stack([np.zeros(n), dist/3.5], -1), np.stack([np.full(n, w/3.5), dist/3.5], -1)])
-        ra['rp'].append(pos); ra['ri'].append(idx+ra['rn']); ra['rc'].append(np.tile(c, (2*n, 1))); ra['ru'].append(ruv); ra['rn'] += 2*n
-        # dashed centre line on real roads
-        if w >= 5 and nat != 'Chemin' and pos_sol == '0':
-            for k in range(0, n-1, 2):
-                a, b = P[k], P[k+1]; nn = nr[k]*0.08
-                q = np.array([a+nn, a-nn, b-nn, b+nn]); zq = np.array([zl[k], zl[k], zl[k+1], zl[k+1]])+0.03
-                ra['mp'].append(L(q[:, 0], q[:, 1], zq)); ra['mi'].append(np.array([0, 1, 2, 0, 2, 3])+ra['mn']); ra['mn'] += 4
+            if np.abs(zc-zgr).max() <= 25: zm = np.maximum(zc, zgr+0.22); bridge = True
+        # smooth the surface along the road (no bumps from the terrain grid), never sinking far under it
+        k = 7 if len(zm) >= 7 else max(1, len(zm) | 1)
+        if k > 1:
+            pad = np.r_[np.full(k//2, zm[0]), zm, np.full(k//2, zm[-1])]
+            sm = np.convolve(pad, np.ones(k)/k, mode='valid')
+            zm = np.maximum(sm, zm-0.15)
+        LINES.append(dict(P=P, nr=nr, w=w, nat=nat, pos=pos_sol, z=zm, ds=ds, name=p.get('nom_collaboratif_gauche') or '', bridge=bridge))
+print('road lines', len(LINES))
+
+# ---- pass 2: sidewalks = public space between the carriageway and the cadastre parcels
+PARC = []
+for f in json.load(open(f"{D}/parcelles.json"))['features']:
+    g = shape(f['geometry'])
+    for poly in (g.geoms if isinstance(g, MultiPolygon) else [g]):
+        if poly.is_valid: PARC.append(Polygon([(x, y) for x, y, *_ in poly.exterior.coords]))
+ptree = STRtree(PARC)
+CARR = [LineString(l['P']).buffer(l['w']/2, cap_style=2) for l in LINES]
+ctree = STRtree(CARR)
+OFFS = np.arange(0.3, 4.21, 0.3)
+for li, l in enumerate(LINES):
+    l['sw'] = np.zeros((len(l['P']), 2))
+    if l['nat'] == 'Chemin' or l['w'] < 4 or l['bridge']: continue
+    for si, sg in enumerate((1, -1)):
+        base = l['P'] + l['nr'] * sg * l['w']/2
+        pts = base[:, None, :] + (l['nr'] * sg)[:, None, :] * OFFS[None, :, None]
+        flat = [Point(x, y) for x, y in pts.reshape(-1, 2)]
+        hitP = np.zeros(len(flat), bool); hitC = np.zeros(len(flat), bool)
+        q = ptree.query(flat, predicate='intersects'); hitP[q[0]] = True
+        q = ctree.query(flat, predicate='intersects'); own = q[1] == li; hitC[q[0][~own]] = True
+        hit = (hitP | hitC).reshape(len(base), len(OFFS))
+        near = np.zeros(len(base), bool)
+        q = ptree.query([Point(x, y) for x, y in base], predicate='dwithin', distance=12.0); near[np.unique(q[0])] = True
+        first = np.where(hit.any(1), hit.argmax(1), -1)
+        wid = np.where(first >= 0, OFFS[np.maximum(first, 0)] - 0.3, np.where(near, 3.0, 0.0))
+        wid = np.minimum(wid, 3.5)
+        # grass verges are not pavement
+        mid = base + l['nr'] * sg * np.maximum(wid, 0.5)[:, None] * 0.5
+        oc = ortho_rgb(mid[:, 0], mid[:, 1])
+        green = (oc[:, 1] > oc[:, 0]*1.06) & (oc[:, 1] > oc[:, 2]*1.08)
+        wid[green] = 0
+        wid[wid < 0.9] = 0
+        # tidy: a median over 5 samples removes single holes and spikes
+        if len(wid) >= 5:
+            pad = np.r_[wid[:2], wid, wid[-2:]]
+            wid = np.median(np.lib.stride_tricks.sliding_window_view(pad, 5), 1)
+        l['sw'][:, si] = wid
+print('sidewalks done')
+
+# ---- pass 3: meshes
 M_ROAD = G.material('bitume', tex=ftex('bitume'), rough=0.95); M_MARK = G.material('marquage', color=(0.95, 0.95, 0.92, 1))
+M_SIDE = G.material('trottoir', tex=ftex('trottoir'), rough=0.9)
+CURB = 0.14
+for l in LINES:
+    P, nr, w, zs, ds = l['P'], l['nr'], l['w'], l['z'], l['ds']
+    n = len(P); Lp = P+nr*w/2; Rp = P-nr*w/2
+    cell = (int((P[n//2, 0]-XMIN)//CH), int((P[n//2, 1]-(Y0-R))//CH))
+    ra = RA.setdefault(cell, {'rp': [], 'ri': [], 'rc': [], 'ru': [], 'mp': [], 'mi': [], 'rn': 0, 'mn': 0, 'sp': [], 'si': [], 'su': [], 'sn': 0})
+    CL.append((NAMES.setdefault(l['name'], len(NAMES)), w, P, zs, l['sw']))
+    pos = np.vstack([L(Lp[:, 0], Lp[:, 1], zs), L(Rp[:, 0], Rp[:, 1], zs)])
+    e = np.arange(n-1); idx = np.stack([e, n+e, n+e+1, e, n+e+1, e+1], -1).ravel()
+    smp = ortho_rgb(P[:, 0], P[:, 1])
+    sat = smp.max(1)-smp.min(1); okp = (sat < 28) & (smp.mean(1) > 45)
+    base = np.median(smp[okp], 0) if okp.sum() >= 3 else np.array([98, 98, 100.]) if l['nat'] != 'Chemin' else np.array([140, 132, 120.])
+    c = np.r_[np.clip(base*0.95, 0, 255), 255].astype(np.uint8)
+    ruv = np.vstack([np.stack([np.zeros(n), ds/3.5], -1), np.stack([np.full(n, w/3.5), ds/3.5], -1)])
+    ra['rp'].append(pos); ra['ri'].append(idx+ra['rn']); ra['rc'].append(np.tile(c, (2*n, 1))); ra['ru'].append(ruv); ra['rn'] += 2*n
+    def mark(qx, zq):
+        ra['mp'].append(L(qx[:, 0], qx[:, 1], zq)); ra['mi'].append(np.array([0, 1, 2, 0, 2, 3])+ra['mn']); ra['mn'] += 4
+    if w >= 5 and l['nat'] != 'Chemin':
+        for k in range(0, n-1, 2):   # dashed centre line
+            a_, b_ = P[k], P[k+1]; nn = nr[k]*0.07
+            mark(np.array([a_+nn, a_-nn, b_-nn, b_+nn]), np.array([zs[k], zs[k], zs[k+1], zs[k+1]])+0.025)
+        if w >= 6.5:                 # continuous edge lines
+            for sg in (1, -1):
+                for k in range(n-1):
+                    a_, b_ = P[k]+nr[k]*sg*(w/2-0.35), P[k+1]+nr[k+1]*sg*(w/2-0.35); na, nb = nr[k]*0.06, nr[k+1]*0.06
+                    mark(np.array([a_+na, a_-na, b_-nb, b_+nb]), np.array([zs[k], zs[k], zs[k+1], zs[k+1]])+0.025)
+    # sidewalks: walking surface, kerb face and an outer skirt, one strip per side where the width is > 0
+    for si, sg in enumerate((1, -1)):
+        sw = l['sw'][:, si]
+        if not (sw > 0).any(): continue
+        for k in range(n-1):
+            if sw[k] <= 0 or sw[k+1] <= 0: continue
+            i0 = P[k]+nr[k]*sg*w/2; i1 = P[k+1]+nr[k+1]*sg*w/2
+            o0 = i0+nr[k]*sg*sw[k]; o1 = i1+nr[k+1]*sg*sw[k+1]
+            zt0, zt1 = zs[k]+CURB, zs[k+1]+CURB
+            V = [L(*i0, zt0), L(*i1, zt1), L(*o1, zt1), L(*o0, zt0),           # top
+                 L(*i0, zs[k]-0.05), L(*i1, zs[k+1]-0.05),                    # kerb foot
+                 L(*o0, zt0-0.5), L(*o1, zt1-0.5)]                            # skirt foot
+            V = np.vstack(V)
+            I = np.array([0, 1, 2, 0, 2, 3, 4, 5, 1, 4, 1, 0, 3, 2, 7, 3, 7, 6]) if sg == 1 else np.array([0, 2, 1, 0, 3, 2, 4, 1, 5, 4, 0, 1, 3, 7, 2, 3, 6, 7])
+            U = np.array([[0, ds[k]], [0, ds[k+1]], [sw[k+1], ds[k+1]], [sw[k], ds[k]], [-0.2, ds[k]], [-0.2, ds[k+1]], [sw[k]+0.5, ds[k]], [sw[k+1]+0.5, ds[k+1]]])/1.6
+            ra['sp'].append(V); ra['si'].append(I+ra['sn']); ra['su'].append(U); ra['sn'] += 8
 for cell, ra in sorted(RA.items()):
     pr = [G.prim(np.vstack(ra['rp']), np.concatenate(ra['ri']), M_ROAD, uv=np.vstack(ra['ru']), col=np.vstack(ra['rc']))]
     if ra['mp']: pr.append(G.prim(np.vstack(ra['mp']), np.concatenate(ra['mi']), M_MARK))
+    if ra['sp']:
+        SP = np.vstack(ra['sp'])
+        pr.append(G.prim(SP, np.concatenate(ra['si']), M_SIDE, uv=np.vstack(ra['su']), col=np.tile(np.array([214, 211, 204, 255], np.uint8), (len(SP), 1))))
     G.node(f'Routes_{cell[0]}_{cell[1]}', pr)
-rb = bytearray(struct.pack('<I', len(CL)))
-for nid, w, P in CL:
-    q = np.stack([P[:, 0]-X0, -(P[:, 1]-Y0)], -1).astype(np.float32)
+# road axes v2: x, z, surface height, sidewalk widths left/right per vertex
+rb = bytearray(struct.pack('<II', 0x52445632, len(CL)))
+for nid, w, P, zs, sw in CL:
+    q = np.stack([P[:, 0]-X0, -(P[:, 1]-Y0), zs-H0, sw[:, 0], sw[:, 1]], -1).astype(np.float32)
     rb += struct.pack('<IfI', nid, w, len(q)) + q.tobytes()
 open(OUTD+'/routes_axes.bin', 'wb').write(rb)
 json.dump(list(NAMES.keys()), open(OUTD+'/routes_noms.json', 'w'), ensure_ascii=False)
