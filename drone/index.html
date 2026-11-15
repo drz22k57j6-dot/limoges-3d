@@ -29,6 +29,7 @@ button{background:#202d3e;color:white;border:1px solid #394b62;border-radius:9px
 <div id="top"><div id="search" class="panel"><input id="place" value="Hôtel de Ville, Paris" placeholder="Adresse ou lieu à Paris"><button id="load" class="primary">Charger</button></div></div>
 <div id="info" class="panel"><div id="identity">Sélectionne un bâtiment</div><div id="details">Identifiants IGN BD TOPO et RNB affichés ici.</div></div>
 <div id="list"></div>
+<div style="position:absolute;right:10px;top:52px;z-index:2;font-size:10px;color:#fff;background:#101824bb;padding:5px 8px;border-radius:7px;pointer-events:none">Maquette 3D IGN · pas une vidéo de façade réelle</div>
 <div id="hint">Chargement de Paris…<br><small>Glisse pour piloter la caméra · touche un bâtiment pour l'identifier</small></div>
 <div id="controls"><div class="panel"><button id="orbit" class="primary">▶ Orbite auto</button><button id="record">● REC vidéo</button><button id="stop" disabled>■ Stop</button><button id="meta">Exporter fiche JSON</button></div><div class="panel"><button id="closer">＋</button><button id="farther">－</button><button id="reset">Recentrer</button><span id="status">Prêt</span></div></div>
 <script type="module">
@@ -51,7 +52,7 @@ function addRing(shape,ring,holes){if(!ring||ring.length<4)return;const p=ring.m
 function featurePolys(g){if(g.type==='Polygon')return [g.coordinates];if(g.type==='MultiPolygon')return g.coordinates;return []}
 function buildFeature(f){const p=f.properties||{},h=Math.max(4,Number(p.hauteur)||((Number(p.nombre_d_etages)||3)*3.1));const mat=new THREE.MeshStandardMaterial({color:0xc8b9a5,roughness:.88,metalness:0.02});let made=[];
 for(const poly of featurePolys(f.geometry)){if(!poly[0]||poly[0].length<4)continue;const pts=poly[0].map(c=>local(c[0],c[1]));const s=new THREE.Shape();s.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)s.lineTo(pts[i][0],pts[i][1]);s.closePath();for(let j=1;j<poly.length;j++){const hp=poly[j].map(c=>local(c[0],c[1]));const hole=new THREE.Path();hole.moveTo(hp[0][0],hp[0][1]);for(let i=1;i<hp.length;i++)hole.lineTo(hp[i][0],hp[i][1]);hole.closePath();s.holes.push(hole)}
-const geo=new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:false,curveSegments:1});geo.rotateX(Math.PI/2);geo.translate(0,h,0);geo.computeVertexNormals();const mesh=new THREE.Mesh(geo,mat.clone());mesh.material.color.setHex((p.usage_1||'').includes('Résidentiel')?0xcbbba4:0xb5b9bd);mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.feature=f;scene.add(mesh);meshes.push(mesh);made.push(mesh)}
+const geo=new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:false,curveSegments:1});geo.rotateX(-Math.PI/2);geo.computeVertexNormals();const mesh=new THREE.Mesh(geo,mat.clone());mesh.material.color.setHex((p.usage_1||'').includes('Résidentiel')?0xcbbba4:0xb5b9bd);mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.feature=f;scene.add(mesh);meshes.push(mesh);made.push(mesh)}
 return made}
 function clear(){for(const m of meshes){scene.remove(m);m.geometry.dispose();m.material.dispose()}meshes=[];features=[];selected=null;$('list').innerHTML=''}
 async function geocode(q){const u='https://data.geopf.fr/geocodage/search?'+new URLSearchParams({q:q+', Paris',limit:'1'});const d=await(await fetch(u)).json();const f=d.features&&d.features[0];if(!f)throw Error('Adresse introuvable');return f.geometry.coordinates}
