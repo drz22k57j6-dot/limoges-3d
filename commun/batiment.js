@@ -19,6 +19,10 @@
     return { 'Industriel': 'ind', 'Sportif': 'spo', 'Religieux': 'rel', 'Agricole': 'agr', 'Annexe': 'ann' }[p.usage_1] || 'ind0';
   }
   const idOf = f => f.properties.identifiants_rnb || f.properties.cleabs;
+  // ---------- identité réelle (adresses officielles, établissements, zones) : data/identite_batiments.json, généré par outils/identite.py ----------
+  const ID_URL = new URL('../data/identite_batiments.json', document.currentScript ? document.currentScript.src : location.href).href;
+  let idDb = null;
+  const identite = () => idDb || (idDb = fetch(ID_URL).then(r => r.ok ? r.json() : {}).catch(() => ({})));
 
   // ---------- Lambert-93 -> WGS84 (pour le jeu 3D, dont le repère est en Lambert-93) ----------
   const A = 6378137, F = 1 / 298.257222101, E = Math.sqrt(2 * F - F * F), LON0 = 3 * Math.PI / 180, P0 = 46.5 * Math.PI / 180, P1 = 44 * Math.PI / 180, P2 = 49 * Math.PI / 180;
@@ -125,14 +129,37 @@
       <div class="note">Mesuré : données IGN BD TOPO. Estimé : calculé avec les prix de vente médians 2025 à Limoges (DVF : ${PRIX.appart} €/m² appartement, ${PRIX.maison} €/m² maison), un loyer de ${LOYER.appart} €/m² (appartement) et ${LOYER.maison} €/m² (maison), ${PERS_PAR_LOGEMENT} habitant par logement. Loyer commercial : ${LOYER_COMMERCE} €/m², hypothèse de jeu. Ordres de grandeur, pas une estimation immobilière.</div>`;
     if (window.EQ) $('batBody').appendChild(EQ.cardExtra(f, { type: T.n, lat: cy, lon: cx, adresse: () => $('batAddr').textContent }));
     $('batCard').classList.add('on');
-    fetch(`https://data.geopf.fr/geocodage/reverse?lon=${cx}&lat=${cy}&limit=1`).then(r => r.json()).then(d => { const a = d.features?.[0]?.properties; $('batAddr').textContent = a ? a.label : 'Adresse inconnue'; }).catch(() => ($('batAddr').textContent = ''));
-    if (k === 'com' || k === 'mix') {
+    const reverse = () => fetch(`https://data.geopf.fr/geocodage/reverse?lon=${cx}&lat=${cy}&limit=1`).then(r => r.json()).then(d => { const a = d.features?.[0]?.properties; $('batAddr').innerHTML = a ? esc(a.label) + ' <span class="src e">adresse la plus proche</span>' : 'Adresse inconnue'; }).catch(() => ($('batAddr').textContent = ''));
+    identite().then(db => {
+      const I = db[p.cleabs];
+      if (!I) { reverse(); overpass(); return; }
+      const ad = I.adresses || [];
+      if (ad.length) {
+        const sure = ad.every(a => !/à vérifier/.test(a.source));
+        $('batAddr').innerHTML = esc(ad.slice(0, 3).map(a => a.label.replace(/, Limoges$/, '')).join(' · ')) + (ad.length > 3 ? ` <small>+${ad.length - 3} adresses</small>` : '') +
+          ` <span class="src ${sure ? 'm' : 'e'}">${sure ? 'adresse officielle' : 'adresse à vérifier'}</span>`;
+      } else reverse();
+      const rows = [];
+      for (const z of I.zones || []) if (z.nom) rows.push(`<tr><td>${esc(z.nature || z.categorie || 'Site')}</td><td>${esc(z.nom)} ${M}</td></tr>`);
+      const L = (I.lieux || []).filter(l => l.statut !== 'permanently_closed');
+      const ok = L.filter(l => l.confiance >= 0.6 && !/à vérifier/.test(l.rattachement)).sort((a, b) => (b.vitrine - a.vitrine) || (b.confiance - a.confiance));
+      const doubt = L.filter(l => !ok.includes(l));
+      const li = l => `<div style="margin:2px 0"><b>${esc(l.nom)}</b> <small style="color:#9aa5b5">${esc(l.categorie)}${l.marque ? ' · ' + esc(l.marque) : ''}</small></div>`;
+      if (ok.length) rows.push(`<tr><td>Établissements</td><td>${ok.slice(0, 8).map(li).join('')}${ok.length > 8 ? `<small>+${ok.length - 8} autres</small>` : ''}</td></tr>`);
+      if (doubt.length) rows.push(`<tr><td>À vérifier</td><td><small style="color:#9aa5b5">${doubt.slice(0, 6).map(l => esc(l.nom)).join(', ')}${doubt.length > 6 ? '…' : ''}</small></td></tr>`);
+      if (!L.length && !(I.zones || []).length) rows.push(`<tr><td>Établissements</td><td>aucun connu</td></tr>`);
+      rows.push(`<tr><td>Fonction</td><td>${esc(I.fonction)}</td></tr>`);
+      const tr = $('batShops'); if (tr) tr.insertAdjacentHTML('afterend', rows.join(''));
+      $('batBody').querySelector('.note')?.insertAdjacentHTML('beforeend', ' Adresses : IGN BAN PLUS. Établissements : Overture Maps (OpenStreetMap, Meta, Microsoft, Foursquare…), tels que déclarés — non vérifiés sur place.');
+    });
+    const overpass = () => { if (k === 'com' || k === 'mix') {
       const q = `[out:json][timeout:15];(node["shop"](around:15,${cy},${cx});node["amenity"~"restaurant|cafe|bar|bank|pharmacy|fast_food|bakery"](around:15,${cy},${cx}););out tags 10;`;
       fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q) }).then(r => r.json()).then(d => {
         const l = d.elements.map(e => e.tags.name ? `${e.tags.name} (${e.tags.shop || e.tags.amenity})` : (e.tags.shop || e.tags.amenity)).filter(Boolean);
         if (l.length) { const tr = $('batShops'); tr.style.display = ''; tr.lastElementChild.innerHTML = esc(l.join(', ')) + ' <span class="src m">OSM</span>'; }
       }).catch(() => {});
-    }
+    } };
   }
+  setTimeout(identite, 6000); // preload in the background
   window.BAT = { TYPES, typeOf, idOf, show, hide, longPress, featureAt, featureById, fromL93, toL93, inRing, contains, centre, wfs };
 })();
