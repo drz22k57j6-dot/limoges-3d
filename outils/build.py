@@ -246,46 +246,10 @@ def facade_haussmann():
         for xx in range(x0+84, x0+176, 9): d.line([xx, 204, xx, 238], fill=(28, 28, 30, 0), width=2)
     d.rectangle([0, 240, W, H], fill=(248, 244, 232, 255))                                   # floor band
     return im
-def facade_paris_bureau():
-    # Four 3 m bays: curtain-wall glazing, metal mullions and stone spandrels.
-    W, H = 1024, 256
-    im = Image.new('RGBA', (W, H), (232, 229, 220, 255)); d = ImageDraw.Draw(im)
-    for b in range(4):
-        x = b*256
-        d.rectangle([x+12, 18, x+244, 220], fill=(54, 64, 72, 255))
-        d.rectangle([x+20, 26, x+236, 212], fill=(74, 105, 125, 0))
-        for xx in (x+20, x+74, x+128, x+182, x+236):
-            d.line([xx, 26, xx, 212], fill=(205, 207, 202, 0), width=5)
-        for yy in (26, 72, 118, 164, 212):
-            d.line([x+20, yy, x+236, yy], fill=(205, 207, 202, 0), width=5)
-        d.rectangle([x+8, 220, x+248, 232], fill=(190, 185, 174, 255))
-    d.rectangle([0, 240, W, H], fill=(245, 241, 230, 255))
-    return im
-
-def facade_paris_industrie():
-    # Brick piers and tall multi-pane workshop windows.
-    W, H = 1024, 256
-    im = Image.new('RGBA', (W, H), (158, 83, 58, 255)); d = ImageDraw.Draw(im)
-    for y in (18, 48, 78, 108, 138, 168, 198, 228):
-        d.line([0, y, W, y], fill=(181, 111, 79, 255), width=2)
-    for b in range(4):
-        x = b*256
-        d.rectangle([x+34, 38, x+222, 208], fill=(65, 79, 88, 0))
-        d.rectangle([x+26, 30, x+230, 42], fill=(220, 207, 184, 255))
-        d.rectangle([x+26, 204, x+230, 216], fill=(220, 207, 184, 255))
-        for xx in (x+34, x+96, x+159, x+222):
-            d.line([xx, 38, xx, 208], fill=(224, 215, 197, 0), width=6)
-        d.line([x+34, 122, x+222, 122], fill=(224, 215, 197, 0), width=6)
-        d.rectangle([x+8, 0, x+22, H], fill=(125, 62, 45, 255))
-    d.rectangle([0, 238, W, H], fill=(215, 202, 181, 255))
-    return im
-
 if _o.environ.get('CITY_NAME') == 'paris': facade_barre = facade_haussmann
 TEX_RES = G.texture(facade('res')); TEX_COM = G.texture(facade('com'))
 M_BARRE = G.material('facade_barre', tex=G.texture(facade_barre())); M_TOUR = G.material('facade_tour', tex=G.texture(facade_tour())); M_PIGNON = G.material('pignon', tex=G.texture(pignon()))
 M_RES = G.material('facade_logements', tex=TEX_RES); M_COM = G.material('facade_activites', tex=TEX_COM)
-M_PARIS_BUREAU = G.material('facade_paris_bureau', tex=G.texture(facade_paris_bureau()))
-M_PARIS_INDUSTRIE = G.material('facade_paris_industrie', tex=G.texture(facade_paris_industrie()))
 M_PLAIN = G.material('mur_simple')
 TXD = '/home/claude/game/pub/data/tex/'
 def ftex(n): return G.texture(Image.open(TXD+n+'_d.jpg').convert('RGB'), q=84)
@@ -379,9 +343,6 @@ for f in B:
         col = np.r_[np.clip(tint, 0, 255), 255].astype(np.uint8)
         small = poly.area < 35 or h < 3.2 or usage == 'Annexe'
         k = 'plain' if small else ('res' if usage in ('Résidentiel', 'Indifférencié') else 'com')
-        if _o.environ.get('CITY_NAME') == 'paris' and not small:
-            if usage == 'Industriel': k = 'paris_industrie'
-            elif usage == 'Commercial et services' and h >= 10: k = 'paris_bureau'
         # roof colour from orthophoto
         rp = poly.representative_point(); cx, cy = poly.centroid.x, poly.centroid.y
         sx = np.r_[rp.x, cx*0.6+ex[:-1, 0]*0.4]; sy = np.r_[rp.y, cy*0.6+ex[:-1, 1]*0.4]
@@ -435,7 +396,7 @@ for f in B:
 print('buildings', nb, 'gables', gables)
 json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
 
-BMATS = (('res', M_RES), ('com', M_COM), ('paris_bureau', M_PARIS_BUREAU), ('paris_industrie', M_PARIS_INDUSTRIE), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F))
+BMATS = (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F))
 if TILES:
     exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tuiles.py')).read())
     ACC = {}
@@ -443,7 +404,7 @@ if TILES:
     G.node('Materiaux_batiments', [G.prim(np.zeros((3, 3)), np.array([0, 1, 2]), m, uv=np.zeros((3, 2)), col=np.full((3, 4), 255)) for k, m in BMATS])
 for cell in sorted(set(c for c, k in ACC)):
     prims_b = []
-    for k, m in (('res', M_RES), ('com', M_COM), ('paris_bureau', M_PARIS_BUREAU), ('paris_industrie', M_PARIS_INDUSTRIE), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F)):
+    for k, m in (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F)):
         a = ACC.get((cell, k))
         if not a: continue
         P = np.vstack(a['p']); I = np.concatenate(a['i']); UV = np.vstack(a['uv']); C = np.vstack(a['c'])
