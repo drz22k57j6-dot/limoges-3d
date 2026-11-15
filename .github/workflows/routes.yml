@@ -1,0 +1,84 @@
+# Propositions de l'éditeur routier : issues « [ROUTE] » avec un bloc JSON.
+# Le propriétaire du dépôt est appliqué tout de suite ; les autres joueurs passent au vote (5 👍, l'auteur ne compte pas).
+# Chaque heure, les propositions qui ont assez de votes sont fusionnées dans data/routes_modifs.json.
+name: Routes
+on:
+  issues:
+    types: [opened]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: routes-db
+  cancel-in-progress: false
+jobs:
+  routes:
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, '[ROUTE]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Valider, voter, fusionner
+        id: db
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const VOTES = 5, OWNER = context.repo.owner, path = 'data/routes_modifs.json';
+            const num = (v, a, b) => { v = +v; return isFinite(v) && v >= a && v <= b ? Math.round(v * 100) / 100 : undefined; };
+            const id = v => String(v ?? '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
+            function clean(t) {
+              const out = { roads: {}, rings: [], signs: [] };
+              for (const [k, o] of Object.entries(t.roads || {}).slice(0, 300)) {
+                const r = +k; if (!Number.isInteger(r) || r < 0 || r > 100000 || !o) continue;
+                const c = { w: num(o.w, 2.5, 30), lf: num(o.lf, 0, 6), lb: num(o.lb, 0, 6), sens: [0, 1, -1].includes(o.sens) ? o.sens : undefined, tg: num(o.tg, 0, 8), td: num(o.td, 0, 8), cl: ['tirets', 'continue'].includes(o.cl) ? o.cl : undefined, v: num(o.v, 10, 130) };
+                for (const x of Object.keys(c)) if (c[x] === undefined) delete c[x];
+                if (Object.keys(c).length) out.roads[r] = c;
+              }
+              for (const g of (t.rings || []).slice(0, 100)) { if (g.del) { out.rings.push({ id: id(g.id), del: 1 }); continue; } const c = { id: id(g.id), x: num(g.x, -50000, 50000), z: num(g.z, -50000, 50000), y: num(g.y, -500, 500), R: num(g.R, 5, 40), a: num(g.a, 4, 12) }; if (c.id && c.x !== undefined && c.z !== undefined && c.R) { if (c.y === undefined) delete c.y; out.rings.push(c); } }
+              const T = ['stop', 'cedez', 'interdit', 'v30', 'v50', 'v70', 'sensunique', 'pieton', 'giratoire', 'feu'];
+              for (const s of (t.signs || []).slice(0, 300)) { if (s.del) { out.signs.push({ id: id(s.id), del: 1 }); continue; } const c = { id: id(s.id), t: T.includes(s.t) ? s.t : null, road: num(s.road, 0, 100000), dir: s.dir === -1 ? -1 : 1, x: num(s.x, -50000, 50000), z: num(s.z, -50000, 50000), y: num(s.y, -500, 500), hd: num(s.hd, -7, 7) }; if (c.id && c.t && c.x !== undefined && c.z !== undefined && c.y !== undefined) out.signs.push(c); }
+              return out;
+            }
+            function merge(db, p) {
+              for (const [k, o] of Object.entries(p.roads)) db.roads[k] = Object.assign({}, db.roads[k], o);
+              for (const g of p.rings) { db.rings = db.rings.filter(x => x.id !== g.id); if (!g.del) db.rings.push(g); }
+              for (const s of p.signs) { db.signs = db.signs.filter(x => x.id !== s.id); if (!s.del) db.signs.push(s); }
+            }
+            const parse = body => { const m = (body || '').match(/```json\s*([\s\S]*?)```/); try { return clean(JSON.parse(m[1])); } catch (e) { return null; } };
+            const db = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : { v: 1, roads: {}, rings: [], signs: [] };
+            const done = [];
+            const apply = async (issue, p, why) => {
+              merge(db, p); done.push(issue.number);
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: `✅ Appliquée à toute la ville (${why}). Visible dans le jeu d'ici 1 à 2 minutes.` });
+              await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: 'closed', state_reason: 'completed' });
+            };
+            let issues = [];
+            if (context.eventName === 'issues') issues = [context.payload.issue];
+            else issues = (await github.paginate(github.rest.issues.listForRepo, { ...context.repo, state: 'open', per_page: 100 })).filter(i => /^\[ROUTE\]/.test(i.title));
+            for (const issue of issues) {
+              const p = parse(issue.body);
+              if (!p || !(Object.keys(p.roads).length + p.rings.length + p.signs.length)) {
+                if (context.eventName === 'issues') { await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: '❌ Proposition illisible ou vide.' }); await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: 'closed', state_reason: 'not_planned' }); }
+                continue;
+              }
+              if (issue.user.login === OWNER) { await apply(issue, p, 'propriétaire du jeu'); continue; }
+              const reacts = await github.paginate(github.rest.reactions.listForIssue, { ...context.repo, issue_number: issue.number, content: '+1', per_page: 100 });
+              const n = new Set(reacts.map(r => r.user.login).filter(u => u !== issue.user.login)).size;
+              if (n >= VOTES) await apply(issue, p, `${n} votes`);
+              else if (context.eventName === 'issues') {
+                try { await github.rest.issues.addLabels({ ...context.repo, issue_number: issue.number, labels: ['vote-route'] }); } catch (e) {}
+                await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: `🗳️ Proposition reçue. Elle sera appliquée à toute la ville dès ${VOTES} 👍 (réaction sur ce message d'ouverture). Aperçu possible dans le jeu : Éditeur routier → Votes.` });
+              }
+            }
+            if (done.length) { fs.writeFileSync(path, JSON.stringify(db)); core.exportVariable('RT_OK', '1'); core.setOutput('n', done.join(', #')); }
+      - name: Enregistrer dans le dépôt
+        if: env.RT_OK == '1'
+        run: |
+          git config user.name "Base des routes"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/routes_modifs.json
+          git commit -m "Routes : propositions #${{ steps.db.outputs.n }}"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 3; done

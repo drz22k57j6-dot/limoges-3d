@@ -1119,7 +1119,7 @@ async function main() {
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
-    { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
+    { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; setupCar(gC); buildMap(rings);
     // 3D grass ported from Larkhollow, on the real green areas (orthophoto + LiDAR mask)
     grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, maskUrl: 'data/tex/herbe_masque.jpg' + V,
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
@@ -1187,6 +1187,9 @@ main();
 <script src="commun/batiment.js"></script>
 <script src="commun/equipes.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
+<script type="module" src="commun/routes.js"></script>
+<link rel="stylesheet" href="commun/ui.css">
+<script src="commun/ui.js"></script>
 <script src="switcher.js"></script>
 </body>
 </html>

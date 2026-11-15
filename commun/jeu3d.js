@@ -21,6 +21,8 @@ const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 
 // ---------- appui long de 3 s sur un bâtiment ----------
 const canvas = renderer.domElement;
+// iOS : pas de loupe, de sélection ni de menu pendant l'appui long (sinon Safari annule le geste)
+Object.assign(canvas.style, { webkitTouchCallout: 'none', webkitUserSelect: 'none', userSelect: 'none', touchAction: 'none' });
 BAT.longPress(canvas, e => {
   const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera); const hit = ray.intersectObjects(buildings(), false)[0];
@@ -37,7 +39,7 @@ function label(t) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 360; const g = c.getContext('2d');
   g.fillStyle = t.couleur; g.strokeStyle = '#fff'; g.lineWidth = 14; g.beginPath(); g.arc(256, 140, 120, 0, 7); g.fill(); g.stroke();
   g.font = '150px "Apple Color Emoji","Segoe UI Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t.embleme || '⭐', 256, 150);
-  g.font = 'bold 54px -apple-system,sans-serif'; g.fillStyle = 'rgba(0,0,0,.6)'; const w = Math.min(500, g.measureText(t.nom).width + 40); g.beginPath(); g.roundRect(256 - w / 2, 278, w, 72, 30); g.fill();
+  g.font = 'bold 54px -apple-system,sans-serif'; g.fillStyle = 'rgba(0,0,0,.6)'; const w = Math.min(500, g.measureText(t.nom).width + 40), x0 = 256 - w / 2, y0 = 278, h = 72, r = 30; g.beginPath(); g.moveTo(x0 + r, y0); g.arcTo(x0 + w, y0, x0 + w, y0 + h, r); g.arcTo(x0 + w, y0 + h, x0, y0 + h, r); g.arcTo(x0, y0 + h, x0, y0, r); g.arcTo(x0, y0, x0 + w, y0, r); g.closePath(); g.fill();
   g.fillStyle = '#fff'; g.fillText(t.nom, 256, 316);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true })); sp.scale.set(22, 15.5, 1); sp.renderOrder = 10; return sp;
@@ -75,7 +77,7 @@ let drawing = 0;
 window.EQ_HOST = {
   async drawHQ(teams) {
     const my = ++drawing, groups = [];
-    for (const t of teams) if (t.qg) groups.push(await drawTeam(t));
+    for (const t of teams) if (t.qg) { try { groups.push(await drawTeam(t)); } catch (e) { console.warn('QG', t.nom, e); } }
     if (my !== drawing) return;
     hqGroup.clear(); for (const g of groups) hqGroup.add(g);
   },

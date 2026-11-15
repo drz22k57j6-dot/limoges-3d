@@ -1,0 +1,60 @@
+/* Limoges 3D — interface « jeu mobile » : verre dépoli, typo SF, jauges, boutons-icônes. Ne change que l'apparence. */
+:root { --acc:#ffb547; --acc2:#ff8a1c; --cy:#38e8ff; --glass:rgba(12,15,22,.62); --line:rgba(255,255,255,.14); --ui:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif; }
+html,body { font-family:var(--ui); }
+
+/* barre d'options en haut à droite : pastilles icône + libellé */
+.btns { gap:6px !important; padding:5px; border-radius:24px; background:var(--glass); backdrop-filter:blur(18px) saturate(1.5); -webkit-backdrop-filter:blur(18px) saturate(1.5); border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+.btns .b { height:38px; padding:0 12px 0 10px !important; border:0 !important; border-radius:19px !important; background:rgba(255,255,255,.06) !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; font:700 11.5px/1 var(--ui) !important; letter-spacing:.9px !important; text-transform:uppercase; color:#e9eef7 !important; display:flex; align-items:center; gap:7px; transition:background .15s, transform .12s; }
+.btns .b::before { content:''; width:18px; height:18px; flex:none; background:currentColor; -webkit-mask:var(--ic) center/contain no-repeat; mask:var(--ic) center/contain no-repeat; }
+.btns .b:active { transform:scale(.94); background:rgba(255,181,71,.25) !important; }
+#bReset { padding:0 10px !important; }
+@media (max-width:900px) { .btns .b { font-size:0 !important; gap:0; padding:0 10px !important; } .btns .b::before { width:20px; height:20px; } }
+
+/* compteur : jauge circulaire + vitesse */
+#speedo { width:176px; height:176px; text-align:center !important; text-shadow:none !important; }
+#speedo .uiGauge { position:absolute; inset:0; width:100%; height:100%; transform:rotate(135deg); }
+#speedo .uiGauge circle { fill:none; stroke-linecap:round; }
+#speedo #spd { position:absolute; left:0; right:0; top:48px; font:800 italic 58px/1 var(--ui) !important; letter-spacing:-2px !important; background:linear-gradient(180deg,#fff 40%,#c9d3e4); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)); }
+#speedo #spd small { display:block; font:800 11px/1.6 var(--ui) !important; letter-spacing:3px !important; color:#9aa6ba; -webkit-text-fill-color:#9aa6ba; margin:0 !important; font-style:normal; }
+#speedo #gear { position:absolute; left:50%; bottom:20px; transform:translateX(-50%); min-width:36px; height:28px; padding:0 8px; border-radius:14px; background:linear-gradient(180deg,#ffc56b,#ff9f1c); color:#1a1206 !important; font:900 15px/28px var(--ui) !important; box-shadow:0 4px 14px rgba(255,159,28,.45); }
+#speedo #rpm { display:none !important; }
+
+/* mini-carte */
+#mapwrap { width:148px !important; height:148px !important; border:0 !important; box-shadow:0 0 0 3px rgba(255,255,255,.12), 0 0 0 4px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.55) !important; }
+#mapwrap::after { content:''; position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 0 22px rgba(0,0,0,.55); pointer-events:none; }
+#mapwrap .uiN { position:absolute; left:50%; top:5px; transform:translateX(-50%); font:900 10px/1 var(--ui); color:#fff; background:#ff453a; border-radius:7px; padding:2px 4px; z-index:2; }
+
+/* nom de rue */
+#street { padding:9px 18px 9px 14px !important; border-radius:22px !important; background:var(--glass) !important; backdrop-filter:blur(18px) saturate(1.5) !important; -webkit-backdrop-filter:blur(18px) saturate(1.5) !important; border:1px solid var(--line); font:800 13px/1 var(--ui) !important; letter-spacing:1.6px !important; text-transform:uppercase; box-shadow:0 10px 26px rgba(0,0,0,.35); display:flex; align-items:center; gap:8px; }
+#street::before { content:''; width:14px; height:14px; background:var(--acc); -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center/contain no-repeat; }
+#toast { font:700 14px/1 var(--ui) !important; padding:10px 16px !important; border-radius:16px !important; border:1px solid var(--line); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+
+/* commandes tactiles */
+#stick { background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.04), rgba(255,255,255,.1)) !important; border:1.5px solid rgba(255,255,255,.22) !important; box-shadow:inset 0 2px 14px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.25); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+#knob { background:radial-gradient(circle at 35% 30%, #fff, #c9d0dc 55%, #8b95a6) !important; box-shadow:0 6px 18px rgba(0,0,0,.5), 0 0 0 5px rgba(255,255,255,.08) !important; }
+.pedal { font:900 11px/1.15 var(--ui) !important; letter-spacing:1.8px !important; text-align:center; color:rgba(255,255,255,.9); background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05)) !important; border:1.5px solid rgba(255,255,255,.22) !important; box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 10px 26px rgba(0,0,0,.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); transition:transform .08s, background .12s, box-shadow .12s; }
+#gas { border-radius:22px !important; background:repeating-linear-gradient(180deg, rgba(255,255,255,.1) 0 6px, rgba(255,255,255,.03) 6px 12px), linear-gradient(180deg, rgba(48,209,88,.25), rgba(48,209,88,.08)) !important; border-color:rgba(48,209,88,.55) !important; }
+#brk { border-radius:20px !important; background:repeating-linear-gradient(180deg, rgba(255,255,255,.1) 0 6px, rgba(255,255,255,.03) 6px 12px), linear-gradient(180deg, rgba(255,69,58,.25), rgba(255,69,58,.08)) !important; border-color:rgba(255,69,58,.55) !important; }
+#hb { border-color:rgba(255,181,71,.55) !important; font-size:9px !important; }
+.pedal.on { transform:scale(.93); box-shadow:0 0 0 3px rgba(255,255,255,.12), 0 0 28px rgba(255,181,71,.5) !important; }
+#gas.on { background:linear-gradient(180deg, rgba(48,209,88,.7), rgba(48,209,88,.35)) !important; }
+#brk.on { background:linear-gradient(180deg, rgba(255,69,58,.7), rgba(255,69,58,.35)) !important; }
+#hb.on { background:linear-gradient(180deg, rgba(255,181,71,.75), rgba(255,140,28,.4)) !important; color:#1a1206; }
+
+/* boutons ronds des côtés (modes, équipes, éditeur routier) */
+#mswitch button, #eqBtn, #rdBtn { background:var(--glass) !important; backdrop-filter:blur(18px) saturate(1.5) !important; -webkit-backdrop-filter:blur(18px) saturate(1.5) !important; border:1.5px solid var(--line) !important; box-shadow:0 10px 26px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12) !important; transition:transform .12s; }
+#mswitch button:active, #eqBtn:active, #rdBtn:active { transform:scale(.92) !important; }
+#mswitch button.cur { border-color:var(--acc) !important; box-shadow:0 0 0 3px rgba(255,181,71,.18), 0 10px 26px rgba(0,0,0,.4) !important; }
+
+/* écran de chargement */
+#loader { background:radial-gradient(1200px 600px at 50% 30%, #1d2533, #07090d 70%) !important; }
+#loader h1 { font:900 italic 46px/1 var(--ui) !important; letter-spacing:4px !important; text-shadow:0 8px 30px rgba(0,0,0,.6); }
+#loader h1 span { background:linear-gradient(180deg,#ffd27a,#ff9f1c); -webkit-background-clip:text; background-clip:text; color:transparent !important; }
+#loader p { font:700 12px/1.4 var(--ui) !important; letter-spacing:4px !important; text-transform:uppercase; }
+#bar { height:6px !important; border-radius:3px !important; background:rgba(255,255,255,.1) !important; box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
+#bar i { background:linear-gradient(90deg,#ff9f1c,#ffd27a) !important; box-shadow:0 0 14px rgba(255,181,71,.7); }
+#go { font:900 italic 18px/1 var(--ui) !important; letter-spacing:4px !important; padding:18px 54px !important; background:linear-gradient(180deg,#ffc56b,#ff9f1c) !important; color:#1a1206 !important; box-shadow:0 10px 30px rgba(255,159,28,.45), inset 0 1px 0 rgba(255,255,255,.5); position:relative; overflow:hidden; }
+#go::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent); animation:uiShine 2.4s infinite; }
+@keyframes uiShine { 0% { left:-60%; } 60%,100% { left:130%; } }
+#help, #ltxt { font-family:var(--ui) !important; }
+#credits { font-family:var(--ui); font-size:9px !important; opacity:.4 !important; }

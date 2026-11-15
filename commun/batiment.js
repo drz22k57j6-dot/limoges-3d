@@ -74,6 +74,7 @@
   // appui long générique : pick(e) renvoie un objet « cible » (ou null) ; resolve(cible) -> Promise<feature>
   function longPress(el, pick, resolve, opts = {}) {
     const HOLD = opts.hold || 3000; let press = null;
+    Object.assign(el.style, { webkitTouchCallout: 'none', webkitUserSelect: 'none', userSelect: 'none' });
     el.addEventListener('pointerdown', e => {
       if (e.button > 0) return;
       const target = pick(e); if (!target) return;
