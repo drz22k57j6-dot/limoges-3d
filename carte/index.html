@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carte des bâtiments — Limoges</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; height:100%; font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#111; color:#eee; }
+#map { position:fixed; inset:0; }
+.leaflet-container { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+#legend { position:fixed; left:10px; top:calc(10px + env(safe-area-inset-top)); z-index:1000; background:rgba(17,20,26,.88); border-radius:12px; padding:8px 10px; font-size:12px; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+#legend div { display:flex; align-items:center; gap:6px; margin:2px 0; } #legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+#legend b { display:block; margin-bottom:4px; font-size:13px; }
+#hint { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(14px + env(safe-area-inset-bottom)); z-index:1000; background:rgba(17,20,26,.88); padding:7px 12px; border-radius:20px; font-size:13px; white-space:nowrap; }
+#ring { position:fixed; z-index:1100; width:64px; height:64px; margin:-32px 0 0 -32px; pointer-events:none; display:none; }
+#card { position:fixed; z-index:1200; left:0; right:0; bottom:0; max-height:72dvh; overflow:auto; background:#161a22; border-radius:18px 18px 0 0; padding:16px 16px calc(18px + env(safe-area-inset-bottom)); transform:translateY(105%); transition:transform .25s; box-shadow:0 -10px 40px #0008; }
+#card.on { transform:none; }
+@media (min-width:800px) { #card { left:auto; right:12px; bottom:12px; top:12px; width:380px; max-height:none; border-radius:18px; transform:translateX(110%); } #card.on { transform:none; } }
+#card h2 { margin:0 0 2px; font-size:20px; } #card .addr { color:#9aa6b8; margin-bottom:10px; }
+#card .type { display:inline-block; padding:3px 10px; border-radius:10px; font-weight:700; color:#111; margin-bottom:10px; }
+.big { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:6px 0 12px; }
+.big div { background:#0e1117; border-radius:12px; padding:9px 8px; } .big small { color:#9aa6b8; font-size:11px; display:block; } .big b { font-size:17px; }
+table { width:100%; border-collapse:collapse; font-size:13px; } td { padding:6px 2px; border-bottom:1px solid #262c38; vertical-align:top; } td:first-child { color:#9aa6b8; width:45%; }
+.src { font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:6px; margin-left:4px; white-space:nowrap; }
+.m { background:#3ecf8e33; color:#3ecf8e; } .e { background:#ffb54733; color:#ffb547; }
+.note { color:#7d889a; font-size:11.5px; margin-top:10px; }
+#close { position:absolute; right:12px; top:10px; background:#ffffff1a; border:0; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="legend"><b>Bâtiments de Limoges</b></div>
+<div id="hint">Zoome, puis reste appuyé 3 s sur un bâtiment</div>
+<svg id="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="rgba(0,0,0,.35)" stroke="#ffffff33" stroke-width="6"/><circle id="arc" cx="32" cy="32" r="26" fill="none" stroke="#ffd60a" stroke-width="6" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/></svg>
+<div id="card"><button id="close">×</button><div id="cardBody"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+{
+// ---------- Hypothèses chiffrées (sources dans le pied de la fiche) ----------
+const PRIX = { appart: 1531, maison: 1864 };   // € / m², médianes des ventes 2025 à Limoges (DVF)
+const LOYER = { appart: 11.41, maison: 10.0 }; // € / m² / mois hors charges
+const LOYER_COMMERCE = 10;                      // € / m² / mois — hypothèse du jeu, pas une donnée
+const PERS_PAR_LOGEMENT = 1.9;                  // hypothèse (taille moyenne des ménages)
+const TYPES = {
+  hab: { n: 'Habitation', c: '#4ea8ff' }, com: { n: 'Commerce / services', c: '#ff9f0a' }, mix: { n: 'Habitation + commerce', c: '#bf5af2' },
+  ind: { n: 'Industrie', c: '#a2845e' }, spo: { n: 'Sport', c: '#30d158' }, rel: { n: 'Culte', c: '#ffd60a' }, agr: { n: 'Agricole', c: '#7a9a3a' },
+  ann: { n: 'Annexe (garage, abri)', c: '#636a76' }, ind0: { n: 'Non précisé', c: '#b8bec8' },
+};
+const $ = id => document.getElementById(id), esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+$('legend').insertAdjacentHTML('beforeend', Object.values(TYPES).map(t => `<div><i style="background:${t.c}"></i>${t.n}</div>`).join(''));
+function typeOf(p) {
+  const u = [p.usage_1, p.usage_2];
+  const res = u.includes('Résidentiel'), com = u.includes('Commercial et services');
+  if (res && com) return 'mix'; if (res) return 'hab'; if (com) return 'com';
+  if (p.usage_1 === 'Indifférencié' && p.nombre_de_logements > 0) return 'hab';
+  return { 'Industriel': 'ind', 'Sportif': 'spo', 'Religieux': 'rel', 'Agricole': 'agr', 'Annexe': 'ann' }[p.usage_1] || 'ind0';
+}
+
+// ---------- carte ----------
+const map = L.map('map', { zoomControl: false, maxZoom: 20, tap: false }).setView([45.8458, 1.2326], 17);
+const wmts = (layer, fmt) => `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=${fmt}`;
+const plan = L.tileLayer(wmts('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png'), { maxNativeZoom: 19, maxZoom: 20, attribution: '© IGN' }).addTo(map);
+const photo = L.tileLayer(wmts('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg'), { maxNativeZoom: 19, maxZoom: 20, attribution: '© IGN' });
+L.control.layers({ 'Plan': plan, 'Photo aérienne': photo }, null, { position: 'topright' }).addTo(map);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+let layer = null, feats = [], tok = 0;
+async function load() {
+  if (map.getZoom() < 16) { if (layer) { map.removeLayer(layer); layer = null; feats = []; } $('hint').textContent = 'Zoome pour voir les bâtiments'; return; }
+  const b = map.getBounds(), t = ++tok;
+  const url = 'https://data.geopf.fr/wfs/ows?' + new URLSearchParams({ SERVICE: 'WFS', VERSION: '2.0.0', REQUEST: 'GetFeature', TYPENAMES: 'BDTOPO_V3:batiment', OUTPUTFORMAT: 'application/json', SRSNAME: 'EPSG:4326', COUNT: '4000',
+    BBOX: `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()},urn:ogc:def:crs:EPSG::4326`,
+    PROPERTYNAME: 'cleabs,usage_1,usage_2,nombre_de_logements,nombre_d_etages,hauteur,date_d_apparition,materiaux_des_murs,materiaux_de_la_toiture,identifiants_rnb,construction_legere,geometrie' });
+  try {
+    const d = await (await fetch(url)).json(); if (t !== tok) return;
+    if (layer) map.removeLayer(layer);
+    feats = d.features;
+    layer = L.geoJSON(d, { interactive: false, style: f => ({ color: '#111', weight: 0.6, fillColor: TYPES[typeOf(f.properties)].c, fillOpacity: 0.85 }) }).addTo(map);
+    $('hint').textContent = 'Reste appuyé 3 s sur un bâtiment';
+  } catch (e) { $('hint').textContent = 'Chargement impossible, réessaie'; }
+}
+map.on('moveend', load); load(); window.__carte = { map, get n() { return feats.length; } };
+
+// ---------- appui long de 3 s ----------
+function inRing(x, y, r) { let ins = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins; } return ins; }
+function featureAt(ll) { for (const f of feats) for (const poly of f.geometry.coordinates) if (inRing(ll.lng, ll.lat, poly[0])) return f; return null; }
+let press = null; const HOLD = 3000, ring = $('ring'), arc = $('arc');
+const el = map.getContainer();
+el.addEventListener('pointerdown', e => {
+  if (e.button > 0 || !feats.length) return;
+  const f = featureAt(map.mouseEventToLatLng(e)); if (!f) return;
+  press = { x: e.clientX, y: e.clientY, t0: performance.now(), f, id: e.pointerId };
+  ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px'; ring.style.display = 'block';
+  const step = () => { if (!press) return; const k = Math.min(1, (performance.now() - press.t0) / HOLD); arc.setAttribute('stroke-dashoffset', 163.4 * (1 - k));
+    if (k >= 1) { const ff = press.f; cancel(); navigator.vibrate?.(30); show(ff); } else requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+});
+const cancel = () => { press = null; ring.style.display = 'none'; arc.setAttribute('stroke-dashoffset', 163.4); };
+el.addEventListener('pointermove', e => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 12) cancel(); });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, cancel);
+el.addEventListener('contextmenu', e => e.preventDefault());
+map.on('movestart zoomstart', cancel);
+
+// ---------- calculs ----------
+function areaM2(f) { // surface au sol (m²) d'un polygone lon/lat
+  const lat0 = f.geometry.coordinates[0][0][0][1] * Math.PI / 180, kx = 111320 * Math.cos(lat0), ky = 110574; let A = 0;
+  for (const poly of f.geometry.coordinates) { const r = poly[0]; let s = 0; for (let i = 0; i < r.length - 1; i++) s += r[i][0] * kx * r[i + 1][1] * ky - r[i + 1][0] * kx * r[i][1] * ky; A += Math.abs(s) / 2; for (const h of poly.slice(1)) { let t = 0; for (let i = 0; i < h.length - 1; i++) t += h[i][0] * kx * h[i + 1][1] * ky - h[i + 1][0] * kx * h[i][1] * ky; A -= Math.abs(t) / 2; } }
+  return A;
+}
+const eur = v => v >= 1e6 ? (v / 1e6).toFixed(2).replace('.', ',') + ' M€' : Math.round(v).toLocaleString('fr-FR') + ' €';
+const M = '<span class="src m">mesuré</span>', E = '<span class="src e">estimé</span>';
+async function show(f) {
+  const p = f.properties, k = typeOf(p), T = TYPES[k], sol = areaM2(f);
+  const etages = p.nombre_d_etages || (p.hauteur ? Math.max(1, Math.round(p.hauteur / 2.9)) : 1);
+  const plancher = sol * etages * 0.8; // surface utile ≈ 80 % de l'emprise × étages
+  const logements = p.nombre_de_logements || 0;
+  const habitable = k === 'mix' ? plancher * 0.75 : (k === 'hab' ? plancher : 0), commerce = k === 'mix' ? plancher * 0.25 : (k === 'com' ? Math.min(plancher, sol) : 0);
+  const appart = logements > 1;
+  const valeur = habitable * (appart ? PRIX.appart : PRIX.maison) + commerce * PRIX.appart;
+  const loyer = habitable * (appart ? LOYER.appart : LOYER.maison) + commerce * LOYER_COMMERCE;
+  const hab = logements ? Math.round(logements * PERS_PAR_LOGEMENT) : (k === 'hab' ? Math.round(habitable / 40) : 0);
+  const c = f.geometry.coordinates[0][0], cx = c.reduce((s, q) => s + q[0], 0) / c.length, cy = c.reduce((s, q) => s + q[1], 0) / c.length;
+  $('cardBody').innerHTML = `<h2>${T.n}</h2><div class="addr" id="addr">Recherche de l'adresse…</div><span class="type" style="background:${T.c}">${esc(p.usage_1)}${p.usage_2 ? ' + ' + esc(p.usage_2) : ''}</span>
+    <div class="big"><div><small>Habitants</small><b>${hab || '—'}</b></div><div><small>Valeur du bien</small><b>${valeur ? eur(valeur) : '—'}</b></div><div><small>Loyers / mois</small><b>${loyer ? eur(loyer) : '—'}</b></div></div>
+    <table>
+      <tr><td>Logements</td><td>${logements || '—'} ${logements ? M : ''}</td></tr>
+      <tr><td>Habitants</td><td>${hab || '—'} ${hab ? E : ''}</td></tr>
+      <tr><td>Hauteur</td><td>${p.hauteur ? p.hauteur.toFixed(1) + ' m ' + M : '—'}</td></tr>
+      <tr><td>Étages</td><td>${etages} ${p.nombre_d_etages ? M : E}</td></tr>
+      <tr><td>Surface au sol</td><td>${Math.round(sol)} m² ${M}</td></tr>
+      <tr><td>Surface de plancher</td><td>≈ ${Math.round(plancher)} m² ${E}</td></tr>
+      <tr><td>Valeur du bien</td><td>${valeur ? eur(valeur) + ' ' + E : '—'}<br><small style="color:#7d889a">${habitable ? `${Math.round(habitable)} m² × ${appart ? PRIX.appart : PRIX.maison} €/m² (${appart ? 'appartements' : 'maison'})` : ''}${commerce ? ` + ${Math.round(commerce)} m² commerce` : ''}</small></td></tr>
+      <tr><td>Loyers mensuels</td><td>${loyer ? eur(loyer) + ' ' + E : '—'}</td></tr>
+      <tr><td>Date d'apparition</td><td>${p.date_d_apparition ? String(p.date_d_apparition).slice(0, 4) + ' ' + M : '—'}</td></tr>
+      <tr id="shops" style="display:none"><td>Commerces</td><td></td></tr>
+      <tr><td>Identifiant</td><td style="font-size:11px">${esc(p.identifiants_rnb || p.cleabs)}</td></tr>
+    </table>
+    <div class="note">Mesuré : données IGN BD TOPO. Estimé : calculé avec les prix de vente médians 2025 à Limoges (DVF : ${PRIX.appart} €/m² appartement, ${PRIX.maison} €/m² maison), un loyer de ${LOYER.appart} €/m² (appartement) et ${LOYER.maison} €/m² (maison), ${PERS_PAR_LOGEMENT} habitant par logement. Loyer commercial : ${LOYER_COMMERCE} €/m², hypothèse de jeu. Ordres de grandeur, pas une estimation immobilière.</div>`;
+  $('card').classList.add('on');
+  fetch(`https://data.geopf.fr/geocodage/reverse?lon=${cx}&lat=${cy}&limit=1`).then(r => r.json()).then(d => { const a = d.features?.[0]?.properties; $('addr').textContent = a ? a.label : 'Adresse inconnue'; }).catch(() => ($('addr').textContent = ''));
+  if (k === 'com' || k === 'mix') {
+    const q = `[out:json][timeout:15];(node["shop"](around:15,${cy},${cx});node["amenity"~"restaurant|cafe|bar|bank|pharmacy|fast_food|bakery"](around:15,${cy},${cx}););out tags 10;`;
+    fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q) }).then(r => r.json()).then(d => {
+      const l = d.elements.map(e => e.tags.name ? `${e.tags.name} (${e.tags.shop || e.tags.amenity})` : (e.tags.shop || e.tags.amenity)).filter(Boolean);
+      if (l.length) { const tr = $('shops'); tr.style.display = ''; tr.lastElementChild.innerHTML = esc(l.join(', ')) + ' <span class="src m">OSM</span>'; }
+    }).catch(() => {});
+  }
+}
+$('close').onclick = () => $('card').classList.remove('on');
+}
+</script>
+</body>
+</html>
