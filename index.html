@@ -888,7 +888,9 @@ $('bFoot').onclick = () => { const F = mode === 'plane' ? { x: PL.x, z: PL.z, h:
 let gameRecorder=null,gameChunks=[],recordStarted=0;
 $('bRec').onclick=()=>{
  if(gameRecorder&&gameRecorder.state!=='inactive'){gameRecorder.stop();return}
+ if(mode!=='plane'){toast('Passe en mode DRONE pour filmer');return}
  try{
+  if(qi!==0){qi=0;applyQuality();toast('Qualité ULTRA activée pour la capture')}
   const canvas=renderer.domElement;
   const stream=canvas.captureStream(60);
   const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
@@ -943,7 +945,7 @@ const core = new THREE.Mesh(new THREE.BoxGeometry(.62,.22,.78),droneMat); core.c
 const topShell = new THREE.Mesh(new THREE.BoxGeometry(.5,.12,.58),new THREE.MeshStandardMaterial({color:0x596879,metalness:.6,roughness:.28}));topShell.position.y=.16;droneBody.add(topShell);
 const rotors=[];
 for(const x of [-1,1])for(const z of [-1,1]){
- const arm=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,Math.hypot(x,z)*1.1,10),armMat);arm.position.set(x*.52,.015,z*.52);arm.rotation.z=Math.atan2(x,z);droneBody.add(arm);
+ const arm=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,Math.hypot(1.02,1.02),10),armMat);arm.position.set(x*.51,.015,z*.51);arm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(x,0,z).normalize());droneBody.add(arm);
  const motor=new THREE.Mesh(new THREE.CylinderGeometry(.16,.18,.13,20),droneMat);motor.position.set(x*1.02,.08,z*1.02);droneBody.add(motor);
  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.08,16),new THREE.MeshStandardMaterial({color:0xbac6d0,metalness:.8,roughness:.2}));hub.position.set(x*1.02,.18,z*1.02);droneBody.add(hub);
  const rotor=new THREE.Group();rotor.position.set(x*1.02,.23,z*1.02);droneBody.add(rotor);
@@ -1005,7 +1007,7 @@ function updatePlaneVisual(dt){
  drone.position.set(PL.x,PL.y+Math.sin(PL.t*2.1)*.025,PL.z);drone.rotation.set(0,PL.yaw,0);
  droneBody.rotation.set(PL.pitch,0,PL.bank,'YXZ');
  for(const r of rotors)r.rotor.rotation.y+=dt*(22+Math.abs(PL.spd)*1.8)*r.dir;
- camGimbal.rotation.x=PL.gimbalPitch;
+ camGimbal.rotation.set(PL.gimbalPitch,0,-PL.bank);drone.updateMatrixWorld(true);
 }
 function updatePlaneCamera(dt,t){
  const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw);
