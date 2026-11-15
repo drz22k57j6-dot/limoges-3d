@@ -6,7 +6,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { createSaltlineRoads } from '../road_saltline.js';
 import { createPlateauTrees } from '../plateau_trees.js';
 
-const V = '?v=22', D = '../data/';
+const _ville = (() => { let v = new URLSearchParams(location.search).get('ville'); try { v = v || localStorage.getItem('ville'); } catch (e) {} return v; })();
+const V = '?v=22', D = _ville === 'paris' ? '../data/paris/' : '../data/';
 const Q = Object.fromEntries(new URLSearchParams(location.search));
 const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder); const tex = new THREE.TextureLoader();
 const bin = async u => { const r = await fetch(D + u + V); if (!r.ok) throw new Error(u); return r.arrayBuffer(); };
