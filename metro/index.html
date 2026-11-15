@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Métro de Paris — à taille réelle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../apied/saltline.css">
+<style>
+  #apStart { position: fixed; inset: 0; z-index: 60; display: none; align-items: flex-end; justify-content: center; padding-bottom: calc(14vh + env(safe-area-inset-bottom)); background: linear-gradient(0deg, rgba(6,8,10,.75), rgba(6,8,10,0) 55%); }
+  #apStart.on { display: flex; }
+  #apStart button { font: 600 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .3em; text-transform: uppercase; color: #0b0d0f; background: #ffb347; border: 0; min-height: 54px; padding: 2px 40px 0 44px; cursor: pointer; }
+  #apCar { display: none; position: fixed; z-index: 40; left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); height: 42px; padding: 0 14px; display: flex; align-items: center; gap: 8px;
+    font: 600 12px/1 'Barlow Condensed', sans-serif; letter-spacing: .22em; text-transform: uppercase; color: #e8e4da; background: rgba(11,13,15,.55); border: 1px solid rgba(232,228,218,.42); cursor: pointer; }
+  #apSet { position: fixed; z-index: 40; left: calc(12px + env(safe-area-inset-left)); bottom: calc(62px + env(safe-area-inset-bottom)); width: 42px; height: 42px; font-size: 20px; color: #e8e4da; background: rgba(11,13,15,.55); border: 1px solid rgba(232,228,218,.42); cursor: pointer; }
+  #apPanel { position: fixed; z-index: 70; left: calc(12px + env(safe-area-inset-left)); bottom: calc(112px + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 24px)); padding: 14px 16px; background: rgba(11,13,15,.92); border: 1px solid rgba(232,228,218,.2); border-top: 3px solid #ffb347; color: #e8e4da; font: 600 13px 'Barlow Condensed', sans-serif; letter-spacing: .16em; text-transform: uppercase; display: none; }
+  #apPanel.on { display: block; }
+  #apPanel label { display: block; margin: 10px 0 6px; } #apPanel input { width: 100%; accent-color: #ffb347; }
+  #apPanel .seg { display: flex; } #apPanel .seg button { flex: 1; min-height: 36px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: rgba(232,228,218,.64); background: transparent; border: 1px solid rgba(232,228,218,.35); margin-left: -1px; }
+  #apPanel .seg button.on { background: #e8e4da; color: #0b0d0f; }
+  .h-obj { display: none !important; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "../apied/three-shim.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="view" tabindex="0"></canvas>
+  <div id="ui"></div>
+  <div id="boot">
+    <div class="boot-mark">MÉTRO</div>
+    <div class="boot-sub" id="boot-msg">Paris · réseau réel</div>
+    <div class="boot-bar"><i id="boot-fill"></i></div>
+  </div>
+</div>
+<div id="apStart"><button id="apGo">Entrer dans le métro</button></div>
+<button id="apCar" aria-label="Retour en voiture">🚗 Limoges</button>
+
+<script src="physique.js"></script>
+<script src="../apied/saltline.js"></script>
+<script src="../switcher.js"></script>
+<script type="module" src="metro.js"></script>
+<script>
+  // départ (le son ne peut démarrer qu'après un toucher sur iPhone) et retour à la voiture à l'endroit où l'on est
+  (function () {
+    const st = document.getElementById('apStart');
+    const wait = setInterval(() => { if (window.__ready) { clearInterval(wait); st.classList.add('on'); } }, 200);
+    document.getElementById('apGo').onclick = () => {
+      st.classList.remove('on'); const G = window.__G;
+      try { G.audio && G.audio.resume && G.audio.resume(); } catch (e) {}
+      try { G.input && G.input.requestLock && G.input.requestLock(); } catch (e) {}
+      try { window.__metroAudio && window.__metroAudio(); } catch (e) {}
+    };
+    document.getElementById('apCar').onclick = () => {
+      location.href = '../';
+    };
+  })();
+</script>
+</body>
+</html>
