@@ -38,7 +38,7 @@ window.__LIMOGES_LEVEL = async function (G) {
       const m = o.material; BMAT[m.name] = m; if (m.map) { m.map.colorSpace = THREE.SRGBColorSpace; m.map.anisotropy = 8; }
       const PBR = { toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit', facade_barre: 'enduit', facade_tour: 'enduit', pignon: 'enduit' }, tn = PBR[m.name];
       if (tn && !m.userData.pbr) { m.userData.pbr = 1; const ref = m.map, fix = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (ref) { t.offset.copy(ref.offset); t.repeat.copy(ref.repeat); t.rotation = ref.rotation; t.center.copy(ref.center); } return t; };
-        m.normalMap = fix(tex.load(D + 'tex/' + tn + '_n.jpg' + V)); m.normalScale.set(0.9, 0.9); m.roughnessMap = fix(tex.load(D + 'tex/' + tn + '_r.jpg' + V)); m.needsUpdate = true; }
+        m.normalMap = fix(tex.load('../data/tex/' + tn + '_n.jpg' + V)); m.normalScale.set(0.9, 0.9); m.roughnessMap = fix(tex.load('../data/tex/' + tn + '_r.jpg' + V)); m.needsUpdate = true; }
       if (o.material.name === 'eau') { o.material.color.set(0x2c4a46); o.material.roughness = 0.06; o.material.map = null; o.material.needsUpdate = true; }
     });
     root.add(gO.scene);
