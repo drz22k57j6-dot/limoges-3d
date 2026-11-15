@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Territoire — Limoges 3D</title>
+<style>
+:root { --bg:#0f1620; --pan:rgba(15,22,32,.82); --acc:#ffd60a; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+html,body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:#fff; font:15px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; touch-action:none; }
+#c { position:fixed; inset:0; width:100%; height:100%; display:block; }
+#lobby { position:fixed; inset:0; z-index:10; display:grid; place-items:center; background:radial-gradient(circle at 30% 20%,#23314a,#0b1018); padding:20px; overflow:auto; }
+.card { width:min(420px,100%); background:#141c28; border:1px solid #2a3547; border-radius:20px; padding:22px; box-shadow:0 20px 60px #0008; }
+h1 { margin:0 0 4px; font-size:32px; letter-spacing:1px; } h1 b { color:var(--acc); }
+.sub { color:#9fb0c8; margin:0 0 18px; }
+label { display:block; font-size:13px; color:#9fb0c8; margin:12px 0 5px; }
+input, select { width:100%; font-size:16px; padding:12px; border-radius:12px; border:1px solid #2f3b50; background:#0c121b; color:#fff; user-select:text; -webkit-user-select:text; }
+#teamColor { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; } #teamColor button { width:34px; height:34px; border-radius:50%; border:3px solid transparent; cursor:pointer; } #teamColor button.on { border-color:#fff; }
+#play { width:100%; margin-top:18px; padding:15px; font-size:18px; font-weight:800; border:0; border-radius:14px; background:var(--acc); color:#111; cursor:pointer; }
+.rules { color:#9fb0c8; font-size:13px; margin-top:14px; } .rules b { color:#fff; }
+#hud { display:none; }
+#board { position:fixed; left:calc(10px + env(safe-area-inset-left)); top:calc(10px + env(safe-area-inset-top)); z-index:5; background:var(--pan); border-radius:14px; padding:8px 10px; min-width:190px; font-size:13px; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+#board .row { display:grid; grid-template-columns:12px 1fr auto auto; gap:6px; align-items:center; padding:2px 0; } #board .row.me { font-weight:800; } #board i { width:12px; height:12px; border-radius:3px; } #board small { color:#9fb0c8; }
+#mini { position:fixed; right:calc(10px + env(safe-area-inset-right)); top:calc(10px + env(safe-area-inset-top)); z-index:5; width:150px; height:150px; border-radius:14px; border:2px solid #fff3; }
+#top { position:fixed; left:50%; transform:translateX(-50%); top:calc(10px + env(safe-area-inset-top)); z-index:5; display:flex; gap:8px; align-items:center; background:var(--pan); border-radius:12px; padding:6px 10px; font-size:13px; }
+#top button { background:#ffffff1f; border:0; color:#fff; border-radius:8px; padding:5px 9px; font:inherit; cursor:pointer; }
+#flash { position:fixed; left:50%; top:30%; transform:translateX(-50%); z-index:6; padding:10px 18px; border-radius:14px; font-size:20px; font-weight:800; opacity:0; transition:opacity .4s; pointer-events:none; text-align:center; }
+#spd { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(150px + env(safe-area-inset-bottom)); z-index:5; font-size:22px; font-weight:800; text-shadow:0 2px 6px #000; }
+.tb { position:fixed; bottom:calc(18px + env(safe-area-inset-bottom)); z-index:5; width:96px; height:96px; border-radius:50%; background:#ffffff26; border:2px solid #ffffff55; display:grid; place-items:center; font-size:38px; touch-action:none; }
+#tL { left:calc(18px + env(safe-area-inset-left)); } #tR { left:calc(128px + env(safe-area-inset-left)); } #tB { right:calc(18px + env(safe-area-inset-right)); width:84px; height:84px; font-size:16px; font-weight:800; }
+#status { position:fixed; left:50%; bottom:40%; transform:translateX(-50%); z-index:20; color:#fff; font-size:15px; background:#000a; padding:6px 12px; border-radius:10px; pointer-events:none; } #status:empty { display:none; }
+@media (hover:hover) and (pointer:fine) { .tb { opacity:.35; } }
+</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="lobby"><div class="card">
+  <h1>TERRI<b>TOIRE</b></h1>
+  <p class="sub">Conquiers Limoges, rue par rue, avec ton équipe.</p>
+  <label>Ton pseudo</label><input id="pseudo" maxlength="14" placeholder="Sid" autocomplete="off">
+  <label>Ton équipe (crée-la ou rejoins-la avec le même nom)</label><input id="teamName" maxlength="18" placeholder="Les Aurenciens" autocomplete="off">
+  <label>Couleur de l'équipe (si tu la crées)</label><div id="teamColor"></div>
+  <label>Partie</label><input id="room" maxlength="24" value="limoges" autocomplete="off">
+  <label>Mode</label><select id="mode"><option value="multi">Multijoueur en ligne</option><option value="solo">Solo contre des robots</option></select>
+  <button id="play">JOUER</button>
+  <div class="rules"><b>Règles :</b> roule hors de ton territoire, ta trace te suit. Reviens chez ton équipe : tout ce que ta boucle entoure devient à vous, bâtiments compris. Si un rival roule sur ta trace avant que tu rentres, tu perds ta trace. Équipes illimitées, autant de joueurs que vous voulez par équipe.</div>
+</div></div>
+<div id="hud">
+  <div id="board"></div><canvas id="mini" width="300" height="300"></canvas>
+  <div id="top">Partie <b id="roomName"></b> · <span id="peers">0</span> connecté(s) <button id="share">Inviter</button></div>
+  <div id="flash"></div><div id="spd"></div>
+  <div class="tb" id="tL">◀</div><div class="tb" id="tR">▶</div><div class="tb" id="tB">FREIN</div>
+</div>
+<div id="status"></div>
+<script type="module" src="jeu.js"></script>
+</body>
+</html>
