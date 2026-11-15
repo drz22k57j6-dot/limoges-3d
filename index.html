@@ -231,7 +231,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=22';
+const V = '?v=23';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -543,6 +543,7 @@ function setupCity(gT, gO) {
         m.envMapIntensity = m.name === 'bitume' ? 0.6 : 1; m.needsUpdate = true;
       }
       if (/facade|mur/.test(m.name)) { m.color.multiplyScalar(0.95); m.envMapIntensity = 1; }
+      BMAT[m.name] = m;
       if (m.name === 'eau') {
         m.normalMap = waterNormal; waterNormal.offset.copy(m.map.offset); waterNormal.repeat.copy(m.map.repeat);
         m.map = null; m.color.set(0x2c4a46); m.roughness = 0.06; m.metalness = 0.0; m.envMapIntensity = 14; m.normalScale.set(0.35, 0.35);
@@ -1040,6 +1041,29 @@ const ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IlVEOVV6R05C
 const ORIGIN = { lat: 45.84646501496012, lon: 1.233611398108212, ellHeight: 0 }; // 31 allée Le Gréco
 let tiles = null, tilesRoot = null, cityMode = 'ign', tilesCalib = { t: 0, n: 0 };
 const raycaster = new THREE.Raycaster();
+// ---------- buildings streamed as 3D Tiles (data/tuiles, outils/tuiles.py): detailed 250 m tiles near the camera, simple 1 km tiles far away ----------
+async function startCityTiles() {
+  try {
+    const [{ TilesRenderer }, P] = await Promise.all([
+      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),
+      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
+    const t = new TilesRenderer('data/tuiles/tileset.json' + V);
+    t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
+    t.errorTarget = [6, 8, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
+    const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 });
+    t.addEventListener('load-model', ({ scene: sc }) => {
+      sc.traverse(o => {
+        if (!o.isMesh) return;
+        const n = o.material.name, m = n === 'lointain' ? far : BMAT[n];
+        if (m) { o.material.dispose(); o.material = m; }
+        let p = o; while (p && !p.userData.ids) p = p.parent; if (p) o.userData.ids = p.userData.ids;
+        o.castShadow = o.receiveShadow = true;
+      });
+    });
+    t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
+    scene.add(t.group); cityTiles = t; window.__cityTiles = t;
+  } catch (e) { console.warn('tuiles ville', e); }
+}
 async function startGoogleCity() {
   try {
     const [{ TilesRenderer }, P] = await Promise.all([
@@ -1105,6 +1129,7 @@ const carBlob = (() => {
 })();
 car.add(carBlob);
 let terrainRoot = null;
+const BMAT = {}; let cityTiles = null;
 let grass = null; const grassP = new THREE.Vector3();
 
 // ---------------- main ----------------
@@ -1143,6 +1168,7 @@ async function main() {
     $('go').style.display = 'block';
     $('go').onclick = () => { startAudio(); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
     if (/autostart/.test(location.hash)) $('go').click();
+    await startCityTiles();
     renderer.setAnimationLoop(loop);
     startGoogleCity();
   } catch (e) { console.error(e); $('ltxt').textContent = 'Erreur de chargement : ' + e.message; }
@@ -1167,6 +1193,7 @@ function loop(now) {
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
   updateTrees(dt, camera.position.x, camera.position.z, false); // the same 3D trees in both cities
   if (grass) { grassP.set(F.x, F.y, F.z); grass.update(dt, grassP); }
+  if (cityTiles) { cityTiles.group.visible = cityMode !== 'google'; if (cityTiles.group.visible) { camera.updateMatrixWorld(); cityTiles.setResolutionFromRenderer(camera, renderer); cityTiles.update(); } }
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : S.vf) * 3.6);

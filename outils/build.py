@@ -1,4 +1,4 @@
-import json, struct, io, math, sys, random
+import json, struct, io, math, sys, random, os
 import numpy as np, tifffile
 from PIL import Image, ImageDraw
 from shapely.geometry import shape, Polygon, MultiPolygon, LineString
@@ -237,17 +237,35 @@ M_ROOF_T = G.material('toit_tuiles', tex=ftex('tuiles'), rough=0.75); M_ROOF_S =
 import os
 FAC = json.load(open(D+'/facades.json')) if os.path.exists(D+'/facades.json') else {}
 # buildings checked against reference photos supplied by the user
+# buildings reconstructed in detail by the Building Appearance Engine: removed from the generic mesh only (rollback = remove from the list)
+_BI = os.environ.get('BAE_INDEX', '')
+DETAIL = set(json.load(open(_BI))['batiments']) if _BI and os.path.exists(_BI) else set()
+DETAIL_DONE = []
 STYLE = {'BATIMENT0000000224596718': ('barre', (212, 182, 162), 'référence photo utilisateur (All. Le Gréco)'),
          'BATIMENT0000000224596725': ('tour', (198, 56, 50), 'référence photo utilisateur (All. Émile Kahn)')}
 INFO = []
 
 # ---------- buildings ----------
 B = json.load(open(f"{D}/bat.json"))['features']
-CH = 1000.0
-ACC = {}
-CUR = [None]
-def push(k, p, uv, c, idx):
-    a = ACC.setdefault((CUR[0], k), {'p': [], 'uv': [], 'c': [], 'i': [], 'n': 0}); a['p'].append(p); a['uv'].append(uv); a['c'].append(c); a['i'].append(idx+a['n']); a['n'] += len(p)
+TILES = os.environ.get('TILES_OUT', '')          # 3D Tiles export of the buildings (data/tuiles)
+CH = 250.0 if TILES else 1000.0
+ACC = {}; ACC1 = {}
+CUR = [None]; FID = [0]; BIDS = []
+def push(k, p, uv, c, idx, acc=None, cell=None):
+    a = (acc if acc is not None else ACC).setdefault((cell or CUR[0], k), {'p': [], 'uv': [], 'c': [], 'i': [], 'f': [], 'n': 0}); a['p'].append(p); a['uv'].append(uv); a['c'].append(c); a['i'].append(idx+a['n']); a['f'].append(np.full(len(p), FID[0], np.uint32)); a['n'] += len(p)
+def lod1(poly, zb, zt, col, rcol):
+    # far version: simplified prism, vertex colours only
+    q = poly.simplify(1.5)
+    if q.is_empty or q.geom_type != 'Polygon': q = poly
+    q = orient(q, 1.0); ex = np.asarray(q.exterior.coords)[:, :2]; n = len(ex)
+    cell = (int((q.centroid.x-XMIN)//1000), int((q.centroid.y-(Y0-R))//1000))
+    pos = np.vstack([L(ex[:, 0], ex[:, 1], np.full(n, zb)), L(ex[:, 0], ex[:, 1], np.full(n, zt))]); e = np.arange(n-1)
+    push('lod1', pos, np.zeros((2*n, 2)), np.tile(col, (2*n, 1)), np.stack([e, e+1, n+e+1, e, n+e+1, n+e], -1).ravel(), ACC1, cell)
+    V = ex[:-1]; tri = np.asarray(earcut.triangulate_float64(V, np.array([len(V)], np.uint32))).reshape(-1, 3)
+    if len(tri):
+        a_, b_, c_ = V[tri[:, 0]], V[tri[:, 1]], V[tri[:, 2]]
+        cr = (b_[:, 0]-a_[:, 0])*(c_[:, 1]-a_[:, 1])-(b_[:, 1]-a_[:, 1])*(c_[:, 0]-a_[:, 0]); tri[cr < 0] = tri[cr < 0][:, [0, 2, 1]]
+        push('lod1', L(V[:, 0], V[:, 1], np.full(len(V), zt)), np.zeros((len(V), 2)), np.tile(rcol, (len(V), 1)), tri.ravel(), ACC1, cell)
 
 def walls(k, ring_xy, zb, zt, ground, col, ubay=3.0, u0=0.0):
     # ring closed (first==last), zt per vertex
@@ -292,6 +310,8 @@ for f in B:
         usage = p.get('usage_1') or 'Indifférencié'
         bid = p.get('cleabs')
         sty = STYLE.get(bid)
+        if bid in DETAIL: DETAIL_DONE.append(bid); continue
+        FID[0] = len(BIDS); BIDS.append(bid)   # drawn by the Building Appearance Engine (data/batiments_detail), collision kept
         if sty:
             tint = np.array(sty[1], float); src = sty[2]
         elif bid in FAC:
@@ -349,10 +369,17 @@ for f in B:
                 ri = np.asarray(r.coords); walls(k, ri, zb, np.full(len(ri), zt), ground, col)
             # parapet look: roof slightly darker grey mixed with ortho
             roof_flat(poly, zt, rcol); INFO[-1]['toit'] = 'plat'
+        if TILES: lod1(poly, zb, zt, col, rcol)
         nb += 1
 print('buildings', nb, 'gables', gables)
 json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
 
+BMATS = (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F))
+if TILES:
+    exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tuiles.py')).read())
+    ACC = {}
+    # material holders: the game takes the building materials (with their textures) from objets.glb by name
+    G.node('Materiaux_batiments', [G.prim(np.zeros((3, 3)), np.array([0, 1, 2]), m, uv=np.zeros((3, 2)), col=np.full((3, 4), 255)) for k, m in BMATS])
 for cell in sorted(set(c for c, k in ACC)):
     prims_b = []
     for k, m in (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F)):

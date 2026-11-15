@@ -8,6 +8,7 @@ const BUILDING_MAT = /facade|mur|pignon|toit/;  // matériaux des bâtiments du 
 const ready = () => new Promise(r => { const t = setInterval(() => { if (window.__dbg && window.BAT && window.EQ && buildings().length) { clearInterval(t); r(); } }, 400); });
 let cache = null;
 function buildings() {
+  if (window.__cityTiles) { const a = []; window.__dbg?.scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh && o.visible !== false && o.material && BUILDING_MAT.test(o.material.name || '')) a.push(o); }); return a; } // streamed tiles: always fresh
   if (cache && cache.length) return cache;
   const a = []; window.__dbg?.scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh && o.material && BUILDING_MAT.test(o.material.name || '')) a.push(o); });
   return (cache = a);
@@ -28,8 +29,12 @@ BAT.longPress(canvas, e => {
   ray.setFromCamera(ndc, camera); const hit = ray.intersectObjects(buildings(), false)[0];
   if (!hit) return null;
   const p = hit.point.clone().addScaledVector(ray.ray.direction, 0.6); // un peu à l'intérieur du mur
-  return toLonLat(p.x, p.z);
-}, ([lon, lat]) => BAT.featureAt(lon, lat, 3), { onMiss: () => {} });
+  const ll = toLonLat(p.x, p.z);
+  // 3D tiles: every vertex carries the building number -> exact IGN identifier, no guessing from the position
+  const bid = hit.object.geometry.getAttribute('_batchid'), ids = hit.object.userData.ids;
+  if (bid && ids && hit.face) { const id = ids[bid.getX(hit.face.a)]; if (id) return { id, ll }; }
+  return { ll };
+}, r => r.id ? BAT.featureById(r.id).then(f => f || BAT.featureAt(r.ll[0], r.ll[1], 3)).catch(() => BAT.featureAt(r.ll[0], r.ll[1], 3)) : BAT.featureAt(r.ll[0], r.ll[1], 3), { onMiss: () => {} });
 
 // ---------- QG des équipes en 3D ----------
 const hqGroup = new THREE.Group(); hqGroup.name = 'QG_equipes'; scene.add(hqGroup);
