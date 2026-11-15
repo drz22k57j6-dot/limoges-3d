@@ -1,1 +1,21 @@
-{"equipes": []}
+{
+ "equipes": [
+  {
+   "id": "2b88846b-ab5b-4665-b51a-50dd3efaeb73",
+   "nom": "Zup",
+   "couleur": "#5e5ce6",
+   "embleme": "☠️",
+   "devise": "Zip",
+   "description": "",
+   "qg": {
+    "id": "SHM7J4YJCV3N",
+    "lat": 45.844629686153844,
+    "lon": 1.2335086576923078,
+    "adresse": "18 rue Olivier de Serres 87100 Limoges"
+   },
+   "auteur": "drz22k57j6-dot",
+   "maj": "2026-11-15T01:00:28.008Z",
+   "cree": "2026-11-15T01:00:28.008Z"
+  }
+ ]
+}
