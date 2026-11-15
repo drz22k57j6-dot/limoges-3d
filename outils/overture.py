@@ -7,7 +7,14 @@ typ = sys.argv[1]; theme = sys.argv[2]; out = sys.argv[3]
 lst = urllib.request.urlopen(f'{BASE}/?list-type=2&prefix={REL}/theme={theme}/type={typ}/', timeout=60).read().decode()
 keys = re.findall(r'<Key>([^<]+)</Key>', lst)
 print(len(keys), 'files', flush=True)
-X0, Y0, X1, Y1 = 1.1945, 45.8195, 1.2727, 45.8735
+import os
+if os.environ.get('CITY_X0'):
+    from pyproj import Transformer
+    _t = Transformer.from_crs(2154, 4326, always_xy=True); _cx, _cy = float(os.environ['CITY_X0']), float(os.environ['CITY_Y0'])
+    _a = _t.transform(_cx - 3100, _cy - 3100); _b = _t.transform(_cx + 3100, _cy + 3100)
+    X0, Y0, X1, Y1 = _a[0], _a[1], _b[0], _b[1]
+else:
+    X0, Y0, X1, Y1 = 1.1945, 45.8195, 1.2727, 45.8735
 fs = fsspec.filesystem('https')
 def scan(k):
     f = pq.ParquetFile(fs.open(f'{BASE}/{k}', block_size=2**20))

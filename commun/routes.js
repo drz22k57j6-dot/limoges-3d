@@ -12,9 +12,9 @@ const $ = id => document.getElementById(id);
 
 // ---------------------------------------------------------------- données
 const [axBuf, graph, NAMES] = await Promise.all([
-  fetch('data/routes_axes.wasm' + V).then(r => r.arrayBuffer()),
-  fetch('data/graphe_routier.json' + V).then(r => r.json()).catch(() => ({ nodes: [], edges: [] })),
-  fetch('data/routes_noms.json' + V).then(r => r.json()).catch(() => [])]);
+  fetch((window.CITY ? CITY.data : 'data/') + 'routes_axes.wasm' + V).then(r => r.arrayBuffer()),
+  fetch((window.CITY ? CITY.data : 'data/') + 'graphe_routier.json' + V).then(r => r.json()).catch(() => ({ nodes: [], edges: [] })),
+  fetch((window.CITY ? CITY.data : 'data/') + 'routes_noms.json' + V).then(r => r.json()).catch(() => [])]);
 const ROADS = [];
 {
   const dv = new DataView(axBuf); const n = dv.getUint32(4, true); let o = 8;
@@ -822,7 +822,8 @@ function tap(x, y) {
 
 // ---------------------------------------------------------------- modifications officielles
 async function loadOfficial() {
-  for (const u of [`https://raw.githubusercontent.com/${REPO}/main/data/routes_modifs.json?t=${Date.now()}`, 'data/routes_modifs.json' + V]) {
+  const _cd = window.CITY ? CITY.data : 'data/';
+  for (const u of [`https://raw.githubusercontent.com/${REPO}/main/${_cd}routes_modifs.json?t=${Date.now()}`, _cd + 'routes_modifs.json' + V]) {
     try { const r = await fetch(u); if (r.ok) { OFF = Object.assign(empty(), await r.json()); break; } } catch (e) {}
   }
   // une proposition locale déjà validée (même id / même valeur) n'est plus « proposée »

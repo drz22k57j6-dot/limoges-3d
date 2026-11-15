@@ -6,7 +6,8 @@ from shapely.geometry.polygon import orient
 import mapbox_earcut as earcut
 
 D = sys.argv[1]; OUTD = sys.argv[2]
-X0, Y0, R = 562924.0, 6528957.0, 3000.0
+import os as _o
+X0, Y0, R = float(_o.environ.get('CITY_X0', 562924.0)), float(_o.environ.get('CITY_Y0', 6528957.0)), 3000.0
 random.seed(1); rng = np.random.default_rng(1)
 
 # ---------- rasters (2 m) ----------
@@ -227,6 +228,25 @@ def pignon():
     for y in (0, 128): d.line([0, y, 256, y], fill=(205, 205, 205), width=3)
     d.line([128, 0, 128, 256], fill=(222, 222, 222), width=2)
     return im
+def facade_haussmann():
+    # Paris: 4 bays (3 m) x 1 floor of a Haussmann-style stone facade: tall French windows with cream frames, wrought-iron railings,
+    # stone joints. Alpha = stone (takes the building colour). Generic style, not a survey of each building.
+    W, H = 1024, 256
+    im = Image.new('RGBA', (W, H), (255, 255, 255, 255)); d = ImageDraw.Draw(im)
+    for y in (64, 128, 192): d.line([0, y, W, y], fill=(232, 232, 232, 255), width=2)           # stone courses
+    for b in range(4):
+        x0 = b*256
+        d.rectangle([x0+78, 22, x0+178, 238], fill=(236, 230, 214, 0))                         # moulded frame
+        d.rectangle([x0+88, 30, x0+168, 236], fill=(70, 78, 86, 0))                            # glass
+        d.line([x0+128, 30, x0+128, 236], fill=(236, 230, 214, 0), width=5)
+        for yy in (95, 160): d.line([x0+88, yy, x0+168, yy], fill=(236, 230, 214, 0), width=4)
+        d.line([x0+96, 40, x0+120, 220], fill=(110, 120, 130, 0), width=6)                    # sky reflection
+        d.rectangle([x0+72, 12, x0+184, 22], fill=(244, 240, 228, 255))                       # cornice over the window
+        d.rectangle([x0+80, 200, x0+176, 204], fill=(28, 28, 30, 0))                          # railing bar
+        for xx in range(x0+84, x0+176, 9): d.line([xx, 204, xx, 238], fill=(28, 28, 30, 0), width=2)
+    d.rectangle([0, 240, W, H], fill=(248, 244, 232, 255))                                   # floor band
+    return im
+if _o.environ.get('CITY_NAME') == 'paris': facade_barre = facade_haussmann
 TEX_RES = G.texture(facade('res')); TEX_COM = G.texture(facade('com'))
 M_BARRE = G.material('facade_barre', tex=G.texture(facade_barre())); M_TOUR = G.material('facade_tour', tex=G.texture(facade_tour())); M_PIGNON = G.material('pignon', tex=G.texture(pignon()))
 M_RES = G.material('facade_logements', tex=TEX_RES); M_COM = G.material('facade_activites', tex=TEX_COM)
@@ -290,6 +310,8 @@ def roof_flat(poly, z, col):
 
 wall_tint = {'Résidentiel': (236, 228, 212), 'Industriel': (200, 200, 196), 'Commercial et services': (225, 222, 215),
              'Religieux': (220, 208, 186), 'Sportif': (215, 215, 210), 'Agricole': (190, 175, 155), 'Annexe': (210, 200, 185)}
+if _o.environ.get('CITY_NAME') == 'paris':   # Paris stone / render when no photo measurement: estimate, flagged as such
+    wall_tint.update({'Résidentiel': (226, 214, 190), 'Indifférencié': (224, 213, 192), 'Commercial et services': (222, 214, 198)})
 nb = 0; gables = 0; FOOT = []
 for f in B:
     p = f['properties']; g = shape(f['geometry'])
@@ -356,12 +378,12 @@ for f in B:
         else:
             if sty and sty[0] == 'tour':
                 walls('tour', ex, zb, np.full(len(ex), zt), ground, col, ubay=15.0)
-            elif (k == 'res' and h >= 12) or (sty and sty[0] == 'barre'):
+            elif (k == 'res' and h >= (8 if _o.environ.get('CITY_NAME') == 'paris' else 12)) or (k == 'com' and h >= 8 and _o.environ.get('CITY_NAME') == 'paris') or (sty and sty[0] == 'barre'):
                 # slab: long walls get the bay facade, short gable ends are plain white
                 for a_, b_ in zip(ex[:-1], ex[1:]):
                     Ls = math.hypot(*(b_-a_))
                     if Ls < 0.5: continue
-                    if Ls < 16: walls('pignon', np.array([a_, b_]), zb, np.full(2, zt), ground, np.array([255, 255, 255, 255], np.uint8), ubay=3.0)
+                    if Ls < (3 if _o.environ.get('CITY_NAME') == 'paris' else 16): walls('pignon', np.array([a_, b_]), zb, np.full(2, zt), ground, np.array([255, 255, 255, 255], np.uint8), ubay=3.0)
                     else: walls('barre', np.array([a_, b_]), zb, np.full(2, zt), ground, col, ubay=12.0)
             else:
                 walls(k, ex, zb, np.full(len(ex), zt), ground, col)
@@ -446,7 +468,7 @@ M_SIDE = G.material('trottoir', tex=ftex('trottoir'), rough=0.9)
 CURB = 0.14
 for l in LINES:
     CL.append((NAMES.setdefault(l['name'], len(NAMES)), l['w'], l['P'], l['z'], l['sw']))
-exec(open('/home/claude/scripts/roads_v3.py').read())
+exec(open(_o.path.join(_o.path.dirname(_o.path.abspath(__file__)), 'roads_v3.py')).read())
 # road axes v2: x, z, surface height, sidewalk widths left/right per vertex
 rb = bytearray(struct.pack('<II', 0x52445632, len(CL)))
 for nid, w, P, zs, sw in CL:

@@ -7,7 +7,8 @@ from PIL import Image, ImageDraw, ImageFilter
 from shapely.geometry import shape
 Image.MAX_IMAGE_PIXELS = None
 D, CH, OUT = sys.argv[1:4]
-X0, Y0, R = 562924.0, 6528957.0, 3000.0
+import os as _o
+X0, Y0, R = float(_o.environ.get('CITY_X0', 562924.0)), float(_o.environ.get('CITY_Y0', 6528957.0)), 3000.0
 XMIN, YMAX, PX = X0 - R, Y0 + R, 2.0
 N = int(2 * R / PX)                                  # 3000
 # ortho mosaic averaged to 2 m

@@ -3,7 +3,7 @@
 // - QG des équipes visibles : bâtiment enveloppé à la couleur de l'équipe, colonne de lumière, emblème et nom.
 import * as THREE from 'three';
 
-const X0 = 562924, Y0 = 6528957;               // origine du jeu (Lambert-93)
+const X0 = window.CITY ? CITY.X0 : 562924, Y0 = window.CITY ? CITY.Y0 : 6528957; // origine du jeu (Lambert-93) — ville choisie
 const BUILDING_MAT = /facade|mur|pignon|toit/;  // matériaux des bâtiments du jeu
 const ready = () => new Promise(r => { const t = setInterval(() => { if (window.__dbg && window.BAT && window.EQ && buildings().length) { clearInterval(t); r(); } }, 400); });
 let cache = null;

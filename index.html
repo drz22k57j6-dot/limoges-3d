@@ -74,9 +74,23 @@
   <div class="pedal" id="gas">GAZ</div>
 </div>
 <div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0</div>
+<script>
+// ---------- choice of city (?ville=paris), remembered on the phone ----------
+window.CITIES = {
+  limoges: { id: 'limoges', nom: 'LIMOGES', zone: "VAL DE L'AURENCE · 6 × 6 KM", data: 'data/', X0: 562924, Y0: 6528957, lat: 45.84646501496012, lon: 1.233611398108212, geoid: 49.5, depart: '31 allée Le Gréco' },
+  paris: { id: 'paris', nom: 'PARIS', zone: 'CENTRE · LOUVRE – BASTILLE · 6 × 6 KM', data: 'data/paris/', X0: 652087, Y0: 6862038, lat: 48.85659634742922, lon: 2.3469933375556065, geoid: 44.5, depart: 'Hôtel de Ville' } };
+(() => { let v = new URLSearchParams(location.search).get('ville'); try { if (!v) v = localStorage.getItem('ville'); if (v) localStorage.setItem('ville', v); } catch (e) {} window.CITY = window.CITIES[v] || window.CITIES.limoges; })();
+</script>
 <div id="loader">
-  <h1>LIMOGES <span>DRIVE</span></h1>
-  <p>VAL DE L'AURENCE · 6 × 6 KM</p>
+  <h1><span id="cityName">LIMOGES</span> <span>DRIVE</span></h1>
+  <p id="cityZone">VAL DE L'AURENCE · 6 × 6 KM</p>
+  <div id="cityPick" style="margin:6px 0 10px;display:flex;gap:10px;justify-content:center"></div>
+  <script>
+    document.getElementById('cityName').textContent = CITY.nom; document.getElementById('cityZone').textContent = CITY.zone;
+    for (const c of Object.values(CITIES)) { const b = document.createElement('a'); b.textContent = c.nom; b.href = '?ville=' + c.id;
+      b.style.cssText = 'padding:8px 18px;border-radius:20px;font-weight:700;text-decoration:none;letter-spacing:.08em;' + (c.id === CITY.id ? 'background:#fff;color:#111' : 'background:rgba(255,255,255,.15);color:#fff');
+      document.getElementById('cityPick').appendChild(b); }
+  </script>
   <div id="bar"><i></i></div>
   <div id="ltxt">Chargement de la ville…</div>
   <button id="go">ROULER</button>
@@ -232,7 +246,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=23';
+const V = '?v=24';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1199,7 +1213,7 @@ setInterval(() => { const b = $('fCar'); if (b) b.classList.toggle('near', mode 
 // ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
 const TILE_ERR = [2, 5, 12]; // lower = sharper photo city
 const ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IlVEOVV6R05CSWVjTHZrMkUiLCJqdGkiOiIzMzU1MWMwNS1mOTI4LTRkZjItOTFlMy1mNTY0ZDVhMzY1MzMiLCJpZCI6NTQ5MjIzLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3OTQ2NTU2Njd9.36tL2NsuqQYEqQ66NQYshABW3ACnL4ldZv1p0eWrst0';
-const ORIGIN = { lat: 45.84646501496012, lon: 1.233611398108212, ellHeight: 0 }; // 31 allée Le Gréco
+const ORIGIN = { lat: CITY.lat, lon: CITY.lon, ellHeight: 0 }; // city origin (Lambert-93 X0, Y0)
 let tiles = null, tilesRoot = null, cityMode = 'ign', tilesCalib = { t: 0, n: 0 };
 const raycaster = new THREE.Raycaster();
 // ---------- buildings streamed as 3D Tiles (data/tuiles, outils/tuiles.py): detailed 250 m tiles near the camera, simple 1 km tiles far away ----------
@@ -1208,7 +1222,7 @@ async function startCityTiles() {
     const [{ TilesRenderer }, P] = await Promise.all([
       import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),
       import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
-    const t = new TilesRenderer('data/tuiles/tileset.json' + V);
+    const t = new TilesRenderer(CITY.data + 'tuiles/tileset.json' + V);
     t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
     t.errorTarget = [6, 8, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
     const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 });
@@ -1236,7 +1250,7 @@ async function startGoogleCity() {
     tiles.registerPlugin(new P.GLTFExtensionsPlugin({ dracoLoader: draco }));
     tiles.registerPlugin(new P.TileCompressionPlugin());
     // the plugin puts the address at the origin with X west / Z north: we turn it to X east / -Z north
-    tiles.registerPlugin(new P.ReorientationPlugin({ lat: ORIGIN.lat * Math.PI / 180, lon: ORIGIN.lon * Math.PI / 180, height: H0 + 49.5, recenter: true }));
+    tiles.registerPlugin(new P.ReorientationPlugin({ lat: ORIGIN.lat * Math.PI / 180, lon: ORIGIN.lon * Math.PI / 180, height: H0 + CITY.geoid, recenter: true }));
     tiles.errorTarget = TILE_ERR[qi];
     tiles.addEventListener('load-model', ({ scene: sc }) => {
       sc.traverse(o => {
@@ -1298,20 +1312,20 @@ let lastStreet = '', streetT = 0;
 async function main() {
   try {
     const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, signs, names, pontsBuf, kerbBuf] = await Promise.all([
-      loadGLB('data/terrain.wasm', 't'), loadGLB('data/objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
-      loadBin('data/relief.wasm', 'r'), loadBin('data/batiments_collision.wasm', 'b'), loadBin('data/routes_axes.wasm', 'a'), loadBin('data/arbres.wasm', 'r2'), loadBin('data/routes_v3.wasm', 'v3').catch(() => null), loadBin('data/routes_deco.wasm', 'dc').catch(() => null), fetch('data/signalisation.json' + V).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch('data/routes_noms.json' + V).then(r => r.json()), loadBin('data/routes_ponts.wasm', 'p').catch(() => null), loadBin('data/routes_bordures.wasm', 'k').catch(() => null)]);
+      loadGLB(CITY.data + 'terrain.wasm', 't'), loadGLB(CITY.data + 'objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
+      loadBin(CITY.data + 'relief.wasm', 'r'), loadBin(CITY.data + 'batiments_collision.wasm', 'b'), loadBin(CITY.data + 'routes_axes.wasm', 'a'), loadBin(CITY.data + 'arbres.wasm', 'r2'), loadBin(CITY.data + 'routes_v3.wasm', 'v3').catch(() => null), loadBin(CITY.data + 'routes_deco.wasm', 'dc').catch(() => null), fetch(CITY.data + 'signalisation.json' + V).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(CITY.data + 'routes_noms.json' + V).then(r => r.json()), loadBin(CITY.data + 'routes_ponts.wasm', 'p').catch(() => null), loadBin(CITY.data + 'routes_bordures.wasm', 'k').catch(() => null)]);
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
     { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; setupCar(gC); buildMap(rings);
     // 3D grass ported from Larkhollow, on the real green areas (orthophoto + LiDAR mask)
-    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, maskUrl: 'data/tex/herbe_masque.jpg' + V,
+    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, maskUrl: CITY.data + 'tex/herbe_masque.jpg' + V,
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
     window.__grass = grass;
     // real buildings modelled one by one (data/modeles/index.json): placed on their IGN footprint, at their LiDAR height
-    fetch('data/modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) for (const m of idx.modeles) loader.loadAsync('data/modeles/' + m.fichier + V).then(g => {
+    fetch(CITY.data + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) for (const m of idx.modeles) loader.loadAsync(CITY.data + 'modeles/' + m.fichier + V).then(g => {
       const o = g.scene, bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
       const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z);
       inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
@@ -1326,7 +1340,7 @@ async function main() {
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
     updateCarVisual(0.016); updateCamera(0.016, 0);
     renderer.compile(scene, camera);
-    $('ltxt').textContent = 'Prêt — départ : 31 allée Le Gréco';
+    $('ltxt').textContent = 'Prêt — départ : ' + CITY.depart;
     $('go').style.display = 'block';
     $('go').onclick = () => { startAudio(); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
     if (/autostart/.test(location.hash)) $('go').click();

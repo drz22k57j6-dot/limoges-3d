@@ -110,6 +110,14 @@ meta = {'_meta': {'version': 1, 'sources': {
     'zones': 'IGN BD TOPO zones d\'activité ou d\'intérêt (Licence Ouverte 2.0)',
     'lieux': 'Overture Maps Foundation, places 2026-10-21 (CDLA-Permissive-2.0 ; données OSM sous ODbL © contributeurs OpenStreetMap)'},
     'regle': 'aucune donnée inventée ; « inconnu », « mixte » et « à vérifier » quand les sources ne suffisent pas'}}
-json.dump({**meta, **out}, open(OUT, 'w'), ensure_ascii=False, separators=(',', ':'))
+# one file per 1 km cell (cell of the building centroid), so a phone only loads the neighbourhood it needs
+import os
+X0c, Y0c = float(os.environ.get('CITY_X0', 562924.0)), float(os.environ.get('CITY_Y0', 6528957.0))
+os.makedirs(OUT, exist_ok=True); cells = collections.defaultdict(dict)
+cent = {ids[j]: geoms[j].centroid for j in range(len(ids))}
+for k, v in out.items():
+    c = cent[k]; cells[(int((c.x - X0c + 3000) // 1000), int((c.y - Y0c + 3000) // 1000))][k] = v
+for (i, j), d in cells.items(): json.dump(d, open(f'{OUT}/{i}_{j}.json', 'w'), ensure_ascii=False, separators=(',', ':'))
+json.dump(meta['_meta'], open(f'{OUT}/meta.json', 'w'), ensure_ascii=False)
 print('bâtiments', len(out), 'avec adresse', sum(1 for v in out.values() if 'adresses' in v), 'avec établissement', sum(1 for v in out.values() if 'lieux' in v))
 print(dict(stats))

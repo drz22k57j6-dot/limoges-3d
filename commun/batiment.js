@@ -20,9 +20,15 @@
   }
   const idOf = f => f.properties.identifiants_rnb || f.properties.cleabs;
   // ---------- identité réelle (adresses officielles, établissements, zones) : data/identite_batiments.json, généré par outils/identite.py ----------
-  const ID_URL = new URL('../data/identite_batiments.json', document.currentScript ? document.currentScript.src : location.href).href;
-  let idDb = null;
-  const identite = () => idDb || (idDb = fetch(ID_URL).then(r => r.ok ? r.json() : {}).catch(() => ({})));
+  // one file per 1 km cell of the chosen city (data/<ville>/identite/i_j.json), so a phone only loads its neighbourhood
+  const ID_BASE = new URL('../' + (window.CITY ? CITY.data : 'data/') + 'identite/', document.currentScript ? document.currentScript.src : location.href).href;
+  const idCells = new Map();
+  const identiteCell = (i, j) => { const k = i + '_' + j; if (!idCells.has(k)) idCells.set(k, fetch(ID_BASE + k + '.json').then(r => r.ok ? r.json() : {}).catch(() => ({}))); return idCells.get(k); };
+  const identite = (lon, lat) => { if (lon === undefined) return Promise.resolve({}); const [x, y] = toL93(lon, lat), cx = window.CITY ? CITY.X0 : 562924, cy = window.CITY ? CITY.Y0 : 6528957;
+    const i = Math.floor((x - cx + 3000) / 1000), j = Math.floor((y - cy + 3000) / 1000);
+    return identiteCell(i, j).then(async d => { if (!idWanted || d[idWanted]) return d;   // centroid near a cell edge: look in the neighbours
+      for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const n = await identiteCell(i + a, j + b); if (n[idWanted]) return n; } return d; }); };
+  let idWanted = null;
 
   // ---------- Lambert-93 -> WGS84 (pour le jeu 3D, dont le repère est en Lambert-93) ----------
   const A = 6378137, F = 1 / 298.257222101, E = Math.sqrt(2 * F - F * F), LON0 = 3 * Math.PI / 180, P0 = 46.5 * Math.PI / 180, P1 = 44 * Math.PI / 180, P2 = 49 * Math.PI / 180;
@@ -131,7 +137,7 @@
     if (window.EQ) $('batBody').appendChild(EQ.cardExtra(f, { type: T.n, lat: cy, lon: cx, adresse: () => $('batAddr').textContent }));
     $('batCard').classList.add('on');
     const reverse = () => fetch(`https://data.geopf.fr/geocodage/reverse?lon=${cx}&lat=${cy}&limit=1`).then(r => r.json()).then(d => { const a = d.features?.[0]?.properties; $('batAddr').innerHTML = a ? esc(a.label) + ' <span class="src e">adresse la plus proche</span>' : 'Adresse inconnue'; }).catch(() => ($('batAddr').textContent = ''));
-    identite().then(db => {
+    idWanted = p.cleabs; identite(cx, cy).then(db => {
       const I = db[p.cleabs];
       if (!I) { reverse(); overpass(); return; }
       const ad = I.adresses || [];
@@ -161,6 +167,5 @@
       }).catch(() => {});
     } };
   }
-  setTimeout(identite, 6000); // preload in the background
   window.BAT = { TYPES, typeOf, idOf, show, hide, longPress, featureAt, featureById, fromL93, toL93, inRing, contains, centre, wfs };
 })();
