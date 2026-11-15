@@ -49,15 +49,18 @@
   #gas { right:calc(24px + env(safe-area-inset-right)); width:76px; height:118px; }
   #brk { right:calc(110px + env(safe-area-inset-right)); width:76px; height:86px; }
   #hb { right:calc(196px + env(safe-area-inset-right)); width:62px; height:62px; border-radius:50%; font-size:11px; }
-  #loader { position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; justify-content:center; background:radial-gradient(ellipse at 50% 40%,#2a2f3a,#07080b 70%); transition:opacity .8s; }
-  #loader h1 { font-size:44px; margin:0; letter-spacing:6px; font-weight:700; }
-  #loader h1 span { color:var(--acc); }
-  #loader p { margin:6px 0 26px; opacity:.75; letter-spacing:2px; font-size:15px; }
-  #bar { width:min(320px,70vw); height:4px; background:rgba(255,255,255,.15); border-radius:2px; overflow:hidden; }
-  #bar i { display:block; height:100%; width:0; background:var(--acc); transition:width .2s; }
-  #ltxt { margin-top:10px; font-size:13px; opacity:.7; letter-spacing:1px; }
-  #go { margin-top:26px; display:none; pointer-events:auto; background:var(--acc); color:#111; border:0; border-radius:30px; padding:14px 42px; font:700 20px Rajdhani,sans-serif; letter-spacing:3px; cursor:pointer; }
-  #help { margin-top:16px; font-size:13px; opacity:.6; text-align:center; line-height:1.5; max-width:420px; padding:0 20px; }
+  #loader { position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end; padding:0 calc(8vw + env(safe-area-inset-right)) calc(9vh + env(safe-area-inset-bottom)) calc(8vw + env(safe-area-inset-left)); background:linear-gradient(180deg,rgba(5,7,10,.15) 0%,rgba(5,7,10,.55) 55%,rgba(5,7,10,.92) 100%),url(data/paris/menu.jpg) center/cover,#0b0d10; transition:opacity .8s; font-family:-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif; }
+  #loader h1 { font-size:clamp(54px,11vw,120px); margin:0; letter-spacing:-.02em; font-weight:700; line-height:.9; }
+  #loader h1 span { display:block; font-size:.2em; font-weight:500; letter-spacing:.32em; color:rgba(255,255,255,.7); margin-top:14px; text-transform:uppercase; }
+  #loader p { margin:14px 0 28px; opacity:.7; font-size:15px; font-weight:400; max-width:440px; line-height:1.45; }
+  #bar { width:min(360px,80vw); height:2px; background:rgba(255,255,255,.14); border-radius:1px; overflow:hidden; }
+  #bar i { display:block; height:100%; width:0; background:#fff; transition:width .2s; }
+  #ltxt { margin-top:10px; font-size:12px; opacity:.55; letter-spacing:.04em; }
+  #goRow { display:none; gap:12px; margin-top:22px; flex-wrap:wrap; }
+  #go, #goFps { pointer-events:auto; border-radius:28px; padding:15px 28px; font:600 16px/1 -apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif; cursor:pointer; letter-spacing:.01em; }
+  #go { background:#fff; color:#000; border:0; }
+  #goFps { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.25); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); text-decoration:none; }
+  #help { display:none; }
   #credits { position:fixed; left:50%; bottom:4px; transform:translateX(-50%); font-size:10px; opacity:.55; z-index:5; pointer-events:none; white-space:nowrap; }
   #flash { position:fixed; inset:0; pointer-events:none; z-index:3; box-shadow:inset 0 0 0 rgba(255,40,20,0); transition:box-shadow .15s; }
   #toast { top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); font-size:15px; font-weight:600; opacity:0; transition:opacity .3s; background:var(--glass); padding:5px 14px; border-radius:14px; }
@@ -101,19 +104,13 @@ window.CITIES = {
 (() => { let v = new URLSearchParams(location.search).get('ville'); try { if (!v) v = localStorage.getItem('ville'); if (v) localStorage.setItem('ville', v); } catch (e) {} window.CITY = window.CITIES.paris; void v; })();   // projet : Paris uniquement
 </script>
 <div id="loader">
-  <h1><span id="cityName">LIMOGES</span> <span>DRIVE</span></h1>
-  <p id="cityZone">VAL DE L'AURENCE · 6 × 6 KM</p>
-  <div id="cityPick" style="margin:6px 0 10px;display:none;gap:10px;justify-content:center"></div>
-  <script>
-    document.getElementById('cityName').textContent = CITY.nom; document.getElementById('cityZone').textContent = CITY.zone;
-    for (const c of Object.values(CITIES)) { const b = document.createElement('a'); b.textContent = c.nom; b.href = '?ville=' + c.id;
-      b.style.cssText = 'padding:8px 18px;border-radius:20px;font-weight:700;text-decoration:none;letter-spacing:.08em;' + (c.id === CITY.id ? 'background:#fff;color:#111' : 'background:rgba(255,255,255,.15);color:#fff');
-      document.getElementById('cityPick').appendChild(b); }
-  </script>
+  <h1>Paris<span>Drone photo · 3D</span></h1>
+  <p id="cityZone">Chaque bâtiment avec son identifiant IGN. Tape une adresse : le drone y va, cadre la façade et la photographie en ultra HD.</p>
+  <div id="cityPick" style="display:none"></div>
   <div id="bar"><i></i></div>
-  <div id="ltxt">Chargement de la ville…</div>
-  <button id="go">ROULER</button>
-  <div id="help">Clavier : ZQSD / flèches · Espace = frein à main · C = caméra · R = remettre sur la route · F = drone<br>Drone : GAZ avancer · joystick tourner/altitude · Espace monter · Maj descendre<br>Mobile : joystick à gauche, pédales à droite (mode paysage conseillé)</div>
+  <div id="ltxt">Chargement de Paris…</div>
+  <div id="goRow"><button id="go">Piloter le drone</button><a id="goFps" href="apied/">FPS à pied</a></div>
+  <div id="help"></div>
 </div>
 
 <script type="importmap">
@@ -126,6 +123,7 @@ window.CITIES = {
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { initDronePhoto } from './drone/photo.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -265,7 +263,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=26';
+const V = '?v=27';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1113,7 +1111,7 @@ function planeGround(x,z){
 //  clavier : Z/S tangage, Q/D roulis, ←/→ lacet, Espace/Maj ou ↑/↓ gaz.
 // Contact strict : le drone ne touche un mur, un toit ou le sol que lorsque sa coque y est réellement
 // (rayon de la coque et des hélices 0,78 m, patins à 0,21 m sous le centre) ; aucune marge invisible.
-const DS = { lx: 0, ly: 0, rx: 0, ry: 0 };
+const DS = { lx: 0, ly: 0, rx: 0, ry: 0 }; let AUTOP = null;
 const DR = { R: 0.78, LEG: 0.21, VMAX: 16, VZ: 5, YAW: 1.6 };
 function droneWalls(x, y, z, r) { // pousse hors des murs plus hauts que le drone, au contact exact
   let hit = false; const ci = Math.floor(x / CELL), cj = Math.floor(z / CELL);
@@ -1133,19 +1131,20 @@ function planeStep(dt){
  const yaw=THREE.MathUtils.clamp(-DS.lx+(kb(['ArrowLeft'])?1:0)-(kb(['ArrowRight'])?1:0),-1,1);
  const thr=THREE.MathUtils.clamp(DS.ly+(kb(['Space','ArrowUp'])?1:0)-(kb(['ShiftLeft','ShiftRight','ArrowDown'])?1:0),-1,1);
  const ex=x=>Math.sign(x)*x*x*.55+x*.45;               // courbe « expo » : précision autour du centre
- PL.yaw+=ex(yaw)*DR.YAW*dt;
+ const auto=AUTOP&&AUTOP.active&&AUTOP.step(dt);
+ if(!auto)PL.yaw+=ex(yaw)*DR.YAW*dt;
  const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw),rx=-Math.cos(PL.yaw),rz=Math.sin(PL.yaw);
- const wantX=(fx*ex(pitch)+rx*ex(roll))*DR.VMAX,wantZ=(fz*ex(pitch)+rz*ex(roll))*DR.VMAX;
+ if(!auto){const wantX=(fx*ex(pitch)+rx*ex(roll))*DR.VMAX,wantZ=(fz*ex(pitch)+rz*ex(roll))*DR.VMAX;
  const k=Math.min(1,dt*(pitch||roll?1.8:2.6));        // inertie, puis freinage actif quand on lâche
  PL.vx=(PL.vx||0)+(wantX-(PL.vx||0))*k; PL.vz=(PL.vz||0)+(wantZ-(PL.vz||0))*k;
- PL.vy+=(ex(thr)*DR.VZ-PL.vy)*Math.min(1,dt*3);
+ PL.vy+=(ex(thr)*DR.VZ-PL.vy)*Math.min(1,dt*3);}
  let nx=PL.x+PL.vx*dt,nz=PL.z+PL.vz*dt,ny=PL.y+PL.vy*dt;
  // murs : contact exact avec la coque
  const [wx,wz,hit]=droneWalls(nx,ny,nz,DR.R); nx=wx;nz=wz;
  if(hit){const vn=PL.vx*hit.nx+PL.vz*hit.nz;if(vn<0){PL.vx-=vn*hit.nx;PL.vz-=vn*hit.nz;if(vn<-3)thud(Math.min(1,-vn/10))}}
  // sol, toits : les patins se posent au contact
  const floor=planeGround(nx,nz)+DR.LEG;
- if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}PL.landed=thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6}else PL.landed=false;
+ if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}PL.landed=!auto&&thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6}else PL.landed=false;
  if(PL.landed){PL.vx*=.8;PL.vz*=.8}
  ny=Math.min(500,ny);
  const LIM=2990;PL.x=THREE.MathUtils.clamp(nx,-LIM,LIM);PL.z=THREE.MathUtils.clamp(nz,-LIM,LIM);PL.y=ny;
@@ -1188,7 +1187,9 @@ const _gp = new THREE.Vector3(), _gl = new THREE.Vector3();
 function updatePlaneCamera(dt,t){
  let dy=PL.yaw-camYaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));camYaw+=dy*Math.min(1,dt*4);
  const g=GIMBAL.dirs[GIMBAL.i];
- let gy=g[1]-GIMBAL.yaw;gy=Math.atan2(Math.sin(gy),Math.cos(gy));GIMBAL.yaw+=gy*Math.min(1,dt*3);GIMBAL.tilt+=(g[2]-GIMBAL.tilt)*Math.min(1,dt*3);
+ const gt=GIMBAL.ov?[0,GIMBAL.ov.yaw,GIMBAL.ov.tilt]:[0,g[1],g[2]+(GIMBAL.man||0)];
+ let gy=gt[1]-GIMBAL.yaw;gy=Math.atan2(Math.sin(gy),Math.cos(gy));GIMBAL.yaw+=gy*Math.min(1,dt*3);GIMBAL.tilt+=(gt[2]-GIMBAL.tilt)*Math.min(1,dt*3);
+ if(GIMBAL.photoV)GIMBAL.fov=GIMBAL.photoV();
  if(droneView==='cam'){gimbalPose(_gp,_gl);camPos.copy(_gp);camLook.lerp(_gl,Math.min(1,dt*10));camera.fov+=(GIMBAL.fov-camera.fov)*Math.min(1,dt*4);}
  else{pilotPose(_gp,_gl);camPos.lerp(_gp,Math.min(1,dt*5));camLook.lerp(_gl,Math.min(1,dt*6));camera.fov+=(60-camera.fov)*Math.min(1,dt*3);}
  camera.position.copy(camPos);camera.lookAt(camLook);camera.updateProjectionMatrix();
@@ -1206,6 +1207,24 @@ function updatePip(dt) {
   const d = PIP.img.data; for (let y = 0; y < 180; y++) d.set(PIP.px.subarray((179 - y) * 1280, (180 - y) * 1280), y * 1280);
   c.putImageData(PIP.img, 0, 0);
 }
+// ---------- appareil photo du drone, pilote automatique et pellicule (drone/photo.js) ----------
+const onFrameHooks = [];
+function centreBuilding() { // identifiant IGN du bâtiment au centre de l'image (passe d'identifiants)
+  DID.tick = 0; const on = DID.on; DID.on = true; updateBuildingLabels(0.016); DID.on = on;
+  const cnt = new Map(); for (let y = DID.H / 2 - 6; y < DID.H / 2 + 6; y++) for (let x = DID.W / 2 - 8; x < DID.W / 2 + 8; x++) { const p = (y * DID.W + x) * 4, k = didPix[p] | (didPix[p + 1] << 8) | (didPix[p + 2] << 16); if (k) cnt.set(k, (cnt.get(k) || 0) + 1); }
+  let bk = 0, bn = 0; for (const [k, n] of cnt) if (n > bn) { bn = n; bk = k; } return bk ? DID.list[bk] : null;
+}
+const DPHOTO = initDronePhoto({ THREE, PL, DS, GIMBAL, DID, scene, camera, renderer, drone, CITY, CELL, key, ringTop, ringGrid,
+  rings: () => allRings, composer: () => composer, cityTiles: () => cityTiles, resize, surfaceH, planeGround, toast,
+  centreBuilding, mode: () => mode, onFrame: f => onFrameHooks.push(f), streetName: () => $('street').textContent,
+  qualityName: () => QUALITIES[qi].name, click: id => $(id).click(), recording: () => gameRecorder && gameRecorder.state === 'recording',
+  setAuto: a => { AUTOP = a; } });
+window.__DPHOTO = DPHOTO;
+// inclinaison manuelle de la nacelle : glisser verticalement sur l'image
+{ let y0 = null, m0 = 0; const cv = renderer.domElement;
+  cv.addEventListener('pointerdown', e => { if (mode === 'plane') { y0 = e.clientY; m0 = GIMBAL.man || 0; } });
+  addEventListener('pointermove', e => { if (y0 !== null) GIMBAL.man = THREE.MathUtils.clamp(m0 + (y0 - e.clientY) / innerHeight * 1.6, -1.4, 0.5); });
+  addEventListener('pointerup', () => { y0 = null; }); }
 function setMode(m){
  const prev=mode;
  if(prev==='foot'&&m!=='foot'){
@@ -1225,7 +1244,7 @@ function setMode(m){
  if(m==='plane'){
   const rx=Math.cos(S.h),rz=-Math.sin(S.h);
   if(!drone.visible||Math.hypot(PL.x-S.x,PL.z-S.z)>40){PL.x=S.x+rx*4;PL.z=S.z+rz*4;PL.y=planeGround(PL.x,PL.z)+DR.LEG;PL.yaw=S.h;PL.spd=0;PL.vx=0;PL.vz=0;PL.vy=0;PL.landed=true;PL.gimbalPitch=0}
-  drone.visible=true;S.vx=S.vz=S.yawRate=0;S.vf=0;camYaw=PL.yaw;camMode=0;$('bPlane').textContent='VOITURE';$('bCam').textContent='GIMBAL';toast('Drone posé · manche gauche : gaz et lacet · manche droit : avancer et glisser');
+  drone.visible=true;car.visible=false;S.vx=S.vz=S.yawRate=0;S.vf=0;camYaw=PL.yaw;camMode=0;$('bPlane').textContent='VOITURE';$('bCam').textContent='GIMBAL';toast('Drone posé · manche gauche : gaz et lacet · manche droit : avancer et glisser');
  }else{
   if(prev==='plane'&&Math.hypot(PL.x-S.x,PL.z-S.z)>40){S.x=PL.x;S.z=PL.z;respawn()}
   camYaw=S.h;$('bPlane').textContent='DRONE ✦';$('bCam').textContent='CAMÉRA';
@@ -1503,7 +1522,7 @@ async function main() {
     updateCarVisual(0.016); updateCamera(0.016, 0);
     renderer.compile(scene, camera);
     $('ltxt').textContent = 'Prêt — départ : ' + CITY.depart;
-    $('go').style.display = 'block';
+    $('goRow').style.display = 'flex';
     $('go').onclick = () => { startAudio(); if (qi !== 0) { qi = 0; applyQuality(); } setMode('plane'); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
     $('bPlane').style.display = 'none';   // plus de voiture : drone et FPS à pied
     if (/autostart/.test(location.hash)) $('go').click();
@@ -1521,7 +1540,7 @@ function loop(now) {
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
-  if (mode === 'plane') drone.visible = true; updateBuildingLabels(dt); updatePip(dt);
+  if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
   // sun follows car for shadows

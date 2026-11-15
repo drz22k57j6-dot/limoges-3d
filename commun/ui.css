@@ -47,14 +47,8 @@ html,body { font-family:var(--ui); }
 #mswitch button.cur { border-color:var(--acc) !important; box-shadow:0 0 0 3px rgba(255,181,71,.18), 0 10px 26px rgba(0,0,0,.4) !important; }
 
 /* écran de chargement */
-#loader { background:radial-gradient(1200px 600px at 50% 30%, #1d2533, #07090d 70%) !important; }
-#loader h1 { font:900 italic 46px/1 var(--ui) !important; letter-spacing:4px !important; text-shadow:0 8px 30px rgba(0,0,0,.6); }
-#loader h1 span { background:linear-gradient(180deg,#ffd27a,#ff9f1c); -webkit-background-clip:text; background-clip:text; color:transparent !important; }
-#loader p { font:700 12px/1.4 var(--ui) !important; letter-spacing:4px !important; text-transform:uppercase; }
-#bar { height:6px !important; border-radius:3px !important; background:rgba(255,255,255,.1) !important; box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
-#bar i { background:linear-gradient(90deg,#ff9f1c,#ffd27a) !important; box-shadow:0 0 14px rgba(255,181,71,.7); }
-#go { font:900 italic 18px/1 var(--ui) !important; letter-spacing:4px !important; padding:18px 54px !important; background:linear-gradient(180deg,#ffc56b,#ff9f1c) !important; color:#1a1206 !important; box-shadow:0 10px 30px rgba(255,159,28,.45), inset 0 1px 0 rgba(255,255,255,.5); position:relative; overflow:hidden; }
-#go::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent); animation:uiShine 2.4s infinite; }
 @keyframes uiShine { 0% { left:-60%; } 60%,100% { left:130%; } }
-#help, #ltxt { font-family:var(--ui) !important; }
 #credits { font-family:var(--ui); font-size:9px !important; opacity:.4 !important; }
+
+/* drone : interface photo épurée (drone/photo.js) — boutons ronds des autres modes masqués */
+.flying #mswitch, .flying #eqBtn, .flying #rdBtn, #loader ~ #mswitch, html:has(#loader) #mswitch, html:has(#loader) #eqBtn, html:has(#loader) #rdBtn { display:none !important; }
