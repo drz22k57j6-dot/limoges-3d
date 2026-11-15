@@ -138,6 +138,7 @@ export function initDronePhoto(A) {
 
   // menu
   const items = () => [
+    ['Monde', A.world() === 'photo' ? 'Photo réaliste' : 'Monde 3D', () => A.setWorld(A.world() === 'photo' ? '3d' : 'photo')],
     ['Qualité d\'image', A.qualityName(), () => { A.click('bQ'); }],
     ['Identifiants des bâtiments', A.DID.on ? 'Affichés' : 'Masqués', () => A.click('bId')],
     ['Couleur unique par bâtiment', A.DID.colors ? 'Oui' : 'Non', () => A.click('bIdCol')],
@@ -171,6 +172,8 @@ export function initDronePhoto(A) {
   async function takePhoto(meta = {}) {
     if (S.busy) return null; S.busy = true; $('dpShut').classList.add('busy', 'snap');
     try {
+      // les photos viennent toujours du Monde 3D (IGN) : le maillage photo réaliste (Google) ne peut pas être enregistré
+      const wasPhoto = A.cityMode() === 'google'; if (wasPhoto) A.setCity('ign');
       await tilesSettled(meta.auto ? 7000 : 2500);
       const { renderer, camera } = A, comp = A.composer();
       const [W, H] = PHOTO, pr = renderer.getPixelRatio(), aspect = camera.aspect, fov = camera.fov;
@@ -183,11 +186,11 @@ export function initDronePhoto(A) {
       if (comp) { comp.setPixelRatio(1); comp.setSize(W, H); comp.render(0.016); } else renderer.render(A.scene, camera);
       const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/jpeg', 0.94));
       camera.aspect = aspect; camera.fov = fov; camera.updateProjectionMatrix(); renderer.setPixelRatio(pr); A.resize();
-      for (const s of hidden) s.visible = true; A.drone.visible = dv;
+      for (const s of hidden) s.visible = true; A.drone.visible = dv; if (wasPhoto) A.setCity('google');
       if (!blob) throw new Error('capture');
       const thumb = await makeThumb(blob);
       const rec = { date: Date.now(), blob, thumb, w: W, h: H, lens: LENSES[S.lens].id, mm: LENSES[S.lens].mm, ign: ign || null,
-        adresse: meta.adresse || A.streetName() || '', vue: meta.vue || 'Manuelle',
+        adresse: meta.adresse || A.streetName() || '', nom: meta.nom || null, vue: meta.vue || 'Manuelle',
         pos: { x: +A.PL.x.toFixed(1), alt: +(A.PL.y - A.surfaceH(A.PL.x, A.PL.z)).toFixed(1), z: +A.PL.z.toFixed(1) } };
       rec.id = await dbPut(rec);
       setRoll(thumb); flash();
@@ -311,27 +314,30 @@ export function initDronePhoto(A) {
   const AUTO = { active: false, wp: [], i: 0, wait: 0, cancel: false };
   A.setAuto(AUTO);
   $('dpStop').onclick = () => stopAuto('Commandes rendues');
-  function stopAuto(msg) { AUTO.active = false; AUTO.wp = []; A.GIMBAL.ov = null; $('dpAuto').classList.remove('on'); if (msg) A.toast(msg); }
+  function stopAuto(msg) { const was = AUTO.active; AUTO.active = false; AUTO.wp = []; A.GIMBAL.ov = null; $('dpAuto').classList.remove('on'); if (msg) A.toast(msg); if (AUTO.resolve) { const r = AUTO.resolve; AUTO.resolve = null; r({ photos: AUTO.done || 0, annule: !!msg && was }); } }
   function status(t, s) { $('dpAutoT').textContent = t; $('dpAutoS').textContent = s; $('dpAuto').classList.add('on'); }
   async function shootAddress(f) {
-    if (A.mode() !== 'plane') return;
+    if (A.mode() !== 'plane') return { photos: 0, erreur: 'drone inactif' };
+    if (AUTO.active) stopAuto();
     const [lon, lat] = f.geometry.coordinates, [X, Y] = lambert93(lon, lat), x = X - A.CITY.X0, z = -(Y - A.CITY.Y0), label = f.properties.label;
-    if (Math.abs(x) > 2950 || Math.abs(z) > 2950) { A.toast('Cette adresse est hors de la zone 3D chargée (centre de Paris pour l\'instant)'); return; }
-    const F = facadeFor(x, z); if (!F) { A.toast('Aucun bâtiment trouvé à cette adresse'); return; }
+    if (!A.inCity(x, z)) { A.toast('Cette adresse est hors de la zone 3D de Paris'); return { photos: 0, erreur: 'hors zone' }; }
+    status('Préparation', label); await A.ensureArea(x, z);
+    const F = facadeFor(x, z); if (!F) { $('dpAuto').classList.remove('on'); A.toast('Aucun bâtiment trouvé à cette adresse'); return { photos: 0, erreur: 'aucun bâtiment' }; }
     const shots = [['Façade', 0, false], ['Trois-quarts gauche', 35, false], ['Trois-quarts droite', -35, false], ['Vue aérienne', 0, true]];
     const plan = []; for (const [nm, ang, aer] of shots) { const v = viewpoint(F, ang, aer, S.lens); if (v) plan.push({ nm, ...v }); }
-    if (!plan.length) { A.toast('Pas de point de vue dégagé trouvé pour cette façade'); return; }
+    if (!plan.length) { $('dpAuto').classList.remove('on'); A.toast('Pas de point de vue dégagé trouvé pour cette façade'); return { photos: 0, erreur: 'pas de point de vue dégagé' }; }
     // vol : monter au-dessus des toits, traverser, descendre au point de vue
     const P0 = new THREE.Vector3(A.PL.x, A.PL.y, A.PL.z);
-    const cruiseFor = (a, b) => { let m = 0; const d = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(d / 8); for (let k = 0; k <= n; k++) { const t = k / n; m = Math.max(m, A.planeGround(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)); } return Math.max(m + 18, A.surfaceH(a.x, a.z) + 40); };
+    const cruiseFor = (a, b) => { let m = 0; const d = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(d / 8); for (let k = 0; k <= n; k++) { const t = k / n; m = Math.max(m, A.planeGround(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)); } return Math.max(m + 18, A.surfaceH(a.x, a.z) + 60); };
     AUTO.wp = []; let prev = P0;
     for (const s of plan) {
       const c = Math.max(cruiseFor(prev, s.P), prev.y, s.P.y);
       AUTO.wp.push({ p: new THREE.Vector3(prev.x, c, prev.z), fast: true }, { p: new THREE.Vector3(s.P.x, c, s.P.z), fast: true }, { p: s.P.clone(), shot: s, look: s.look });
       prev = s.P;
     }
-    AUTO.i = 0; AUTO.wait = 0; AUTO.active = true; AUTO.label = label; AUTO.F = F; AUTO.done = 0; AUTO.total = plan.length;
+    AUTO.i = 0; AUTO.wait = 0; AUTO.active = true; AUTO.label = label; AUTO.nom = f.properties.nom || null; AUTO.F = F; AUTO.done = 0; AUTO.total = plan.length;
     status('En route', label + ' · ' + plan.length + ' photos prévues');
+    return new Promise(r => { AUTO.resolve = v => r({ ...v, adresse: label }); });
   }
   const tmpV = new THREE.Vector3();
   // appelé par la physique du drone à la place des manches
@@ -340,6 +346,10 @@ export function initDronePhoto(A) {
     if (A.DS.lx || A.DS.ly || A.DS.rx || A.DS.ry) { stopAuto('Pilote automatique annulé : commandes reprises'); return false; }
     const w = AUTO.wp[AUTO.i]; if (!w) { stopAuto(); return false; }
     if (AUTO.wait > 0) { AUTO.wait -= dt; PL.vx *= 0.8; PL.vz *= 0.8; PL.vy *= 0.8; return true; }
+    if (w.fast) { // regard 40 m devant : si un toit (quartier pas encore chargé au départ) dépasse, on monte
+      const L = Math.hypot(w.p.x - PL.x, w.p.z - PL.z) || 1;
+      for (const d of [10, 25, 40]) { const t = Math.min(1, d / L), g = A.planeGround(PL.x + (w.p.x - PL.x) * t, PL.z + (w.p.z - PL.z) * t); if (g + 15 > w.p.y) { for (let j = AUTO.i; j < AUTO.wp.length && AUTO.wp[j].fast; j++) AUTO.wp[j].p.y = g + 18; } }
+    }
     tmpV.set(w.p.x - PL.x, w.p.y - PL.y, w.p.z - PL.z);
     const dh = Math.hypot(tmpV.x, tmpV.z), vmax = w.fast ? 15 : 4;
     const want = Math.min(vmax, dh * 0.9 + 0.2), vy = THREE.MathUtils.clamp(tmpV.y * 1.2, -4, 5);
@@ -352,11 +362,11 @@ export function initDronePhoto(A) {
     if (dh < 0.35 && Math.abs(tmpV.y) < 0.35 && Math.hypot(PL.vx, PL.vz) < 0.4 && Math.abs(dy) < 0.03) {
       if (w.shot) {
         AUTO.wait = 9; status('Prise de vue', w.shot.nm + ' · ' + AUTO.label);
-        takePhoto({ auto: true, adresse: AUTO.label, vue: w.shot.nm }).then(r => { AUTO.done += r ? 1 : 0; AUTO.wait = 0.4; AUTO.i++;
+        takePhoto({ auto: true, adresse: AUTO.label, nom: AUTO.nom, vue: w.shot.nm }).then(r => { AUTO.done += r ? 1 : 0; AUTO.wait = 0.4; AUTO.i++;
           if (AUTO.i >= AUTO.wp.length) { stopAuto(); A.toast(AUTO.done + ' photo' + (AUTO.done > 1 ? 's' : '') + ' dans la pellicule'); } else status('En route', AUTO.wp[AUTO.i].shot ? AUTO.wp[AUTO.i].shot.nm : 'Point de vue suivant'); });
       } else AUTO.i++;
     }
     return true;
   };
-  return { takePhoto, openGallery, AUTO, lambert93, shootAddress, facadeFor, viewpoint };
+  return { takePhoto, openGallery, AUTO, lambert93, shootAddress, facadeFor, viewpoint, stopAuto, allPhotos: dbAll, openPhoto: p => openPhoto(p) };
 }

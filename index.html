@@ -56,6 +56,9 @@
   #bar { width:min(360px,80vw); height:2px; background:rgba(255,255,255,.14); border-radius:1px; overflow:hidden; }
   #bar i { display:block; height:100%; width:0; background:#fff; transition:width .2s; }
   #ltxt { margin-top:10px; font-size:12px; opacity:.55; letter-spacing:.04em; }
+  #worldPick { display:flex; margin-top:20px; padding:4px; border-radius:22px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+  #worldPick button { border:0; background:none; color:#fff; font:600 14px/1 -apple-system,'SF Pro Text',Arial,sans-serif; padding:10px 16px; border-radius:18px; cursor:pointer; opacity:.75; }
+  #worldPick button.on { background:#fff; color:#000; opacity:1; }
   #goRow { display:none; gap:12px; margin-top:22px; flex-wrap:wrap; }
   #go, #goFps { pointer-events:auto; border-radius:28px; padding:15px 28px; font:600 16px/1 -apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif; cursor:pointer; letter-spacing:.01em; }
   #go { background:#fff; color:#000; border:0; }
@@ -109,6 +112,7 @@ window.CITIES = {
   <div id="cityPick" style="display:none"></div>
   <div id="bar"><i></i></div>
   <div id="ltxt">Chargement de Paris…</div>
+  <div id="worldPick"><button data-world="3d">Monde 3D</button><button data-world="photo">Photo réaliste</button></div>
   <div id="goRow"><button id="go">Piloter le drone</button><a id="goFps" href="apied/">FPS à pied</a></div>
   <div id="help"></div>
 </div>
@@ -124,6 +128,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { initDronePhoto } from './drone/photo.js';
+import { initAgent } from './drone/agent.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -263,7 +268,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=27';
+const V = '?v=29';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -372,10 +377,12 @@ function updateBuildingLabels(dt) {
   for (const o of DID.meshes) { if (!o.parent) { DID.meshes.delete(o); continue; } o.material = didMat; }
   const vis = []; scene.traverseVisible(o => { if (o.isMesh || o.isPoints || o.isLine || o.isSprite) { if (!DID.meshes.has(o) && o !== sky && o.visible) { vis.push(o); } } });
   for (const o of vis) o.visible = false;
+  const ctv = cityTiles.group.visible, trv = tilesRoot ? tilesRoot.visible : false; cityTiles.group.visible = true; if (tilesRoot) tilesRoot.visible = false;
   const bg = scene.background, fog = scene.fog; scene.background = null; scene.fog = null;
   renderer.setRenderTarget(didRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
   renderer.readRenderTargetPixels(didRT, 0, 0, DID.W, DID.H, didPix); renderer.setRenderTarget(null);
   scene.background = bg; scene.fog = fog; for (const o of vis) o.visible = true;
+  cityTiles.group.visible = ctv; if (tilesRoot) tilesRoot.visible = trv;
   for (const o of DID.meshes) o.material = DID.colors ? didColMat : o.userData.matReal;
   // pixels par bâtiment et centre à l'écran
   const acc = new Map();
@@ -406,6 +413,27 @@ function updateBuildingLabels(dt) {
 function didJournal(t0) {
   const L = []; for (const [id, s] of DID.seen) if (s.rec > 0) L.push({ id, debut_s: +(s.first - t0).toFixed(1), fin_s: +(s.last - t0).toFixed(1), vues: s.rec, pixels_max: s.px });
   return { ville: CITY.id, date: new Date().toISOString(), source: 'identifiants IGN BD TOPO (cleabs)', batiments: L.sort((a, b) => a.debut_s - b.debut_s) };
+}
+// ville entière : ajout de bâtiments secteur par secteur (tableaux qui grandissent)
+let segN = 0;
+function appendBuildings(buf) {
+  if (!segs) { segs = new Float32Array(4 * 65536); segRing = new Int32Array(65536); allRings = []; segN = 0; }
+  if (!buf) return;
+  const dv = new DataView(buf); const n = dv.getUint32(0, true); let o = 4;
+  for (let q = 0; q < n; q++) {
+    const m = dv.getUint32(o, true), top = dv.getFloat32(o + 4, true); o += 8;
+    const r = new Float32Array(buf.slice(o, o + m * 8)); o += m * 8; const i = allRings.length; allRings.push(r); ringTop.push(top);
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (let k = 0; k < m; k++) { x0 = Math.min(x0, r[2 * k]); x1 = Math.max(x1, r[2 * k]); z0 = Math.min(z0, r[2 * k + 1]); z1 = Math.max(z1, r[2 * k + 1]); }
+    for (let a = Math.floor(x0 / CELL); a <= Math.floor(x1 / CELL); a++) for (let b = Math.floor(z0 / CELL); b <= Math.floor(z1 / CELL); b++) { const kk = key(a, b); let l = ringGrid.get(kk); if (!l) ringGrid.set(kk, l = []); l.push(i); }
+    for (let k = 0; k < m - 1; k++) {
+      if (segN >= segRing.length) { const s2 = new Float32Array(segs.length * 2); s2.set(segs); segs = s2; const r2 = new Int32Array(segRing.length * 2); r2.set(segRing); segRing = r2; }
+      const x1_ = r[2 * k], z1_ = r[2 * k + 1], x2_ = r[2 * k + 2], z2_ = r[2 * k + 3];
+      segs[4 * segN] = x1_; segs[4 * segN + 1] = z1_; segs[4 * segN + 2] = x2_; segs[4 * segN + 3] = z2_; segRing[segN] = i;
+      for (let a = Math.floor(Math.min(x1_, x2_) / CELL); a <= Math.floor(Math.max(x1_, x2_) / CELL); a++) for (let b = Math.floor(Math.min(z1_, z2_) / CELL); b <= Math.floor(Math.max(z1_, z2_) / CELL); b++) { const kk = key(a, b); let l = segGrid.get(kk); if (!l) segGrid.set(kk, l = []); l.push(segN); }
+      segN++;
+    }
+  }
 }
 function parseBuildings(buf) {
   const dv = new DataView(buf); const n = dv.getUint32(0, true); let o = 4; const arr = []; const rings = []; const sr = [];
@@ -520,7 +548,8 @@ const TREE = { data: null, n: 0, kind: null, sc: null, grid: new Map(), pools: {
 function buildTrees(buf) {
   const dv = new DataView(buf), n = dv.getUint32(0, true);
   const f = new Float32Array(buf.slice(4, 4 + n * 24)), c = new Uint8Array(buf.slice(4 + n * 24, 4 + n * 28));
-  const P = createPlateauTrees(THREE, { sunDir, sunColor: sun.color, sunIntensity: () => sun.intensity, barkMap: barkTexture() });
+  const P = TREE.P || createPlateauTrees(THREE, { sunDir, sunColor: sun.color, sunIntensity: () => sun.intensity, barkMap: barkTexture() });
+  if (TREE.data) { for (const im of TREE.far || []) { scene.remove(im); im.dispose(); } for (const k in TREE.pools) for (const im of TREE.pools[k]) { scene.remove(im); im.dispose(); } TREE.far = []; TREE.pools = {}; TREE.grid = new Map(); treeGrid.clear(); treeChunks.length = 0; }
   TREE.P = P; TREE.data = f; TREE.n = n;
   const KINDS = ['tree', 'pine', 'birch', 'sapling'];
   TREE.kind = new Uint8Array(n); TREE.sc = new Float32Array(n * 2); TREE.col = []; TREE.lod = new Int8Array(n).fill(2);
@@ -600,10 +629,11 @@ function updateTrees(dt, cx, cz, hidden) {
   for (const pk in TREE.pools) for (const im of TREE.pools[pk]) { im.count = fill[pk] || 0; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
   for (const im of dirty) im.instanceMatrix.needsUpdate = true;
 }
-function setupCity(gT, gO) {
-  const grassTex = texLoader.load('data/tex/herbe_d.jpg' + V); grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping; grassTex.anisotropy = 8;
-  const detail = makeDetail();
-  gT.scene.traverse(o => {
+let _grassTex = null, _detail = null;
+function prepTerrain(root) {
+  const grassTex = _grassTex || (_grassTex = texLoader.load('data/tex/herbe_d.jpg' + V)); grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping; grassTex.anisotropy = 8;
+  const detail = _detail || (_detail = makeDetail());
+  root.traverse(o => {
     if (!o.isMesh) return;
     const old = o.material;
     o.geometry.computeVertexNormals();
@@ -628,6 +658,9 @@ function setupCity(gT, gO) {
     o.receiveShadow = true;
     o.matrixAutoUpdate = false; o.updateMatrix();
   });
+}
+function setupCity(gT, gO) {
+  prepTerrain(gT.scene);
   scene.add(gT.scene); terrainRoot = gT.scene;
   // facade night glow
   const seen = new Set();
@@ -716,7 +749,7 @@ function setupCity(gT, gO) {
     ch.traverse(o => { o.matrixAutoUpdate = false; o.updateMatrix(); });
     chunks.push({ obj: ch, c, roads: /Routes/.test(ch.name) });
   });
-  scene.add(gO.scene);
+  scene.add(gO.scene); objetsRoot = gO.scene;
 }
 
 // ---------------- car ----------------
@@ -935,11 +968,12 @@ function updateCarVisual(dt) {
 }
 
 // ---------------- minimap ----------------
-let mapImg, mapScale = 0.34; // px per metre
-function buildMap(rings) {
+let mapImg, mapScale = 0.34, mapCX = 0, mapCZ = 0; // px per metre ; centre de la carte (ville entière : suit le drone)
+function buildMap(rings, cx = 0, cz = 0) {
+  mapCX = cx; mapCZ = cz;
   const W = Math.round(6000 * mapScale); mapImg = document.createElement('canvas'); mapImg.width = mapImg.height = W;
   const c = mapImg.getContext('2d'); c.fillStyle = '#20262c'; c.fillRect(0, 0, W, W);
-  const tx = x => (x + 3000) * mapScale, tz = z => (z + 3000) * mapScale;
+  const tx = x => (x - cx + 3000) * mapScale, tz = z => (z - cz + 3000) * mapScale;
   c.fillStyle = '#3a424b';
   for (const r of rings) { c.beginPath(); for (let k = 0; k < r.length; k += 2) (k ? c.lineTo : c.moveTo).call(c, tx(r[k]), tz(r[k + 1])); c.fill(); }
   c.lineCap = 'round'; c.lineJoin = 'round';
@@ -956,7 +990,7 @@ function drawMap() {
   const W = 300, z = 1.6;
   mctx.save(); mctx.fillStyle = '#20262c'; mctx.fillRect(0, 0, W, W);
   mctx.translate(W / 2, W / 2); const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : mode === 'foot' ? { x: FT.x, z: FT.z, h: FT.yaw } : S; mctx.rotate(Math.PI + F.h); mctx.scale(z, z);
-  mctx.drawImage(mapImg, -(F.x + 3000) * mapScale, -(F.z + 3000) * mapScale);
+  mctx.drawImage(mapImg, -(F.x - mapCX + 3000) * mapScale, -(F.z - mapCZ + 3000) * mapScale);
   mctx.restore();
   mctx.fillStyle = '#ffb547'; mctx.strokeStyle = '#000'; mctx.lineWidth = 2;
   mctx.beginPath(); mctx.moveTo(150, 136); mctx.lineTo(160, 160); mctx.lineTo(150, 154); mctx.lineTo(140, 160); mctx.closePath(); mctx.stroke(); mctx.fill();
@@ -1015,6 +1049,7 @@ let gameRecorder=null,gameChunks=[],recordStarted=0;
 $('bRec').onclick=()=>{
  if(gameRecorder&&gameRecorder.state!=='inactive'){gameRecorder.stop();return}
  if(mode!=='plane'){toast('Passe en mode DRONE pour filmer');return}
+ if(cityMode==='google'){toast('Vidéo possible seulement en Monde 3D : le Paris photo réaliste (Google) ne peut pas être enregistré');return}
  try{
    droneView='cam';
    
@@ -1147,7 +1182,7 @@ function planeStep(dt){
  if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}PL.landed=!auto&&thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6}else PL.landed=false;
  if(PL.landed){PL.vx*=.8;PL.vz*=.8}
  ny=Math.min(500,ny);
- const LIM=2990;PL.x=THREE.MathUtils.clamp(nx,-LIM,LIM);PL.z=THREE.MathUtils.clamp(nz,-LIM,LIM);PL.y=ny;
+ const LX=STREAM.idx?STREAM.idx.RX-10:2990,LZ=STREAM.idx?STREAM.idx.RY-10:2990;PL.x=THREE.MathUtils.clamp(nx,-LX,LX);PL.z=THREE.MathUtils.clamp(nz,-LZ,LZ);PL.y=ny;
  PL.spd=Math.hypot(PL.vx,PL.vz);
  // attitude réelle d'un quadri : penche dans le sens de l'accélération
  const lf=(PL.vx*fx+PL.vz*fz)/DR.VMAX,ls=(PL.vx*rx+PL.vz*rz)/DR.VMAX;
@@ -1218,8 +1253,13 @@ const DPHOTO = initDronePhoto({ THREE, PL, DS, GIMBAL, DID, scene, camera, rende
   rings: () => allRings, composer: () => composer, cityTiles: () => cityTiles, resize, surfaceH, planeGround, toast,
   centreBuilding, mode: () => mode, onFrame: f => onFrameHooks.push(f), streetName: () => $('street').textContent,
   qualityName: () => QUALITIES[qi].name, click: id => $(id).click(), recording: () => gameRecorder && gameRecorder.state === 'recording',
-  setAuto: a => { AUTOP = a; } });
+  setAuto: a => { AUTOP = a; },
+  world: () => WORLD.mode, setWorld: m => setWorld(m), cityMode: () => cityMode, setCity: m => setCity(m),
+  inCity: (x, z) => STREAM.idx ? !!STREAM.idx.secteurs[Math.floor((x + STREAM.idx.RX) / 1000) + '_' + Math.floor((-z + STREAM.idx.RY) / 1000)] : Math.abs(x) < 2950 && Math.abs(z) < 2950,
+  ensureArea: async (x, z) => { const I = STREAM.idx; if (!I) return; const si = Math.floor((x + I.RX) / 1000), sj = Math.floor((-z + I.RY) / 1000), ks = []; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) ks.push((si + a) + '_' + (sj + b)); await Promise.all(ks.map(sectorPhys)); } });
 window.__DPHOTO = DPHOTO;
+const AGENT = initAgent({ photo: DPHOTO, mode: () => mode, inCityLL: (lon, lat) => { const [X, Y] = DPHOTO.lambert93(lon, lat), x = X - CITY.X0, z = -(Y - CITY.Y0); return STREAM.idx ? !!STREAM.idx.secteurs[Math.floor((x + STREAM.idx.RX) / 1000) + '_' + Math.floor((-z + STREAM.idx.RY) / 1000)] : Math.abs(x) < 2950 && Math.abs(z) < 2950; } });
+window.__AGENT = AGENT;
 // inclinaison manuelle de la nacelle : glisser verticalement sur l'image
 { let y0 = null, m0 = 0; const cv = renderer.domElement;
   cv.addEventListener('pointerdown', e => { if (mode === 'plane') { y0 = e.clientY; m0 = GIMBAL.man || 0; } });
@@ -1444,10 +1484,19 @@ async function startGoogleCity() {
     });
     tilesRoot = new THREE.Group(); tilesRoot.rotation.y = Math.PI; tilesRoot.add(tiles.group); scene.add(tilesRoot);
     tiles.setCamera(camera); tiles.setResolutionFromRenderer(camera, renderer);
-    tiles.addEventListener('load-tile-set', () => { setCity('google'); });
+    tiles.addEventListener('load-tile-set', () => { if (WORLD.mode === 'photo') setCity('google'); });
     setTimeout(() => { if (cityMode !== 'google' && !tiles.root) toast('Ville photo indisponible — ville IGN'); }, 15000);
   } catch (e) { console.warn('Google 3D tiles', e); tiles = null; toast('Ville photo indisponible — ville IGN'); }
 }
+// choix du monde (menu et réglages), mémorisé
+const WORLD = { mode: (() => { try { return localStorage.getItem('monde') || '3d'; } catch (e) { return '3d'; } })(), ready: false };
+function setWorld(m) {
+  WORLD.mode = m; try { localStorage.setItem('monde', m); } catch (e) {}
+  for (const b of document.querySelectorAll('[data-world]')) b.classList.toggle('on', b.dataset.world === m);
+  if (m === 'photo') { if (tiles) setCity('google'); else if (WORLD.ready) { toast('Chargement du Paris photo réaliste…'); startGoogleCity(); } }
+  else setCity('ign');
+}
+window.__setWorld = setWorld; window.__WORLD = WORLD;
 function setCity(m) {
   if (m === 'google' && !tiles) return;
   cityMode = m;
@@ -1484,25 +1533,88 @@ const carBlob = (() => {
   m.rotation.x = -Math.PI / 2; m.position.y = 0.06; m.visible = false; m.renderOrder = 2; return m;
 })();
 car.add(carBlob);
-let terrainRoot = null;
+let terrainRoot = null, objetsRoot = null;
 const BMAT = {}; let cityTiles = null;
 let grass = null; const grassP = new THREE.Vector3();
+
+// ---------------- Paris entier : chargement par secteurs autour du drone ----------------
+// data/paris/secteurs/index.json : secteurs de 1 km (routes, bordures, trottoirs, arbres, murs, axes), tuiles de terrain
+// et de relief de 2 km. La physique (murs, routes, relief) s'ajoute au fil du vol ; l'affichage (routes, arbres, terrain
+// détaillé) suit le drone dans un rayon de ~1,5 km. Au-delà : un terrain d'ensemble de tout Paris (terrain_loin).
+const STREAM = { idx: null, phys: new Set(), physP: new Map(), vis: new Map(), terr: new Map(), relief: new Set(), busy: false, last: '', treeBufs: new Map(), treeDirty: false, SR: null };
+window.__STREAM = STREAM;
+const sGet = u => fetch(CITY.data + u + V).then(r => { if (!r.ok) throw new Error(u); return r.arrayBuffer(); });
+function sectorPhys(k) {   // une fois chargée, la physique d'un secteur reste (pas de doublons)
+  if (STREAM.phys.has(k)) return Promise.resolve(); if (STREAM.physP.has(k)) return STREAM.physP.get(k);
+  const inf = STREAM.idx.secteurs[k]; if (!inf) return Promise.resolve();
+  const has = f => inf.fichiers.includes(f), [si, sj] = k.split('_').map(Number), tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2);
+  const rel = (STREAM.idx.relief || []).includes(tk) && !STREAM.relief.has(tk) ? (STREAM.relief.add(tk), sGet('secteurs/relief/r_' + tk + '.wasm').then(b => { relief.push(...parseRelief(b)); }).catch(() => STREAM.relief.delete(tk))) : null;
+  const p = Promise.all([has('batiments_collision.wasm') ? sGet('secteurs/' + k + '/batiments_collision.wasm') : null, has('routes_axes.wasm') ? sGet('secteurs/' + k + '/routes_axes.wasm') : null, has('arbres.wasm') ? sGet('secteurs/' + k + '/arbres.wasm') : null, rel])
+    .then(([bat, ax, arb]) => { appendBuildings(bat); if (ax) parseRoads(ax); if (arb) STREAM.treeBufs.set(k, arb); STREAM.phys.add(k); STREAM.physP.delete(k); })
+    .catch(e => { STREAM.physP.delete(k); console.warn('secteur', k, e); });
+  STREAM.physP.set(k, p); return p;
+}
+async function sectorVis(k) {
+  if (STREAM.vis.has(k)) return; const ent = { ms: [] }; STREAM.vis.set(k, ent);
+  const inf = STREAM.idx.secteurs[k]; if (!inf) return; const has = f => inf.fichiers.includes(f), g = f => has(f) ? sGet('secteurs/' + k + '/' + f).catch(() => null) : null;
+  const [v3, pt, dc, kb, sg] = await Promise.all([g('routes_v3.wasm'), g('routes_ponts.wasm'), g('routes_deco.wasm'), g('routes_bordures.wasm'), has('signalisation.json') ? fetch(CITY.data + 'secteurs/' + k + '/signalisation.json' + V).then(r => r.json()).catch(() => null) : null]);
+  const SR = STREAM.SR;
+  ent.ms = [].concat(v3 ? SR.buildV3(v3) : [], pt ? SR.buildV3(pt) : [], dc ? SR.buildDeco(dc) : [], sg && sg.length ? SR.buildSignals(sg) : [], kb ? SR.buildKerbs(kb) : []);
+  if (STREAM.vis.get(k) !== ent) { freeMeshes(ent.ms); return; }
+  for (const m of ent.ms) { scene.add(m); chunks.push({ obj: m, c: new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()) }); }
+}
+function freeMeshes(ms) { for (const m of ms) { scene.remove(m); const i = chunks.findIndex(c => c.obj === m); if (i >= 0) chunks.splice(i, 1); m.traverse(n => { if (n.isMesh) { n.geometry.dispose(); for (const mt of [].concat(n.material)) if (mt !== STREAM.SR.material) mt.dispose(); } }); } }
+async function terrainTile(k) {
+  if (STREAM.terr.has(k)) return; STREAM.terr.set(k, null);
+  try { const g = await loadGLB(CITY.data + 'terrain/t_' + k + '.wasm', 'tt'); prepTerrain(g.scene); if (!STREAM.terr.has(k)) return; STREAM.terr.set(k, g.scene); scene.add(g.scene); }
+  catch (e) { STREAM.terr.delete(k); }
+}
+async function streamUpdate(x, z, force) {
+  const I = STREAM.idx; if (!I || STREAM.busy) return;
+  const si = Math.floor((x + I.RX) / 1000), sj = Math.floor((-z + I.RY) / 1000), id = si + '_' + sj;
+  if (id === STREAM.last && !force) return; STREAM.busy = true; STREAM.last = id;
+  try {
+    const R = 1, want = [];
+    for (let a = -R; a <= R; a++) for (let b = -R; b <= R; b++) { const k = (si + a) + '_' + (sj + b); if (I.secteurs[k]) want.push(k); }
+    want.sort((p, q) => { const d = k => { const [i, j] = k.split('_').map(Number); return Math.hypot(i - si, j - sj); }; return d(p) - d(q); });
+    // affichage : libérer ce qui est loin
+    for (const [k, ent] of STREAM.vis) { const [i, j] = k.split('_').map(Number); if (Math.max(Math.abs(i - si), Math.abs(j - sj)) > R + 1) { freeMeshes(ent.ms); STREAM.vis.delete(k); } }
+    const wantT = new Set(); for (const a of [-1200, 0, 1200]) for (const b of [-1200, 0, 1200]) wantT.add(Math.floor((x + I.RX + a) / 2000) + '_' + Math.floor((-z + I.RY + b) / 2000));
+    for (const [k, sc] of STREAM.terr) if (!wantT.has(k)) { if (sc) { scene.remove(sc); sc.traverse(n => { if (n.isMesh) { n.geometry.dispose(); if (n.material.map) n.material.map.dispose(); n.material.dispose(); } }); } STREAM.terr.delete(k); }
+    await Promise.all(want.map(sectorPhys));
+    // arbres des secteurs autour : un seul ensemble, reconstruit quand on change de secteur
+    const tb = want.map(k => STREAM.treeBufs.get(k)).filter(Boolean);
+    if (tb.length) { let n = 0; for (const b of tb) n += new DataView(b).getUint32(0, true); const out = new ArrayBuffer(4 + n * 28), dv = new DataView(out); dv.setUint32(0, n, true); let of = 4, oc = 4 + n * 24;
+      for (const b of tb) { const m = new DataView(b).getUint32(0, true); new Uint8Array(out, of, m * 24).set(new Uint8Array(b, 4, m * 24)); new Uint8Array(out, oc, m * 4).set(new Uint8Array(b, 4 + m * 24, m * 4)); of += m * 24; oc += m * 4; }
+      buildTrees(out); }
+    // masque d'herbe de la tuile de 2 km sous le drone
+    if (grass && grass.setMask) { const ti = Math.floor((x + I.RX) / 2000), tj = Math.floor((-z + I.RY) / 2000); grass.setMask(CITY.data + 'tex/herbe/h_' + ti + '_' + tj + '.jpg' + V, [ti * 2000 - I.RX, -((tj + 1) * 2000 - I.RY), 2000, 2000]); }
+    await Promise.all([...wantT].map(terrainTile));
+    for (const k of want) await sectorVis(k);
+    buildMap(allRings, Math.round(x / 500) * 500, Math.round(z / 500) * 500);
+  } finally { STREAM.busy = false; }
+}
 
 // ---------------- main ----------------
 let lastStreet = '', streetT = 0;
 async function main() {
   try {
-    const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, signs, names, pontsBuf, kerbBuf] = await Promise.all([
+    STREAM.idx = await fetch(CITY.data + 'secteurs/index.json' + V).then(r => r.ok ? r.json() : null).catch(() => null);
+    const SX = !!STREAM.idx, none = Promise.resolve(null);
+    const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, signs, names, pontsBuf, kerbBuf] = SX ? await Promise.all([
+      loadGLB(CITY.data + 'terrain_loin.wasm', 't'), loadGLB(CITY.data + 'objets_ville.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'), none, none, none, none, none, none, none,
+      fetch(CITY.data + 'routes_noms.json' + V).then(r => r.ok ? r.json() : {}).catch(() => ({})), none, none]) : await Promise.all([
       loadGLB(CITY.data + 'terrain.wasm', 't'), loadGLB(CITY.data + 'objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
       loadBin(CITY.data + 'relief.wasm', 'r'), loadBin(CITY.data + 'batiments_collision.wasm', 'b'), loadBin(CITY.data + 'routes_axes.wasm', 'a'), loadBin(CITY.data + 'arbres.wasm', 'r2'), loadBin(CITY.data + 'routes_v3.wasm', 'v3').catch(() => null), loadBin(CITY.data + 'routes_deco.wasm', 'dc').catch(() => null), fetch(CITY.data + 'signalisation.json' + V).then(r => r.ok ? r.json() : null).catch(() => null),
       fetch(CITY.data + 'routes_noms.json' + V).then(r => r.json()), loadBin(CITY.data + 'routes_ponts.wasm', 'p').catch(() => null), loadBin(CITY.data + 'routes_bordures.wasm', 'k').catch(() => null)]);
     $('ltxt').textContent = 'Construction du monde…';
     await new Promise(r => setTimeout(r, 30));
-    relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
-    setupCity(gT, gO); buildTrees(treesBuf);
-    { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; setupCar(gC); buildMap(rings);
+    if (SX) { relief = []; roadNames = names || {}; appendBuildings(null); setupCity(gT, gO); gT.scene.position.y = -0.6; gT.scene.updateMatrixWorld(true); gT.scene.traverse(o => { if (o.isMesh) { o.matrixAutoUpdate = true; o.renderOrder = -1; } }); }
+    else { relief = parseRelief(rel); roadNames = names; parseRoads(rds); parseBuildings(bat); setupCity(gT, gO); buildTrees(treesBuf); }
+    if (SX) { STREAM.SR = createSaltlineRoads(THREE); window.__SR = STREAM.SR; window.__groundH = groundH; }
+    else { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; setupCar(gC); if (!SX) buildMap(allRings);
     // 3D grass ported from Larkhollow, on the real green areas (orthophoto + LiDAR mask)
-    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, maskUrl: CITY.data + 'tex/herbe_masque.jpg' + V,
+    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, isVisible: () => cityMode !== 'google', maskUrl: SX ? null : CITY.data + 'tex/herbe_masque.jpg' + V,
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
     window.__grass = grass;
     // real buildings modelled one by one (data/modeles/index.json): placed on their IGN footprint, at their LiDAR height
@@ -1516,6 +1628,7 @@ async function main() {
       scene.add(root);
     }).catch(e => console.warn('modele', m.id, e)); }).catch(() => {});
     applyTime(); applyQuality();
+    if (SX) { $('ltxt').textContent = 'Chargement du quartier…'; await streamUpdate(0, 0, true); }
     respawn(true);
     { const m = /x=(-?[\d.]+)&z=(-?[\d.]+)&h=(-?[\d.]+)/.exec(location.hash); if (m) { S.x = +m[1]; S.z = +m[2]; const r = nearestRoad(S.x, S.z, 60); if (r) { S.x = r.x; S.z = r.z; S.h = r.dir; } else S.h = +m[3]; S.y = S.lastG = surfaceH(S.x, S.z); S.yv = S.y; } }
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
@@ -1523,12 +1636,13 @@ async function main() {
     renderer.compile(scene, camera);
     $('ltxt').textContent = 'Prêt — départ : ' + CITY.depart;
     $('goRow').style.display = 'flex';
-    $('go').onclick = () => { startAudio(); if (qi !== 0) { qi = 0; applyQuality(); } setMode('plane'); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
+    for (const b of document.querySelectorAll('#worldPick [data-world]')) { b.classList.toggle('on', b.dataset.world === WORLD.mode); b.onclick = () => { WORLD.mode = b.dataset.world; for (const c of document.querySelectorAll('#worldPick [data-world]')) c.classList.toggle('on', c === b); try { localStorage.setItem('monde', WORLD.mode); } catch (e) {} }; }
+    $('go').onclick = () => { startAudio(); if (qi !== 0) { qi = 0; applyQuality(); } setMode('plane'); setWorld(WORLD.mode); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
     $('bPlane').style.display = 'none';   // plus de voiture : drone et FPS à pied
     if (/autostart/.test(location.hash)) $('go').click();
     await startCityTiles();
     renderer.setAnimationLoop(loop);
-    startGoogleCity();
+    WORLD.ready = true; if (WORLD.mode === 'photo') startGoogleCity();
   } catch (e) { console.error(e); $('ltxt').textContent = 'Erreur de chargement : ' + e.message; }
 }
 let prev = performance.now(), acc = 0, frames = 0, fpsT = 0;
@@ -1540,6 +1654,7 @@ function loop(now) {
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
+  if (STREAM.idx && (STREAM.tick = (STREAM.tick || 0) - dt) < 0) { STREAM.tick = 0.5; const p = mode === 'plane' ? PL : S; streamUpdate(p.x, p.z); }
   if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
@@ -1549,9 +1664,17 @@ function loop(now) {
   waterNormal.offset.x = (t * 0.012) % 1; waterNormal.offset.y = (t * 0.007) % 1;
   // distance culling
   const far = QUALITIES[qi].far + 600, tf = QUALITIES[qi].trees;
+  // deux mondes séparés, jamais mélangés : « Monde 3D » (IGN) ou « Photo réaliste » (maillage photo seul)
+  const PHOTO_W = cityMode === 'google';
+  for (const c of chunks) c.hiddenByCity = PHOTO_W;
+  for (const c of treeChunks) c.hiddenByCity = PHOTO_W;
+  if (terrainRoot) terrainRoot.visible = !PHOTO_W; if (objetsRoot) objetsRoot.visible = !PHOTO_W;
+  for (const sc of STREAM.terr.values()) if (sc) sc.visible = !PHOTO_W;
+  if (grass && grass.group) grass.group.userData.hideWorld = PHOTO_W;
+  scene.traverse(o => { if (o.name && o.name.startsWith('modele_')) o.visible = !PHOTO_W; });
   for (const c of chunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
-  updateTrees(dt, camera.position.x, camera.position.z, false); // the same 3D trees in both cities
+  updateTrees(dt, camera.position.x, camera.position.z, PHOTO_W); for (const im of TREE.far || []) im.visible = im.visible && !PHOTO_W;
   if (grass) { grassP.set(F.x, F.y, F.z); grass.update(dt, grassP); }
   if (cityTiles) { cityTiles.group.visible = cityMode !== 'google'; if (cityTiles.group.visible) { camera.updateMatrixWorld(); cityTiles.setResolutionFromRenderer(camera, renderer); cityTiles.update(); } }
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }

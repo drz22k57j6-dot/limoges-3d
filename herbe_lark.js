@@ -38,7 +38,7 @@ export function createLarkGrass(T, o) {
     uSunDir: { value: new T.Vector3(0, 1, 0) }, uSunCol: { value: new T.Color(1, 1, 1) }, uAmbSky: { value: new T.Color() }, uAmbGround: { value: new T.Color() },
     uShadowMap: { value: null }, uShadowMat: { value: new T.Matrix4() }, uShadowOn: { value: 0 }, uGrassCam: { value: new T.Vector2() }, uGrassCamH: { value: 0 }
   };
-  new T.TextureLoader().load(o.maskUrl, t => { t.colorSpace = T.NoColorSpace; t.flipY = false; t.minFilter = T.LinearMipmapLinearFilter; t.anisotropy = 4; U.uGroundMap.value = t; ready = true; });
+  if (o.maskUrl) new T.TextureLoader().load(o.maskUrl, t => { t.colorSpace = T.NoColorSpace; t.flipY = false; t.minFilter = T.LinearMipmapLinearFilter; t.anisotropy = 4; U.uGroundMap.value = t; ready = true; });
   let ready = false, hx = 1e9, hz = 1e9;
   function refreshHeight(cx, cz) {
     hx = Math.round(cx / 16) * 16; hz = Math.round(cz / 16) * 16;
@@ -229,8 +229,11 @@ void main() {
   });
   scene.add(group);
   const tmpC = new T.Color(), fw = new T.Vector3();
+  const maskLoader = new T.TextureLoader(); let maskKey = null;
   return {
     group,
+    // ville entière : masque d'herbe par tuile de 2 km (rect = x, z nord, largeur, hauteur en repère local)
+    setMask(url, rect) { if (url === maskKey) return; maskKey = url; maskLoader.load(url, t => { if (maskKey !== url) { t.dispose(); return; } t.colorSpace = T.NoColorSpace; t.flipY = false; t.minFilter = T.LinearMipmapLinearFilter; t.anisotropy = 4; const old = U.uGroundMap.value; U.uGroundMap.value = t; U.uGroundRect.value.set(rect[0], rect[1], rect[2], rect[3]); ready = true; if (old) old.dispose(); }); },
     get blades() { return group.children.reduce((a, m) => a + m.geometry.instanceCount, 0); },
     update(dt, player) {
       group.visible = ready && (o.isVisible ? o.isVisible() : true); if (!group.visible) return;
