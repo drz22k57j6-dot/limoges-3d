@@ -3,11 +3,12 @@
   const base = new URL('.', document.currentScript.src).href; // racine du site
   const MODES = [
     { id: '3d', ic: '🚗', name: 'Limoges 3D', href: base },
+    { id: 'apied', ic: '🚶', name: 'À pied (Saltline)', href: base + 'apied/' },
     { id: 'carte', ic: '🗺️', name: 'Carte des bâtiments', href: base + 'carte/' },
     { id: 'studio', ic: '🏗️', name: 'Générateur', href: base + 'studio/' },
   ];
   const path = location.pathname;
-  const cur = path.includes('/carte/') ? 'carte' : path.includes('/studio/') ? 'studio' : '3d';
+  const cur = path.includes('/apied/') ? 'apied' : path.includes('/carte/') ? 'carte' : path.includes('/studio/') ? 'studio' : '3d';
   const css = document.createElement('style');
   css.textContent = `#mswitch{position:fixed;left:calc(10px + env(safe-area-inset-left));top:50%;transform:translateY(-50%);z-index:99999;display:flex;flex-direction:column;gap:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 #mswitch button{width:52px;height:52px;border-radius:50%;border:2px solid #ffffff55;background:rgba(15,20,28,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;box-shadow:0 4px 14px #0007;position:relative}

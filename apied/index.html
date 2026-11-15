@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Limoges 3D — À pied</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="saltline.css">
+<style>
+  #apStart { position: fixed; inset: 0; z-index: 60; display: none; align-items: flex-end; justify-content: center; padding-bottom: calc(14vh + env(safe-area-inset-bottom)); background: linear-gradient(0deg, rgba(6,8,10,.75), rgba(6,8,10,0) 55%); }
+  #apStart.on { display: flex; }
+  #apStart button { font: 600 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .3em; text-transform: uppercase; color: #0b0d0f; background: #ffb347; border: 0; min-height: 54px; padding: 2px 40px 0 44px; cursor: pointer; }
+  #apCar { position: fixed; z-index: 40; left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); height: 42px; padding: 0 14px; display: flex; align-items: center; gap: 8px;
+    font: 600 12px/1 'Barlow Condensed', sans-serif; letter-spacing: .22em; text-transform: uppercase; color: #e8e4da; background: rgba(11,13,15,.55); border: 1px solid rgba(232,228,218,.42); cursor: pointer; }
+  #mswitch { display: none !important; }
+  .h-obj { display: none !important; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./three-shim.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="view" tabindex="0"></canvas>
+  <div id="ui"></div>
+  <div id="boot">
+    <div class="boot-mark">LIMOGES</div>
+    <div class="boot-sub" id="boot-msg">À pied · chargement</div>
+    <div class="boot-bar"><i id="boot-fill"></i></div>
+  </div>
+</div>
+<div id="apStart"><button id="apGo">Marcher</button></div>
+<button id="apCar" aria-label="Retour en voiture">🚗 Voiture</button>
+<script src="physique.js"></script>
+<script src="saltline.js"></script>
+<script type="module" src="monde.js"></script>
+<script>
+  // départ (le son ne peut démarrer qu'après un toucher sur iPhone) et retour à la voiture à l'endroit où l'on est
+  (function () {
+    const st = document.getElementById('apStart');
+    const wait = setInterval(() => { if (window.__ready) { clearInterval(wait); st.classList.add('on'); } }, 200);
+    document.getElementById('apGo').onclick = () => {
+      st.classList.remove('on'); const G = window.__G;
+      try { G.audio && G.audio.resume && G.audio.resume(); } catch (e) {}
+      try { G.input && G.input.requestLock && G.input.requestLock(); } catch (e) {}
+    };
+    document.getElementById('apCar').onclick = () => {
+      const G = window.__G, p = G && G.player && G.player.pos; let q = '';
+      if (p) q = '#autostart&x=' + p.x.toFixed(1) + '&z=' + p.z.toFixed(1) + '&h=' + ((G.player.yaw || 0) - Math.PI).toFixed(3);
+      location.href = '../' + q;
+    };
+  })();
+</script>
+</body>
+</html>

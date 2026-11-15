@@ -867,7 +867,7 @@ $('bQ').onclick = () => { qi = (qi + 1) % QUALITIES.length; applyQuality(); };
 $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
 $('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 0.3; PL.spd = 0; PL.vy = 0; } else respawn(); };
 $('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
-$('bFoot').onclick = () => { startAudio(); setMode(mode === 'foot' ? 'car' : 'foot'); };
+$('bFoot').onclick = () => { const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : S; location.href = 'apied/?x=' + F.x.toFixed(1) + '&z=' + F.z.toFixed(1) + '&h=' + F.h.toFixed(3); };
 function applyQuality() {
   const q = QUALITIES[qi]; resize(); buildComposer(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = TILE_ERR[qi];
   sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
@@ -1322,6 +1322,7 @@ async function main() {
     }).catch(e => console.warn('modele', m.id, e)); }).catch(() => {});
     applyTime(); applyQuality();
     respawn(true);
+    { const m = /x=(-?[\d.]+)&z=(-?[\d.]+)&h=(-?[\d.]+)/.exec(location.hash); if (m) { S.x = +m[1]; S.z = +m[2]; const r = nearestRoad(S.x, S.z, 60); if (r) { S.x = r.x; S.z = r.z; S.h = r.dir; } else S.h = +m[3]; S.y = S.lastG = surfaceH(S.x, S.z); S.yv = S.y; } }
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
     updateCarVisual(0.016); updateCamera(0.016, 0);
     renderer.compile(scene, camera);
