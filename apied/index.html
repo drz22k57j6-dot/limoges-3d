@@ -13,6 +13,12 @@
   #apStart button { font: 600 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .3em; text-transform: uppercase; color: #0b0d0f; background: #ffb347; border: 0; min-height: 54px; padding: 2px 40px 0 44px; cursor: pointer; }
   #apCar { position: fixed; z-index: 40; left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); height: 42px; padding: 0 14px; display: flex; align-items: center; gap: 8px;
     font: 600 12px/1 'Barlow Condensed', sans-serif; letter-spacing: .22em; text-transform: uppercase; color: #e8e4da; background: rgba(11,13,15,.55); border: 1px solid rgba(232,228,218,.42); cursor: pointer; }
+  #apSet { position: fixed; z-index: 40; left: calc(12px + env(safe-area-inset-left)); bottom: calc(62px + env(safe-area-inset-bottom)); width: 42px; height: 42px; font-size: 20px; color: #e8e4da; background: rgba(11,13,15,.55); border: 1px solid rgba(232,228,218,.42); cursor: pointer; }
+  #apPanel { position: fixed; z-index: 70; left: calc(12px + env(safe-area-inset-left)); bottom: calc(112px + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 24px)); padding: 14px 16px; background: rgba(11,13,15,.92); border: 1px solid rgba(232,228,218,.2); border-top: 3px solid #ffb347; color: #e8e4da; font: 600 13px 'Barlow Condensed', sans-serif; letter-spacing: .16em; text-transform: uppercase; display: none; }
+  #apPanel.on { display: block; }
+  #apPanel label { display: block; margin: 10px 0 6px; } #apPanel input { width: 100%; accent-color: #ffb347; }
+  #apPanel .seg { display: flex; } #apPanel .seg button { flex: 1; min-height: 36px; font: 600 12px 'Barlow Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: rgba(232,228,218,.64); background: transparent; border: 1px solid rgba(232,228,218,.35); margin-left: -1px; }
+  #apPanel .seg button.on { background: #e8e4da; color: #0b0d0f; }
   #mswitch { display: none !important; }
   .h-obj { display: none !important; }
 </style>
@@ -36,6 +42,10 @@
 </div>
 <div id="apStart"><button id="apGo">Marcher</button></div>
 <button id="apCar" aria-label="Retour en voiture">🚗 Voiture</button>
+<button id="apSet" aria-label="Réglages">⚙</button>
+<div id="apPanel"><label>Soleil <span id="vSoleil"></span></label><input type="range" id="rSoleil" min="0.1" max="1.5" step="0.05">
+<label>Luminosité <span id="vLum"></span></label><input type="range" id="rLum" min="0.4" max="1.6" step="0.05">
+<label>Qualité des bâtiments</label><div class="seg" id="sQual"><button data-q="0">Rapide</button><button data-q="1">Normale</button><button data-q="2">Haute</button><button data-q="3">Max</button></div></div>
 <script src="physique.js"></script>
 <script src="saltline.js"></script>
 <script type="module" src="monde.js"></script>
@@ -49,6 +59,13 @@
       try { G.audio && G.audio.resume && G.audio.resume(); } catch (e) {}
       try { G.input && G.input.requestLock && G.input.requestLock(); } catch (e) {}
     };
+    const P = document.getElementById('apPanel'), $ = id => document.getElementById(id);
+    const sync = () => { const A = window.__AP; if (!A) return; $('rSoleil').value = A.SET.soleil; $('rLum').value = A.SET.lum; $('vSoleil').textContent = Math.round(A.SET.soleil * 100) + ' %'; $('vLum').textContent = Math.round(A.SET.lum * 100) + ' %'; P.querySelectorAll('#sQual button').forEach(b => b.classList.toggle('on', +b.dataset.q === A.SET.qual)); };
+    $('apSet').onclick = e => { e.stopPropagation(); P.classList.toggle('on'); sync(); };
+    for (const ev of ['pointerdown', 'touchstart', 'mousedown']) { P.addEventListener(ev, e => e.stopPropagation(), { passive: true }); $('apSet').addEventListener(ev, e => e.stopPropagation(), { passive: true }); }
+    $('rSoleil').oninput = () => { window.__AP.SET.soleil = +$('rSoleil').value; window.__AP.apply(); sync(); };
+    $('rLum').oninput = () => { window.__AP.SET.lum = +$('rLum').value; window.__AP.apply(); sync(); };
+    P.querySelectorAll('#sQual button').forEach(b => b.onclick = () => { window.__AP.SET.qual = +b.dataset.q; window.__AP.apply(); sync(); });
     document.getElementById('apCar').onclick = () => {
       const G = window.__G, p = G && G.player && G.player.pos; let q = '';
       if (p) q = '#autostart&x=' + p.x.toFixed(1) + '&z=' + p.z.toFixed(1) + '&h=' + ((G.player.yaw || 0) - Math.PI).toFixed(3);

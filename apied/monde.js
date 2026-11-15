@@ -8,7 +8,7 @@ import { createPlateauTrees } from '../plateau_trees.js';
 
 const V = '?v=22', D = '../data/';
 const Q = Object.fromEntries(new URLSearchParams(location.search));
-const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder); const tex = new THREE.TextureLoader();
 const bin = async u => { const r = await fetch(D + u + V); if (!r.ok) throw new Error(u); return r.arrayBuffer(); };
 const glb = async u => loader.parseAsync(await bin(u), '');
 const say = (t, p) => { const m = document.getElementById('boot-msg'), f = document.getElementById('boot-fill'); if (m) m.textContent = t; if (f && p != null) f.style.width = Math.round(p * 100) + '%'; };
@@ -34,7 +34,10 @@ window.__LIMOGES_LEVEL = async function (G) {
     gO.scene.traverse(o => {
       if (!o.isMesh || o.isInstancedMesh) return; o.receiveShadow = o.castShadow = true;
       if (/^(bitume|marquage|trottoir)$/.test(o.material.name)) { o.visible = false; return; }
-      BMAT[o.material.name] = o.material; if (o.material.map) o.material.map.colorSpace = THREE.SRGBColorSpace;
+      const m = o.material; BMAT[m.name] = m; if (m.map) { m.map.colorSpace = THREE.SRGBColorSpace; m.map.anisotropy = 8; }
+      const PBR = { toit_tuiles: 'tuiles', toit_ardoise: 'ardoise', toit_plat: 'toit_plat', facade_logements: 'enduit', facade_activites: 'enduit', mur_simple: 'enduit', facade_barre: 'enduit', facade_tour: 'enduit', pignon: 'enduit' }, tn = PBR[m.name];
+      if (tn && !m.userData.pbr) { m.userData.pbr = 1; const ref = m.map, fix = t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (ref) { t.offset.copy(ref.offset); t.repeat.copy(ref.repeat); t.rotation = ref.rotation; t.center.copy(ref.center); } return t; };
+        m.normalMap = fix(tex.load(D + 'tex/' + tn + '_n.jpg' + V)); m.normalScale.set(0.9, 0.9); m.roughnessMap = fix(tex.load(D + 'tex/' + tn + '_r.jpg' + V)); m.needsUpdate = true; }
       if (o.material.name === 'eau') { o.material.color.set(0x2c4a46); o.material.roughness = 0.06; o.material.map = null; o.material.needsUpdate = true; }
     });
     root.add(gO.scene);
@@ -116,6 +119,18 @@ window.__LIMOGES_LEVEL = async function (G) {
       }
     },
   };
+  const sun = G.render.sun, base = { sun: sun ? sun.intensity : 1, env: G.scene.environmentIntensity ?? 1 };
+  const SET = Object.assign({ soleil: 0.6, lum: 0.85, qual: 1 }, JSON.parse(localStorage.getItem('apied_reglages') || '{}'));
+  window.__AP = {
+    SET, apply() {
+      if (sun) sun.intensity = base.sun * SET.soleil;
+      G.scene.environmentIntensity = base.env * (0.5 + 0.5 * SET.soleil);
+      G.render.exposure = SET.lum;
+      if (tiles) { tiles.errorTarget = [10, 6, 3, 1.5][SET.qual]; tiles.lruCache.minSize = [200, 300, 600, 900][SET.qual]; tiles.lruCache.maxSize = [600, 900, 1600, 2400][SET.qual]; }
+      localStorage.setItem('apied_reglages', JSON.stringify(SET));
+    },
+  };
+  window.__AP.apply();
   say('Prêt', 0.7);
   return level;
 };
