@@ -1,7 +1,8 @@
 // Équipes : nom, identité (couleur, emblème, devise), description et QG unique (un vrai bâtiment).
 // Stockage : base en ligne si configurée (Supabase, contraintes d'unicité côté serveur), sinon ce téléphone uniquement.
+// Partagé par la carte et le jeu 3D : l'hôte fournit window.EQ_HOST = { drawHQ(teams), restyle(), goTo(team) }.
 (() => {
-  const C = window.CARTE, $ = id => document.getElementById(id);
+  const H = () => window.EQ_HOST || {}, $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const COLORS = ['#ff3b30', '#ff9f0a', '#ffd60a', '#30d158', '#00c7be', '#0a84ff', '#5e5ce6', '#bf5af2', '#ff375f', '#a2845e', '#ffffff', '#1c1c1e'];
   const EMBLEMS = ['🦁', '🐺', '🦅', '🐉', '🦂', '🐍', '🦈', '🐻', '🦊', '🐗', '⚡', '🔥', '👑', '⚔️', '🛡️', '💎', '🏰', '⭐', '🌙', '☠️'];
@@ -48,7 +49,7 @@
   async function refresh() {
     try { teams = await store.list(); } catch (e) { teams = await local.list(); }
     try { const id = localStorage.getItem('mon_equipe'); mine = teams.find(t => t.id === id) || null; } catch (e) {}
-    drawHQ(); C.restyle();
+    H().drawHQ?.(teams); H().restyle?.();
   }
 
   // ---------- interface ----------
@@ -83,7 +84,7 @@
     $('eqX').onclick = close;
     if ($('eqNew')) $('eqNew').onclick = () => openForm(null);
     if ($('eqEdit')) $('eqEdit').onclick = () => openForm(mine);
-    p.querySelectorAll('[data-go]').forEach(el => (el.onclick = () => { const t = teams.find(x => x.id === el.dataset.go); if (t?.qg) { close(); C.map.setView([t.qg.lat, t.qg.lon], 18); } }));
+    p.querySelectorAll('[data-go]').forEach(el => (el.onclick = () => { const t = teams.find(x => x.id === el.dataset.go); if (t?.qg) { close(); H().goTo?.(t); } }));
   }
   const card = t => `<div class="eqCard" style="border-color:${t.couleur}" data-go="${t.id}">${badge(t)}<div><b>${esc(t.nom)}</b><small>${esc(t.devise || '')}</small><br><small>${t.qg ? '🏠 QG : ' + esc(t.qg.adresse || 'bâtiment choisi') : 'Pas encore de QG'}</small>${t._pending ? '<br><small style="color:#ffb547">⏳ en attente de validation</small>' : ''}</small>${t.description ? `<div style="font-size:13px;margin-top:4px">${esc(t.description)}</div>` : ''}</div></div>`;
 
@@ -119,6 +120,7 @@
 
   // ---------- fiche bâtiment : QG ----------
   window.EQ = {
+    get teams() { return teams; }, refresh, redraw: () => { H().drawHQ?.(teams); H().restyle?.(); },
     hqOf: id => teams.find(t => t.qg?.id === id) || null,
     cardExtra(f, info) { // appelé par la fiche du bâtiment
       const id = f.properties.identifiants_rnb || f.properties.cleabs, owner = this.hqOf(id), box = document.createElement('div');
@@ -126,17 +128,11 @@
       else if (picking) {
         const ok = ['Habitation', 'Commerce / services', 'Habitation + commerce', 'Industrie', 'Sport', 'Non précisé'].includes(info.type);
         box.innerHTML = ok ? `<button class="eqBtnP" id="eqHere">🏠 Installer le QG de « ${esc(draft?.nom || 'mon équipe')} » ici</button>` : '<div class="eqErr">Une annexe (garage, abri) ne peut pas être un QG.</div>';
-        setTimeout(() => { const b = $('eqHere'); if (b) b.onclick = () => { draft.qg = { id, lat: info.lat, lon: info.lon, adresse: info.adresse() }; picking = false; $('eqPick').style.display = 'none'; $('card').classList.remove('on'); openForm(); }; });
+        setTimeout(() => { const b = $('eqHere'); if (b) b.onclick = () => { draft.qg = { id, lat: info.lat, lon: info.lon, adresse: info.adresse() }; picking = false; $('eqPick').style.display = 'none'; BAT.hide(); openForm(); }; });
       }
       return box;
     },
   };
 
-  // ---------- QG sur la carte ----------
-  let hqLayer = L.layerGroup().addTo(C.map);
-  function drawHQ() {
-    hqLayer.clearLayers();
-    for (const t of teams) if (t.qg) L.marker([t.qg.lat, t.qg.lon], { icon: L.divIcon({ className: '', html: `<div class="eqHQ" style="background:${t.couleur}">${t.embleme}</div>`, iconSize: [36, 36], iconAnchor: [18, 18] }), title: 'QG de ' + t.nom, interactive: false }).addTo(hqLayer);
-  }
   refresh();
 })();
