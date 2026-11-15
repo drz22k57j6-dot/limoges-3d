@@ -1,0 +1,6 @@
+{"modeles": [
+ {"id": "BATIMENT0000000224596725", "nom": "Tour, 2 allée Émile Kahn", "fichier": "tour_emile_kahn.glb",
+  "centre_local": [-184.68, 287.45], "sol_alt": 289.92, "toit_alt": 316.25, "longueur_m": 28.4, "largeur_m": 24.9, "rotation_deg": 93.7,
+  "source": "Modèle Tencent Hunyuan 3D généré par Sid à partir d'une photo, allégé (83 000 triangles). Position, taille et hauteur calées sur IGN BD TOPO et LiDAR HD.",
+  "verifie": "dimensions et hauteur : mesurées (IGN) ; façade : générée par IA à partir d'une photo, orientation de la façade rouge vers la rue Trésaguet déduite de la photo"}
+]}

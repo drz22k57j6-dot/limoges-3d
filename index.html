@@ -231,7 +231,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=20';
+const V = '?v=22';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1124,6 +1124,16 @@ async function main() {
     grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, maskUrl: 'data/tex/herbe_masque.jpg' + V,
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
     window.__grass = grass;
+    // real buildings modelled one by one (data/modeles/index.json): placed on their IGN footprint, at their LiDAR height
+    fetch('data/modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) for (const m of idx.modeles) loader.loadAsync('data/modeles/' + m.fichier + V).then(g => {
+      const o = g.scene, bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+      const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z);
+      inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
+      const root = new THREE.Group(); root.add(inner); root.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg);
+      root.position.set(m.centre_local[0], m.sol_alt - H0, m.centre_local[1]); root.name = 'modele_' + m.id;
+      o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; } });
+      scene.add(root);
+    }).catch(e => console.warn('modele', m.id, e)); }).catch(() => {});
     applyTime(); applyQuality();
     respawn(true);
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
