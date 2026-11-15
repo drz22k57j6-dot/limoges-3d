@@ -66,6 +66,8 @@ const photo = L.tileLayer(wmts('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg'), { maxN
 L.control.layers({ 'Plan': plan, 'Photo aérienne': photo }, null, { position: 'topright' }).addTo(map);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 let layer = null, feats = [], tok = 0;
+const styleOf = f => { const hq = window.EQ && EQ.hqOf(f.properties.identifiants_rnb || f.properties.cleabs);
+  return hq ? { color: hq.couleur, weight: 4, fillColor: hq.couleur, fillOpacity: 0.9 } : { color: '#111', weight: 0.6, fillColor: TYPES[typeOf(f.properties)].c, fillOpacity: 0.85 }; };
 async function load() {
   if (map.getZoom() < 16) { if (layer) { map.removeLayer(layer); layer = null; feats = []; } $('hint').textContent = 'Zoome pour voir les bâtiments'; return; }
   const b = map.getBounds(), t = ++tok;
@@ -76,11 +78,11 @@ async function load() {
     const d = await (await fetch(url)).json(); if (t !== tok) return;
     if (layer) map.removeLayer(layer);
     feats = d.features;
-    layer = L.geoJSON(d, { interactive: false, style: f => ({ color: '#111', weight: 0.6, fillColor: TYPES[typeOf(f.properties)].c, fillOpacity: 0.85 }) }).addTo(map);
+    layer = L.geoJSON(d, { interactive: false, style: styleOf }).addTo(map);
     $('hint').textContent = 'Reste appuyé 3 s sur un bâtiment';
   } catch (e) { $('hint').textContent = 'Chargement impossible, réessaie'; }
 }
-map.on('moveend', load); load(); window.__carte = { map, get n() { return feats.length; } };
+map.on('moveend', load); load(); window.__carte = { map, get n() { return feats.length; } }; window.CARTE = { map, restyle: () => layer && layer.setStyle(styleOf) };
 
 // ---------- appui long de 3 s ----------
 function inRing(x, y, r) { let ins = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins; } return ins; }
@@ -137,6 +139,7 @@ async function show(f) {
       <tr><td>Identifiant</td><td style="font-size:11px">${esc(p.identifiants_rnb || p.cleabs)}</td></tr>
     </table>
     <div class="note">Mesuré : données IGN BD TOPO. Estimé : calculé avec les prix de vente médians 2025 à Limoges (DVF : ${PRIX.appart} €/m² appartement, ${PRIX.maison} €/m² maison), un loyer de ${LOYER.appart} €/m² (appartement) et ${LOYER.maison} €/m² (maison), ${PERS_PAR_LOGEMENT} habitant par logement. Loyer commercial : ${LOYER_COMMERCE} €/m², hypothèse de jeu. Ordres de grandeur, pas une estimation immobilière.</div>`;
+  if (window.EQ) $('cardBody').appendChild(EQ.cardExtra(f, { type: T.n, lat: cy, lon: cx, adresse: () => $('addr').textContent }));
   $('card').classList.add('on');
   fetch(`https://data.geopf.fr/geocodage/reverse?lon=${cx}&lat=${cy}&limit=1`).then(r => r.json()).then(d => { const a = d.features?.[0]?.properties; $('addr').textContent = a ? a.label : 'Adresse inconnue'; }).catch(() => ($('addr').textContent = ''));
   if (k === 'com' || k === 'mix') {
@@ -150,6 +153,7 @@ async function show(f) {
 $('close').onclick = () => $('card').classList.remove('on');
 }
 </script>
+<script src="equipes.js"></script>
 <script src="../switcher.js"></script>
 </body>
 </html>

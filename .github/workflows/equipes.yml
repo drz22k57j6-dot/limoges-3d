@@ -1,0 +1,63 @@
+# Base de données des équipes : chaque création ou modification arrive sous forme d'issue « [EQUIPE] ».
+# Ce robot vérifie les règles (nom unique, QG unique, champs valides), écrit data/equipes.json, répond et ferme l'issue.
+name: Equipes
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: equipes-db
+  cancel-in-progress: false
+jobs:
+  enregistrer:
+    if: startsWith(github.event.issue.title, '[EQUIPE]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Valider et enregistrer
+        id: db
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const issue = context.payload.issue, author = issue.user.login;
+            const reply = async (msg, ok) => {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: msg });
+              await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: 'closed', state_reason: ok ? 'completed' : 'not_planned' });
+            };
+            const m = (issue.body || '').match(/```json\s*([\s\S]*?)```/);
+            let t; try { t = JSON.parse(m[1]); } catch (e) { return reply('❌ Demande illisible (bloc JSON manquant).', false); }
+            const s = (v, n) => String(v ?? '').replace(/[<>]/g, '').trim().slice(0, n);
+            const team = {
+              id: s(t.id, 64), nom: s(t.nom, 24), couleur: /^#[0-9a-fA-F]{6}$/.test(t.couleur) ? t.couleur : '#888888',
+              embleme: s(t.embleme, 8), devise: s(t.devise, 60), description: s(t.description, 300),
+              qg: t.qg && t.qg.id ? { id: s(t.qg.id, 64), lat: +t.qg.lat, lon: +t.qg.lon, adresse: s(t.qg.adresse, 120) } : null,
+              auteur: author, maj: new Date().toISOString(),
+            };
+            if (!team.id || team.nom.length < 2) return reply('❌ Il faut un nom d\'au moins 2 caractères.', false);
+            if (!team.qg || !isFinite(team.qg.lat) || !isFinite(team.qg.lon)) return reply('❌ Il faut un QG.', false);
+            const path = 'data/equipes.json';
+            const db = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : { equipes: [] };
+            const prev = db.equipes.find(x => x.id === team.id);
+            if (prev && prev.auteur !== author) return reply('❌ Cette équipe appartient à un autre joueur.', false);
+            const nameTaken = db.equipes.find(x => x.id !== team.id && x.nom.toLowerCase() === team.nom.toLowerCase());
+            if (nameTaken) return reply(`❌ Le nom « ${team.nom} » est déjà pris.`, false);
+            const hqTaken = db.equipes.find(x => x.id !== team.id && x.qg && x.qg.id === team.qg.id);
+            if (hqTaken) return reply(`❌ Ce bâtiment est déjà le QG de « ${hqTaken.nom} ».`, false);
+            if (prev) team.cree = prev.cree; else team.cree = team.maj;
+            db.equipes = db.equipes.filter(x => x.id !== team.id).concat([team]);
+            fs.writeFileSync(path, JSON.stringify(db, null, 1));
+            core.setOutput('nom', team.nom);
+            core.exportVariable('EQ_OK', '1');
+            await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: `✅ Équipe « ${team.nom} » ${prev ? 'mise à jour' : 'créée'}, QG : ${team.qg.adresse || team.qg.id}. Visible sur la carte d'ici 1 à 2 minutes.` });
+            await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: 'closed', state_reason: 'completed' });
+      - name: Enregistrer dans le dépôt
+        if: env.EQ_OK == '1'
+        run: |
+          git config user.name "Base des équipes"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/equipes.json
+          git commit -m "Équipe : ${{ steps.db.outputs.nom }}"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 3; done
