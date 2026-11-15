@@ -101,6 +101,8 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createPlateauTrees } from './plateau_trees.js';
 import { createSaltlineRoads } from './road_saltline.js';
+import { createLarkGrass } from './herbe_lark.js';
+import { createLarkLight } from './lumiere_lark.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
@@ -176,6 +178,8 @@ scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x6b6250, 1.15); scene.add(hemi);
 scene.fog = new THREE.Fog(0xbcd2e6, 300, 2000);
 const pmrem = new THREE.PMREMGenerator(renderer);
+// Larkhollow light: physical sky dome, sun colour from the atmosphere, sky ambient, AgX look
+const lark = createLarkLight(THREE, renderer, { scale: 0.18 }); scene.add(lark.dome); window.__lark = lark;
 let envRT = null;
 
 const TIMES = [
@@ -202,6 +206,12 @@ function applyTime() {
   scene.environmentIntensity = t.night ? 0.02 : 0.06; // sky PMREM is very bright HDR
   scene.background = null;
   if (t.night) { scene.background = new THREE.Color(0x05070d); sky.visible = false; } else sky.visible = true;
+  { // Larkhollow lighting overrides the sky, sun, ambient, fog and reflections
+    const L = lark.update(sunDir); sky.visible = false; scene.background = null;
+    sun.color.copy(L.sunColor); sun.intensity = L.sunIntensity;
+    { const amb = L.ambSky.clone(), l = 0.2126 * amb.r + 0.7152 * amb.g + 0.0722 * amb.b; amb.lerp(new THREE.Color(l, l, l), 0.35); hemi.color.copy(amb).multiplyScalar(Math.PI * 1.15 * 0.8); hemi.groundColor.copy(L.ambGround).multiplyScalar(Math.PI * 1.15 * 1.3); hemi.intensity = 1; }
+    scene.fog.color.copy(L.horizon); scene.environment = lark.envMap(); scene.environmentIntensity = 0.45; renderer.toneMappingExposure = t.exp * 1.15;
+  }
   nightMats.forEach(m => { m.emissiveIntensity = t.night ? 1.0 : (t.night === 0 ? 0 : 0.2); });
   headL.forEach(l => l.intensity = t.night || t.elev < 10 ? 60 : 0);
   $('bTime').textContent = t.name;
@@ -221,7 +231,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=17';
+const V = '?v=20';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1095,6 +1105,7 @@ const carBlob = (() => {
 })();
 car.add(carBlob);
 let terrainRoot = null;
+let grass = null; const grassP = new THREE.Vector3();
 
 // ---------------- main ----------------
 let lastStreet = '', streetT = 0;
@@ -1109,6 +1120,10 @@ async function main() {
     relief = parseRelief(rel); roadNames = names; parseRoads(rds); const rings = parseBuildings(bat);
     setupCity(gT, gO); buildTrees(treesBuf);
     { const SR = createSaltlineRoads(THREE); const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } setupCar(gC); buildMap(rings);
+    // 3D grass ported from Larkhollow, on the real green areas (orthophoto + LiDAR mask)
+    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, maskUrl: 'data/tex/herbe_masque.jpg' + V,
+      quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
+    window.__grass = grass;
     applyTime(); applyQuality();
     respawn(true);
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);
@@ -1134,13 +1149,14 @@ function loop(now) {
   const F = mode === 'plane' ? PL : S;
   // sun follows car for shadows
   sun.position.set(F.x + sunDir.x * 300, F.y + sunDir.y * 300, F.z + sunDir.z * 300); sun.target.position.set(F.x, F.y, F.z);
-  sky.position.copy(camera.position);
+  sky.position.copy(camera.position); lark.dome.position.copy(camera.position);
   waterNormal.offset.x = (t * 0.012) % 1; waterNormal.offset.y = (t * 0.007) % 1;
   // distance culling
   const far = QUALITIES[qi].far + 600, tf = QUALITIES[qi].trees;
   for (const c of chunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
   updateTrees(dt, camera.position.x, camera.position.z, false); // the same 3D trees in both cities
+  if (grass) { grassP.set(F.x, F.y, F.z); grass.update(dt, grassP); }
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : S.vf) * 3.6);
