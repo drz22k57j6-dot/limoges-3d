@@ -1,0 +1,61 @@
+{
+ "date": "2026-11-15 08:55",
+ "sources": {
+  "gtfs_idfm": {
+   "ok": false,
+   "erreur": "HTTP Error 403: Forbidden"
+  },
+  "osm": {
+   "ok": false,
+   "erreur": "HTTP Error 502: Bad Gateway"
+  },
+  "traces.geojson": {
+   "ok": true,
+   "dataset": "traces-du-reseau-de-transport-ferre-dile-de-france-schematique",
+   "objets": 376,
+   "champs": [
+    "fourche",
+    "geo_point_2d",
+    "idrefliga",
+    "idrefligc",
+    "ligne",
+    "mode"
+   ]
+  },
+  "gares.geojson": {
+   "ok": true,
+   "dataset": "emplacement-des-gares-idf",
+   "objets": 409,
+   "champs": [
+    "date_mise",
+    "exploitant",
+    "geo_point_2d",
+    "id_gare_g",
+    "id_gares",
+    "id_ref_zda",
+    "id_ref_zdc",
+    "idf",
+    "idrefliga",
+    "idrefligc",
+    "indice_lig",
+    "mode",
+    "nom_gares",
+    "nom_iv",
+    "nom_so_gar",
+    "nom_su_gar",
+    "nom_zda",
+    "nom_zdc",
+    "picto",
+    "principal",
+    "res_com",
+    "termetro",
+    "terrer",
+    "tertrain",
+    "tertram",
+    "terval",
+    "x",
+    "y"
+   ]
+  }
+ }
+}
