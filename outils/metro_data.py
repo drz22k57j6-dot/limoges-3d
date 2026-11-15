@@ -71,6 +71,12 @@ def gtfs():
             if any(set(seq) <= set(k) for k in keep): continue
             keep.append(list(seq))
         L['branches'] = keep
+    # quai -> lignes et directions (terminus) d'après les vraies courses
+    qinfo = {}
+    for t_id, s in seqs.items():
+        r = rid[tid[t_id]['route_id']]; term = parent(s[-1][1])
+        for q, sid, _ in s[:-1]:
+            e = qinfo.setdefault(sid, {'l': set(), 'd': set()}); e['l'].add(r.get('route_short_name', '')); e['d'].add(term)
     used = set(x for L in lines.values() for b in L['branches'] for x in b)
     st_out = {}
     for sid in used:
@@ -85,6 +91,8 @@ def gtfs():
         p = s.get('parent_station')
         if p in st_out:
             e = {'id': s['stop_id'], 'nom': s.get('stop_name', ''), 'lat': float(s.get('stop_lat') or 0), 'lon': float(s.get('stop_lon') or 0), 'type': s.get('location_type', '0'), 'niveau': s.get('level_id', '')}
+            qi = qinfo.get(s['stop_id'])
+            if qi: e['lignes'] = sorted(qi['l']); e['directions'] = sorted(qi['d'])
             (st_out[p]['acces'] if s.get('location_type') == '2' else st_out[p]['quais']).append(e); children[s['stop_id']] = p
     # correspondances (temps à pied) et cheminements à l'intérieur des stations
     tr = [{'de': r['from_stop_id'], 'vers': r['to_stop_id'], 's': r.get('min_transfer_time', '')} for r in rows('transfers.txt') if (children.get(r['from_stop_id']) or r['from_stop_id']) in st_out and (children.get(r['to_stop_id']) or r['to_stop_id']) in st_out]
@@ -137,7 +145,7 @@ def osm():
 for name, fn in [('gtfs_idfm', gtfs), ('osm', osm)]:
     try: fn()
     except Exception as e: note(name, ok=False, erreur=str(e)[:400])
-try: geo([i for i in ['traces-du-reseau-ferre-idf', 'traces-du-reseau-de-transport-ferre-dile-de-france'] + find_dataset(['traces', 'reseau', 'ferre']) if 'schemat' not in i], 'traces.geojson', is_metro)
+try: geo([i for i in ['traces-du-reseau-ferre-idf', 'traces-du-reseau-de-transport-ferre-dile-de-france'] + find_dataset(['traces', 'reseau', 'ferre']) + find_dataset(['traces']) if 'schemat' not in i and 'trace' in i], 'traces.geojson', is_metro)
 except Exception as e: note('traces.geojson', ok=False, erreur=str(e)[:300])
 try: geo(['emplacement-des-gares-idf'] + find_dataset(['emplacement', 'gares']), 'gares.geojson', is_metro)
 except Exception as e: note('gares.geojson', ok=False, erreur=str(e)[:300])
