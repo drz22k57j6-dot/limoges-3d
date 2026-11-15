@@ -284,7 +284,7 @@ const segGrid = new Map(); // building walls
 const treeGrid = new Map();
 const roadGrid = new Map();
 function addTo(grid, x, z, v) { const k = key(Math.floor(x / CELL), Math.floor(z / CELL)); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(v); }
-l
+let segs, segRing, allRings; const ringTop = []; const ringGrid = new Map(); // walls x1,z1,x2,z2
 const buildingLabelSprites = new Map(); let buildingLabelTick = 0;
 function stableBuildingId(i) {
   const r=allRings[i]; let x=0,z=0,n=r.length/2;
