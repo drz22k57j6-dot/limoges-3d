@@ -21,8 +21,15 @@ def note(k, **v): LOG['sources'][k] = v; print(k, v, flush=True)
 
 # ---------------------------------------------------------------- GTFS IDFM
 def gtfs():
-    rec = jget(API + 'offre-horaires-tc-gtfs-idfm/records?limit=20')
     url = None
+    for u in ['https://eu.ftp.opendatasoft.com/stif/GTFS/IDFM-gtfs.zip', 'https://data.iledefrance-mobilites.fr/explore/dataset/offre-horaires-tc-gtfs-idfm/files/a925e164271e4bca93433756d6a340d1/download/']:
+        try:
+            req = urllib.request.Request(u, headers=UA, method='HEAD'); urllib.request.urlopen(req, timeout=60); url = u; break
+        except Exception as e: print('GTFS essai', u, e, flush=True)
+    rec = {'results': []}
+    if not url:
+        try: rec = jget(API + 'offre-horaires-tc-gtfs-idfm/records?limit=20')
+        except Exception as e: print('records', e, flush=True)
     for r in rec.get('results', []):
         for k, v in r.items():
             if isinstance(v, str) and v.startswith('http') and ('zip' in v.lower() or 'gtfs' in v.lower()): url = url or v
@@ -91,7 +98,8 @@ def gtfs():
 def find_dataset(words):
     q = urllib.parse.quote(' '.join(words))
     d = jget(API.rstrip('/') + '?limit=20&where=' + urllib.parse.quote('search("' + ' '.join(words) + '")'))
-    return [x['dataset_id'] for x in d.get('results', [])]
+    ids = [x['dataset_id'] for x in d.get('results', [])]
+    return sorted(ids, key=lambda i: ('schemat' in i, i))
 
 def geo(ids, name, filt):
     for did in ids:
@@ -112,7 +120,13 @@ is_metro = lambda p: any('METRO' in str(v).upper() or 'MÉTRO' in str(v).upper()
 # ---------------------------------------------------------------- OpenStreetMap
 def osm():
     q = '[out:json][timeout:180];area["name"="Paris"]["admin_level"="8"]->.a;(node["railway"="subway_entrance"](48.80,2.20,48.92,2.48);way["railway"="platform"]["subway"="yes"](48.80,2.20,48.92,2.48);node["railway"="station"]["station"="subway"](48.80,2.20,48.92,2.48););out tags center;'
-    d = jget('https://overpass-api.de/api/interpreter?data=' + urllib.parse.quote(q))
+    d = None
+    for base in ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter']:
+        for k in range(2):
+            try: d = jget(base + '?data=' + urllib.parse.quote(q)); break
+            except Exception as e: print('overpass', base, e, flush=True); time.sleep(10)
+        if d: break
+    if not d: raise RuntimeError('overpass indisponible')
     out = []
     for e in d.get('elements', []):
         c = e.get('center') or {'lat': e.get('lat'), 'lon': e.get('lon')}
@@ -123,7 +137,7 @@ def osm():
 for name, fn in [('gtfs_idfm', gtfs), ('osm', osm)]:
     try: fn()
     except Exception as e: note(name, ok=False, erreur=str(e)[:400])
-try: geo(['traces-du-reseau-ferre-idf'] + find_dataset(['traces', 'reseau', 'ferre']), 'traces.geojson', is_metro)
+try: geo([i for i in ['traces-du-reseau-ferre-idf', 'traces-du-reseau-de-transport-ferre-dile-de-france'] + find_dataset(['traces', 'reseau', 'ferre']) if 'schemat' not in i], 'traces.geojson', is_metro)
 except Exception as e: note('traces.geojson', ok=False, erreur=str(e)[:300])
 try: geo(['emplacement-des-gares-idf'] + find_dataset(['emplacement', 'gares']), 'gares.geojson', is_metro)
 except Exception as e: note('gares.geojson', ok=False, erreur=str(e)[:300])
