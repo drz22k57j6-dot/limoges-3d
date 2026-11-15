@@ -1,5 +1,5 @@
 {
- "date": "2026-11-15 08:57",
+ "date": "2026-11-15 08:59",
  "sources": {
   "gtfs_idfm": {
    "ok": true,
@@ -31,38 +31,31 @@
   },
   "traces.geojson": {
    "ok": true,
-   "dataset": "emplacement-des-gares-idf-data-generalisee",
-   "objets": 325,
+   "dataset": "traces-du-reseau-ferre-idf",
+   "objets": 397,
    "champs": [
-    "codeunique",
+    "colourprint_cmjn",
+    "colourweb_hexa",
+    "date_mes",
     "exploitant",
+    "extcode",
     "geo_point_2d",
-    "id_ref_zda",
-    "id_ref_zdc",
     "idf",
     "idrefliga",
     "idrefligc",
+    "indice_lig",
     "metro",
     "mode",
-    "nom_long",
-    "nom_so_gar",
-    "nom_su_gar",
-    "nom_zda",
-    "nom_zdc",
     "objectid_1",
-    "principal",
+    "picto",
+    "picto_final",
     "rer",
     "res_com",
-    "termetro",
-    "terrer",
-    "tertrain",
-    "tertram",
-    "terval",
+    "reseau",
+    "shape_leng",
     "train",
     "tramway",
-    "val",
-    "x",
-    "y"
+    "val"
    ]
   },
   "gares.geojson": {
