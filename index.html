@@ -64,7 +64,8 @@
   <button class="b" id="bQ">HAUTE</button>
   <button class="b" id="bVille">VILLE…</button>
   <button class="b" id="bFoot">À PIED</button>
-  <button class="b" id="bPlane">AVION ✈</button>
+  <button class="b" id="bPlane">DRONE ✦</button>
+  <button class="b" id="bRec">● REC</button>
   <button class="b" id="bReset">↺</button>
 </div>
 <div id="touch">
@@ -94,7 +95,7 @@ window.CITIES = {
   <div id="bar"><i></i></div>
   <div id="ltxt">Chargement de la ville…</div>
   <button id="go">ROULER</button>
-  <div id="help">Clavier : ZQSD / flèches · Espace = frein à main · C = caméra · R = remettre sur la route · F = avion<br>Avion : Z/S vitesse · Q/D tourner · Espace/↑ monter · Maj/↓ descendre<br>Mobile : joystick à gauche, pédales à droite (mode paysage conseillé)</div>
+  <div id="help">Clavier : ZQSD / flèches · Espace = frein à main · C = caméra · R = remettre sur la route · F = drone<br>Drone : GAZ avancer · joystick tourner/altitude · Espace monter · Maj descendre<br>Mobile : joystick à gauche, pédales à droite (mode paysage conseillé)</div>
 </div>
 
 <script type="importmap">
@@ -756,7 +757,7 @@ function respawn(first) {
 }
 
 // ---------------- camera ----------------
-const CAMS = ['POURSUITE', 'LOIN', 'CAPOT', 'CINÉ'];
+const CAMS = ['GIMBAL FPV', 'SUIVI', 'PLONGÉE', 'CINÉ'];
 let camMode = 0;
 function nextCam() { camMode = (camMode + 1) % CAMS.length; toast('Caméra : ' + CAMS[camMode]); }
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), tmp = new THREE.Vector3();
@@ -875,13 +876,35 @@ function thud(k) {
 // ---------------- UI / touch ----------------
 let toastT;
 function toast(s) { const e = $('toast'); e.textContent = s; e.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => e.style.opacity = 0, 1600); }
-$('bCam').onclick = () => { nextCam(); startAudio(); };
+$('bCam').onclick = () => { nextCam(); $('bCam').textContent = mode === 'plane' ? CAMS[camMode] : 'CAMÉRA'; startAudio(); };
 $('bTime').onclick = () => { ti = (ti + 1) % TIMES.length; applyTime(); };
 $('bQ').onclick = () => { qi = (qi + 1) % QUALITIES.length; applyQuality(); };
 $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
-$('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 0.3; PL.spd = 0; PL.vy = 0; } else respawn(); };
+$('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 18; PL.spd = 0; PL.vy = 0; } else respawn(); };
 $('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
 $('bFoot').onclick = () => { const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : S; location.href = 'apied/?x=' + F.x.toFixed(1) + '&z=' + F.z.toFixed(1) + '&h=' + F.h.toFixed(3) + '&ville=' + CITY.id; };
+
+// High-quality in-game drone recording: captures the actual game renderer, not a separate preview.
+let gameRecorder=null,gameChunks=[],recordStarted=0;
+$('bRec').onclick=()=>{
+ if(gameRecorder&&gameRecorder.state!=='inactive'){gameRecorder.stop();return}
+ try{
+  const canvas=renderer.domElement;
+  const stream=canvas.captureStream(60);
+  const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+  if(!mime)throw new Error('Enregistrement vidéo non pris en charge sur ce navigateur');
+  gameChunks=[];gameRecorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:32000000});
+  gameRecorder.ondataavailable=e=>{if(e.data&&e.data.size)gameChunks.push(e.data)};
+  gameRecorder.onstop=()=>{
+   const blob=new Blob(gameChunks,{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='paris-drone-'+new Date().toISOString().replace(/[:.]/g,'-')+'.'+(mime.includes('mp4')?'mp4':'webm');
+   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},60000);
+   $('bRec').textContent='● REC';$('bRec').classList.remove('on');toast('Vidéo enregistrée · '+Math.round(blob.size/1048576)+' Mo');
+  };
+  gameRecorder.start(1000);recordStarted=performance.now();$('bRec').textContent='■ STOP';$('bRec').classList.add('on');toast('Enregistrement du jeu en haute qualité · 60 i/s');
+ }catch(e){toast('Vidéo : '+e.message)}
+};
+
 function applyQuality() {
   const q = QUALITIES[qi]; resize(); buildComposer(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = TILE_ERR[qi];
   sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
@@ -908,167 +931,128 @@ bindPedal('gas', 'thr'); bindPedal('brk', 'brk'); bindPedal('hb', 'hb');
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 
-// ---------------- origami plane ----------------
+// ---------------- professional camera drone ----------------
 let mode = 'car';
-const plane = new THREE.Group(); scene.add(plane);
-const planeBody = new THREE.Group(); plane.add(planeBody);
-{
-  // classic paper dart: two wings + keel, nose toward +Z (metres)
-  const N = [0, 0.02, 1.35], T = [0, 0.06, -1.05], K = [0, -0.32, -0.95];
-  const WL = [-1.05, 0.14, -1.0], WR = [1.05, 0.14, -1.0];
-  const FL = [-0.42, 0.03, -1.02], FR = [0.42, 0.03, -1.02]; // fold line on wings
-  const tri = [
-    [N, FL, T, 0.98], [N, WL, FL, 0.9],   // left wing, inner/outer panel
-    [N, T, FR, 0.98], [N, FR, WR, 0.9],   // right wing
-    [N, K, T, 0.82], [N, T, K, 0.86],     // keel both sides
-  ];
-  const pos = [], col = [];
-  for (const [a, b, c, sh] of tri) { pos.push(...a, ...b, ...c); for (let i = 0; i < 3; i++) col.push(sh, sh, sh * 0.985); }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.computeVertexNormals();
-  // paper texture: fibres + faint ruled lines
-  const pc = document.createElement('canvas'); pc.width = pc.height = 256; const px = pc.getContext('2d');
-  px.fillStyle = '#e4572e'; px.fillRect(0, 0, 256, 256);
-  const gr = px.createLinearGradient(0, 0, 256, 256); gr.addColorStop(0, 'rgba(255,200,120,0.25)'); gr.addColorStop(1, 'rgba(120,20,20,0.2)'); px.fillStyle = gr; px.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 2200; i++) { px.fillStyle = `rgba(120,110,90,${Math.random() * 0.05})`; px.fillRect(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 3, 1); }
-  px.strokeStyle = 'rgba(255,235,200,0.35)'; px.lineWidth = 3; for (let y = -256; y < 512; y += 36) { px.beginPath(); px.moveTo(0, y); px.lineTo(256, y + 256); px.stroke(); }
-  const pt = new THREE.CanvasTexture(pc); pt.colorSpace = THREE.SRGBColorSpace; pt.wrapS = pt.wrapT = THREE.RepeatWrapping;
-  const uv = []; for (let i = 0; i < pos.length; i += 3) uv.push(pos[i] * 0.45 + 0.5, pos[i + 2] * 0.45 + 0.5);
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  const m = new THREE.MeshStandardMaterial({ map: pt, vertexColors: true, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, flatShading: true });
-  const mesh = new THREE.Mesh(g, m); mesh.castShadow = true; mesh.receiveShadow = true; planeBody.add(mesh);
-  // crease lines
-  const lm = new THREE.LineBasicMaterial({ color: 0x8a2a18 });
-  const lg = new THREE.BufferGeometry().setFromPoints([N, FL, N, FR, N, T].map(v => new THREE.Vector3(...v)));
-  planeBody.add(new THREE.LineSegments(lg, lm));
-  planeBody.scale.setScalar(1.45);
+const drone = new THREE.Group(); scene.add(drone);
+const droneBody = new THREE.Group(); drone.add(droneBody);
+const droneMat = new THREE.MeshStandardMaterial({color:0x202a36,metalness:.72,roughness:.28});
+const armMat = new THREE.MeshStandardMaterial({color:0x343f4c,metalness:.68,roughness:.32});
+const propMat = new THREE.MeshStandardMaterial({color:0x151b22,metalness:.35,roughness:.3});
+const lensMat = new THREE.MeshStandardMaterial({color:0x081b2d,metalness:.9,roughness:.12,emissive:0x06243c,emissiveIntensity:.5});
+const core = new THREE.Mesh(new THREE.BoxGeometry(.62,.22,.78),droneMat); core.castShadow=true; droneBody.add(core);
+const topShell = new THREE.Mesh(new THREE.BoxGeometry(.5,.12,.58),new THREE.MeshStandardMaterial({color:0x596879,metalness:.6,roughness:.28}));topShell.position.y=.16;droneBody.add(topShell);
+const rotors=[];
+for(const x of [-1,1])for(const z of [-1,1]){
+ const arm=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,Math.hypot(x,z)*1.1,10),armMat);arm.position.set(x*.52,.015,z*.52);arm.rotation.z=Math.atan2(x,z);droneBody.add(arm);
+ const motor=new THREE.Mesh(new THREE.CylinderGeometry(.16,.18,.13,20),droneMat);motor.position.set(x*1.02,.08,z*1.02);droneBody.add(motor);
+ const hub=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.08,16),new THREE.MeshStandardMaterial({color:0xbac6d0,metalness:.8,roughness:.2}));hub.position.set(x*1.02,.18,z*1.02);droneBody.add(hub);
+ const rotor=new THREE.Group();rotor.position.set(x*1.02,.23,z*1.02);droneBody.add(rotor);
+ for(let k=0;k<2;k++){const blade=new THREE.Mesh(new THREE.BoxGeometry(.82,.018,.105),propMat);blade.rotation.y=k*Math.PI/2;blade.position.y=.015;rotor.add(blade)}
+ rotors.push({rotor,dir:(x*z>0?1:-1)});
+ const leg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.35,8),armMat);leg.position.set(x*.7,-.2,z*.7);droneBody.add(leg);
 }
-plane.visible = false;
-const PL = { x: 0, y: 0, z: 0, yaw: 0, spd: 0, vy: 0, bank: 0, pitch: 0, landed: true, t: 0 };
-function planeGround(x, z) {
-  let g = surfaceH(x, z);
-  const a = ringGrid.get(key(Math.floor(x / CELL), Math.floor(z / CELL)));
-  if (a) for (const i of a) {
-    if (ringTop[i] <= g) continue;
-    const r = allRings[i]; let inside = false;
-    for (let k = 0, j = r.length / 2 - 1; k < r.length / 2; j = k++) {
-      const xi = r[2 * k], zi = r[2 * k + 1], xj = r[2 * j], zj = r[2 * j + 1];
-      if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) inside = !inside;
-    }
-    if (inside) g = Math.max(g, ringTop[i]);
-  }
-  return g;
+const camGimbal=new THREE.Group();camGimbal.position.set(0,-.17,.48);droneBody.add(camGimbal);
+const gimbalFrame=new THREE.Mesh(new THREE.BoxGeometry(.28,.19,.25),armMat);camGimbal.add(gimbalFrame);
+const lens=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.13,24),lensMat);lens.rotation.x=Math.PI/2;lens.position.set(0,-.015,.17);camGimbal.add(lens);
+const lensGlass=new THREE.Mesh(new THREE.CircleGeometry(.078,24),new THREE.MeshBasicMaterial({color:0x123e62}));lensGlass.position.set(0,-.015,.24);camGimbal.add(lensGlass);
+drone.visible=false;
+const PL = { x:0,y:0,z:0,yaw:0,spd:0,vy:0,bank:0,pitch:0,landed:false,t:0,gimbalPitch:0 };
+function planeGround(x,z){
+ let g=surfaceH(x,z);
+ const a=ringGrid.get(key(Math.floor(x/CELL),Math.floor(z/CELL)));
+ if(a)for(const i of a){if(ringTop[i]<=g)continue;const r=allRings[i];let inside=false;
+ for(let k=0,j=r.length/2-1;k<r.length/2;j=k++){const xi=r[2*k],zi=r[2*k+1],xj=r[2*j],zj=r[2*j+1];if(((zi>z)!==(zj>z))&&(x<(xj-xi)*(z-zi)/(zj-zi)+xi))inside=!inside}
+ if(inside)g=Math.max(g,ringTop[i]);}return g;
 }
-function planeStep(dt) {
-  const kb = a => a.some(c => keys[c]);
-  const thr = Math.max(inp.thr, kb(['KeyW', 'KeyZ']) ? 1 : 0);
-  const brk = Math.max(inp.brk, kb(['KeyS']) ? 1 : 0);
-  let turn = inp.steer + (kb(['KeyA', 'KeyQ', 'ArrowLeft']) ? 1 : 0) - (kb(['KeyD', 'ArrowRight']) ? 1 : 0);
-  turn = Math.max(-1, Math.min(1, turn));
-  let climb = inp.climb + (kb(['Space', 'ArrowUp']) ? 1 : 0) - (kb(['ShiftLeft', 'ShiftRight', 'ArrowDown']) ? 1 : 0);
-  climb = Math.max(-1, Math.min(1, climb));
-  if (thr) PL.spd = Math.min(42, PL.spd + 11 * dt);
-  if (brk) PL.spd = Math.max(-6, PL.spd - 16 * dt);
-  if (!thr && !brk && PL.landed) PL.spd *= Math.exp(-2.5 * dt);
-  if (!thr && !brk && !PL.landed) PL.spd *= Math.exp(-0.05 * dt);
-  const turnRate = turn * (0.85 + 0.45 * Math.min(1, Math.abs(PL.spd) / 20));
-  PL.yaw += turnRate * dt;
-  PL.vy += (climb * 11 - PL.vy) * Math.min(1, dt * 3);
-  const fx = Math.sin(PL.yaw), fz = Math.cos(PL.yaw);
-  let nx = PL.x + fx * PL.spd * dt, nz = PL.z + fz * PL.spd * dt, ny = PL.y + PL.vy * dt;
-  // walls of buildings (only below the roof)
-  const ci = Math.floor(nx / CELL), cj = Math.floor(nz / CELL);
-  for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
-    const a = segGrid.get(key(i, j)); if (!a) continue;
-    for (const sI of a) {
-      if (ny > ringTop[segRing[sI]] - 0.05) continue;
-      const ax = segs[4 * sI], az = segs[4 * sI + 1], bx = segs[4 * sI + 2], bz = segs[4 * sI + 3];
-      const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1;
-      const t = Math.max(0, Math.min(1, ((nx - ax) * dx + (nz - az) * dz) / L2));
-      const px = nx - (ax + t * dx), pz = nz - (az + t * dz), d = Math.hypot(px, pz);
-      if (d < 1.1 && d > 1e-4) { nx += px / d * (1.1 - d); nz += pz / d * (1.1 - d); if (Math.abs(PL.spd) > 6) bump(Math.min(1, Math.abs(PL.spd) / 30)); PL.spd *= 0.4; }
-    }
+function planeStep(dt){
+ const kb=a=>a.some(c=>keys[c]);
+ const forward=Math.max(inp.thr,kb(['KeyW','KeyZ','ArrowUp'])?1:0);
+ const backward=Math.max(inp.brk,kb(['KeyS','ArrowDown'])?1:0);
+ let turn=inp.steer+(kb(['KeyA','KeyQ','ArrowLeft'])?1:0)-(kb(['KeyD','ArrowRight'])?1:0);
+ turn=THREE.MathUtils.clamp(turn,-1,1);
+ let climb=inp.climb+(kb(['Space'])?1:0)-(kb(['ShiftLeft','ShiftRight'])?1:0);
+ climb=THREE.MathUtils.clamp(climb,-1,1);
+ const desiredSpeed=(forward-backward*.7)*18;
+ PL.spd+=(desiredSpeed-PL.spd)*Math.min(1,dt*(forward||backward?1.7:1.0));
+ PL.yaw+=turn*1.25*dt;
+ const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw);
+ let nx=PL.x+fx*PL.spd*dt,nz=PL.z+fz*PL.spd*dt;
+ const ground=planeGround(nx,nz);
+ const desiredVy=climb*5.8;
+ PL.vy+=(desiredVy-PL.vy)*Math.min(1,dt*2.8);
+ let ny=PL.y+PL.vy*dt;
+ const floor=ground+7.5;
+ if(ny<floor){ny=floor;PL.vy=Math.max(0,PL.vy)}
+ ny=Math.min(420,Math.max(floor,ny));
+ // Prevent passing through building walls when flying below their roofs.
+ const ci=Math.floor(nx/CELL),cj=Math.floor(nz/CELL);
+ for(let i=ci-1;i<=ci+1;i++)for(let j=cj-1;j<=cj+1;j++){
+  const a=segGrid.get(key(i,j));if(!a)continue;
+  for(const si of a){const top=ringTop[segRing[si]];if(ny>top+1.2)continue;
+   const ax=segs[4*si],az=segs[4*si+1],bx=segs[4*si+2],bz=segs[4*si+3],dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1;
+   const q=THREE.MathUtils.clamp(((nx-ax)*dx+(nz-az)*dz)/L2,0,1),px=nx-(ax+q*dx),pz=nz-(az+q*dz),d=Math.hypot(px,pz);
+   if(d<2.1&&d>1e-4){nx+=px/d*(2.1-d);nz+=pz/d*(2.1-d);PL.spd*=.55}
   }
-  const LIM = 2950; nx = Math.max(-LIM, Math.min(LIM, nx)); nz = Math.max(-LIM, Math.min(LIM, nz));
-  const g = planeGround(nx, nz) + 0.3;
-  if (ny <= g) { if (PL.vy < -7) bump(Math.min(1, -PL.vy / 15)); ny = g; PL.vy = Math.max(0, PL.vy); PL.landed = true; }
-  else PL.landed = ny < g + 0.05;
-  ny = Math.min(ny, 700);
-  PL.x = nx; PL.z = nz; PL.y = ny;
-  // visual attitude
-  const tb = PL.landed ? 0 : -turn * 0.55 * Math.min(1, Math.abs(PL.spd) / 8 + 0.3);
-  const tp = PL.landed ? 0 : THREE.MathUtils.clamp(-PL.vy * 0.045, -0.5, 0.5);
-  PL.bank += (tb - PL.bank) * Math.min(1, dt * 4); PL.pitch += (tp - PL.pitch) * Math.min(1, dt * 4);
-  PL.t += dt;
-  // drive the shared sound / HUD fields
-  S.rpm = 1100 + Math.abs(PL.spd) * 95 + Math.abs(PL.vy) * 80; S.thr = Math.max(thr, Math.abs(climb)) * 0.6; S.slip = PL.landed ? 0 : 3.5 + Math.abs(PL.spd) / 5; S.onGround = true;
+ }
+ const LIM=2950;PL.x=THREE.MathUtils.clamp(nx,-LIM,LIM);PL.z=THREE.MathUtils.clamp(nz,-LIM,LIM);PL.y=ny;
+ PL.bank+=( -turn*.22-PL.bank)*Math.min(1,dt*4);
+ PL.pitch+=(-PL.spd*.006-PL.pitch)*Math.min(1,dt*3);
+ PL.gimbalPitch+=(THREE.MathUtils.clamp(-climb*.12,-.28,.35)-PL.gimbalPitch)*Math.min(1,dt*2.5);
+ PL.t+=dt;PL.landed=false;
+ S.rpm=1800+Math.abs(PL.spd)*35+Math.abs(PL.vy)*50;S.thr=Math.max(forward,backward,Math.abs(climb))*.45;S.slip=0;S.onGround=false;
 }
-function updatePlaneVisual() {
-  const wob = PL.landed ? 0 : Math.sin(PL.t * 7.3) * 0.02 + Math.sin(PL.t * 3.1) * 0.015;
-  plane.position.set(PL.x, PL.y + (PL.landed ? 0 : Math.sin(PL.t * 2.2) * 0.08), PL.z);
-  plane.rotation.set(0, PL.yaw, 0);
-  planeBody.rotation.set(PL.pitch + wob, 0, PL.bank + wob * 0.6, 'YXZ');
+function updatePlaneVisual(dt){
+ drone.position.set(PL.x,PL.y+Math.sin(PL.t*2.1)*.025,PL.z);drone.rotation.set(0,PL.yaw,0);
+ droneBody.rotation.set(PL.pitch,0,PL.bank,'YXZ');
+ for(const r of rotors)r.rotor.rotation.y+=dt*(22+Math.abs(PL.spd)*1.8)*r.dir;
+ camGimbal.rotation.x=PL.gimbalPitch;
 }
-function updatePlaneCamera(dt, t) {
-  const fx = Math.sin(PL.yaw), fz = Math.cos(PL.yaw);
-  let dy = PL.yaw - camYaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); camYaw += dy * Math.min(1, dt * 3.5);
-  const cfx = Math.sin(camYaw), cfz = Math.cos(camYaw), sp = Math.abs(PL.spd);
-  if (camMode === 2) {
-    camPos.set(PL.x + fx * 1.9, PL.y + 0.25, PL.z + fz * 1.9);
-    camLook.set(PL.x + fx * 20, PL.y + 0.25 + PL.vy * 0.6, PL.z + fz * 20);
-    camera.fov += (75 - camera.fov) * Math.min(1, dt * 3);
-  } else if (camMode === 3) {
-    const a = t * 0.2; tmp.set(PL.x + Math.cos(a) * 7, PL.y + 1.5, PL.z + Math.sin(a) * 7);
-    camPos.lerp(tmp, Math.min(1, dt * 3)); camLook.set(PL.x, PL.y, PL.z); camera.fov += (48 - camera.fov) * Math.min(1, dt * 2);
-  } else {
-    const dist = (camMode ? 14 : 6) + sp * 0.05, hgt = (camMode ? 5 : 1.35) - PL.vy * 0.06;
-    tmp.set(PL.x - cfx * dist, PL.y + hgt, PL.z - cfz * dist);
-    const gh = planeGround(tmp.x, tmp.z) + 1; if (tmp.y < gh) tmp.y = gh;
-    camPos.lerp(tmp, Math.min(1, dt * 6));
-    camLook.lerp(new THREE.Vector3(PL.x + fx * 4, PL.y + 0.7, PL.z + fz * 4), Math.min(1, dt * 10));
-    camera.fov += ((62 + sp * 0.35) - camera.fov) * Math.min(1, dt * 3);
-  }
-  camera.position.copy(camPos);
-  if (S.shake > 0.01) { camera.position.x += (Math.random() - .5) * S.shake * 0.4; camera.position.y += (Math.random() - .5) * S.shake * 0.4; S.shake *= 0.88; }
-  camera.lookAt(camLook); camera.updateProjectionMatrix();
+function updatePlaneCamera(dt,t){
+ const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw);
+ let dy=PL.yaw-camYaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));camYaw+=dy*Math.min(1,dt*4);
+ const cfx=Math.sin(camYaw),cfz=Math.cos(camYaw);
+ if(camMode===0){
+  // Stabilized gimbal / cinematic forward camera.
+  const p=new THREE.Vector3(0,-.12,.62).applyMatrix4(drone.matrixWorld);
+  const dir=new THREE.Vector3(fx,PL.gimbalPitch,fz);
+  camPos.lerp(p,Math.min(1,dt*12));camLook.copy(p).add(dir.multiplyScalar(45));
+  camera.fov+=(58-camera.fov)*Math.min(1,dt*4);
+ }else if(camMode===1){
+  tmp.set(PL.x-cfx*13,PL.y+5,PL.z-cfz*13);camPos.lerp(tmp,Math.min(1,dt*4));
+  camLook.lerp(new THREE.Vector3(PL.x,PL.y-1,PL.z),Math.min(1,dt*5));camera.fov+=(52-camera.fov)*Math.min(1,dt*3);
+ }else if(camMode===2){
+  tmp.set(PL.x,PL.y+22,PL.z+.1);camPos.lerp(tmp,Math.min(1,dt*5));camLook.lerp(new THREE.Vector3(PL.x,PL.y-30,PL.z),Math.min(1,dt*6));camera.fov+=(48-camera.fov)*Math.min(1,dt*3);
+ }else{
+  const a=t*.22;tmp.set(PL.x+Math.cos(a)*18,PL.y+7,PL.z+Math.sin(a)*18);camPos.lerp(tmp,Math.min(1,dt*2.5));
+  camLook.lerp(new THREE.Vector3(PL.x,PL.y,PL.z),Math.min(1,dt*3));camera.fov+=(48-camera.fov)*Math.min(1,dt*2);
+ }
+ camera.position.copy(camPos);camera.lookAt(camLook);camera.updateProjectionMatrix();
 }
-function setMode(m) {
-  const prev = mode;
-  if (prev === 'foot' && m !== 'foot') { // remonter dans la voiture (elle vient à toi si elle est loin)
-    if (!footNear()) { S.x = FT.x; S.z = FT.z; S.h = FT.yaw; respawn(); } else toast('En voiture !');
-    camera.near = 0.3; camera.rotation.order = 'XYZ'; camera.updateProjectionMatrix(); footAmbience(false);
-    if (document.pointerLockElement) document.exitPointerLock();
-    if (m === 'foot') return;
-  }
-  if (m === 'foot') {
-    if (prev === 'plane') { S.x = PL.x; S.z = PL.z; respawn(); plane.visible = false; }
-    mode = 'foot'; document.documentElement.classList.remove('flying'); document.documentElement.classList.add('walking');
-    const lx = Math.cos(S.h), lz = -Math.sin(S.h); // portière conducteur (gauche)
-    FT.x = S.x + lx * 1.9; FT.z = S.z + lz * 1.9; FT.yaw = S.h + 0.35; FT.pitch = -0.05; FT.vx = FT.vz = FT.vy = 0; FT.ground = true; FT.run = 0;
-    footCollide(); FT.y = surfaceH(FT.x, FT.z); FT.fov = camera.fov;
-    S.vx = S.vz = S.yawRate = 0; S.vf = 0; $('bFoot').textContent = 'VOITURE'; footAmbience(true);
-    toast(isTouch ? 'À pied : pouce gauche pour marcher (poussé à fond = courir), glisse à droite pour regarder' : 'À pied : ZQSD, Maj = courir, Espace = sauter, clic = regarder à la souris, E = voiture');
-    return;
-  }
-  document.documentElement.classList.remove('walking'); $('bFoot').textContent = 'À PIED';
-  mode = m;
-  document.documentElement.classList.toggle('flying', m === 'plane');
-  if (m === 'plane') {
-    const rx = Math.cos(S.h), rz = -Math.sin(S.h);
-    if (!plane.visible || Math.hypot(PL.x - S.x, PL.z - S.z) > 40) {
-      PL.x = S.x + rx * 3.2; PL.z = S.z + rz * 3.2; PL.yaw = S.h; PL.y = planeGround(PL.x, PL.z) + 0.3; PL.spd = 0; PL.vy = 0; PL.landed = true;
-    }
-    plane.visible = true; S.vx = S.vz = S.yawRate = 0; S.vf = 0; camYaw = PL.yaw;
-    $('bPlane').textContent = 'VOITURE'; toast('Avion en papier : GAZ pour avancer, joystick haut/bas pour monter/descendre');
-  } else {
-    if (prev === 'plane' && Math.hypot(PL.x - S.x, PL.z - S.z) > 40) { S.x = PL.x; S.z = PL.z; respawn(); }
-    camYaw = S.h; $('bPlane').textContent = 'AVION ✈';
-  }
+function setMode(m){
+ const prev=mode;
+ if(prev==='foot'&&m!=='foot'){
+  if(!footNear()){S.x=FT.x;S.z=FT.z;S.h=FT.yaw;respawn()}else toast('En voiture !');
+  camera.near=.3;camera.rotation.order='XYZ';camera.updateProjectionMatrix();footAmbience(false);
+  if(document.pointerLockElement)document.exitPointerLock();if(m==='foot')return;
+ }
+ if(m==='foot'){
+  if(prev==='plane'){S.x=PL.x;S.z=PL.z;respawn();drone.visible=false}
+  mode='foot';document.documentElement.classList.remove('flying');document.documentElement.classList.add('walking');
+  const lx=Math.cos(S.h),lz=-Math.sin(S.h);FT.x=S.x+lx*1.9;FT.z=S.z+lz*1.9;FT.yaw=S.h+.35;FT.pitch=-.05;FT.vx=FT.vz=FT.vy=0;FT.ground=true;FT.run=0;
+  footCollide();FT.y=surfaceH(FT.x,FT.z);FT.fov=camera.fov;S.vx=S.vz=S.yawRate=0;S.vf=0;$('bFoot').textContent='VOITURE';footAmbience(true);
+  toast(isTouch?'À pied : joystick pour marcher, glisse à droite pour regarder':'À pied : ZQSD, Maj = courir, Espace = sauter');return;
+ }
+ document.documentElement.classList.remove('walking');$('bFoot').textContent='À PIED';mode=m;
+ document.documentElement.classList.toggle('flying',m==='plane');
+ if(m==='plane'){
+  const rx=Math.cos(S.h),rz=-Math.sin(S.h);
+  if(!drone.visible||Math.hypot(PL.x-S.x,PL.z-S.z)>40){PL.x=S.x+rx*4;PL.z=S.z+rz*4;PL.y=planeGround(PL.x,PL.z)+18;PL.yaw=S.h;PL.spd=0;PL.vy=0;PL.landed=false;PL.gimbalPitch=0}
+  drone.visible=true;S.vx=S.vz=S.yawRate=0;S.vf=0;camYaw=PL.yaw;camMode=0;$('bPlane').textContent='VOITURE';$('bCam').textContent='GIMBAL';toast('Drone prêt : GAZ avance · joystick tourne et monte/descend');
+ }else{
+  if(prev==='plane'&&Math.hypot(PL.x-S.x,PL.z-S.z)>40){S.x=PL.x;S.z=PL.z;respawn()}
+  camYaw=S.h;$('bPlane').textContent='DRONE ✦';$('bCam').textContent='CAMÉRA';
+ }
 }
-
-
 // ---------------- à pied : première personne, yeux à 1,80 m ----------------
 const FT = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vz: 0, vy: 0, ground: true, run: 0, spd: 0, ph: 0, mx: 0, mz: 0, runLock: false, stickRun: false, jump: false, land: 0, fov: 72 };
 const EYE = 1.80, WALK = 1.55, RUN = 6.4, BODY_R = 0.32; window.__FT = FT;
@@ -1357,7 +1341,7 @@ function loop(now) {
   while (acc >= h) { if (mode === 'plane') planeStep(h); else if (mode === 'foot') footStep(h); else step(h); acc -= h; }
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
-  if (mode === 'plane') { updatePlaneVisual(); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
+  if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
   // sun follows car for shadows
   sun.position.set(F.x + sunDir.x * 300, F.y + sunDir.y * 300, F.z + sunDir.z * 300); sun.target.position.set(F.x, F.y, F.z);
