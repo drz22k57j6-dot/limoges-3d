@@ -1,0 +1,29 @@
+# Récupère les vraies données du métro parisien (IDFM, OpenStreetMap) et les range dans data/metro/.
+name: Metro
+on:
+  workflow_dispatch:
+  push:
+    paths: ['outils/metro_data.py', '.github/workflows/metro.yml']
+permissions:
+  contents: write
+concurrency:
+  group: metro-data
+  cancel-in-progress: false
+jobs:
+  donnees:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Télécharger et préparer
+        run: python3 outils/metro_data.py
+      - name: Enregistrer dans le dépôt
+        run: |
+          git config user.name "Données métro"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/metro
+          git diff --cached --quiet && exit 0
+          git commit -m "Métro : données IDFM + OpenStreetMap"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 3; done
