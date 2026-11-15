@@ -6,6 +6,7 @@
     bTime: svg("<circle cx='12' cy='12' r='4'/><path d='M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5'/>"),
     bQ: svg("<path d='M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0'/><circle cx='16' cy='6' r='2'/><circle cx='10' cy='12' r='2'/><circle cx='18' cy='18' r='2'/>"),
     bVille: svg("<path d='M3 21V9l6-4v16M9 21V3l8 4v14M17 21v-9l4 2v7M2 21h20'/>"),
+    bFoot: svg("<circle cx='13' cy='4' r='2'/><path d='M9 21l2-6 3 2v4M8 12l2-4 3 1 2 3 3 1M11 15l-1-5'/>"),
     bPlane: svg("<path d='M10 21l2-1 2 1v-2l-1.5-1V13l8 3v-2l-8-5V4a1.5 1.5 0 0 0-3 0v5l-8 5v2l8-3v5L8 19z'/>"),
     bReset: svg("<path d='M3 12a9 9 0 1 0 3-6.7'/><path d='M3 4v5h5'/>"),
   };

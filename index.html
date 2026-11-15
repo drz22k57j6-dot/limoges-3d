@@ -63,6 +63,7 @@
   <button class="b" id="bTime">JOUR</button>
   <button class="b" id="bQ">HAUTE</button>
   <button class="b" id="bVille">VILLE…</button>
+  <button class="b" id="bFoot">À PIED</button>
   <button class="b" id="bPlane">AVION ✈</button>
   <button class="b" id="bReset">↺</button>
 </div>
@@ -817,7 +818,7 @@ const mctx = $('map').getContext('2d');
 function drawMap() {
   const W = 300, z = 1.6;
   mctx.save(); mctx.fillStyle = '#20262c'; mctx.fillRect(0, 0, W, W);
-  mctx.translate(W / 2, W / 2); const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : S; mctx.rotate(Math.PI + F.h); mctx.scale(z, z);
+  mctx.translate(W / 2, W / 2); const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : mode === 'foot' ? { x: FT.x, z: FT.z, h: FT.yaw } : S; mctx.rotate(Math.PI + F.h); mctx.scale(z, z);
   mctx.drawImage(mapImg, -(F.x + 3000) * mapScale, -(F.z + 3000) * mapScale);
   mctx.restore();
   mctx.fillStyle = '#ffb547'; mctx.strokeStyle = '#000'; mctx.lineWidth = 2;
@@ -846,7 +847,7 @@ function updateAudio() {
   const f = S.rpm / 60 * 2; // 4-cyl firing frequency
   eng.frequency.setTargetAtTime(f, t, 0.03); eng2.frequency.setTargetAtTime(f * 0.5, t, 0.03);
   filt.frequency.setTargetAtTime(400 + S.rpm * 0.35 + S.thr * 900, t, 0.05);
-  engGain.gain.setTargetAtTime(0.10 + S.thr * 0.16, t, 0.05);
+  engGain.gain.setTargetAtTime(mode === 'foot' ? 0.06 * Math.max(0, 1 - Math.hypot(FT.x - S.x, FT.z - S.z) / 25) : 0.10 + S.thr * 0.16, t, 0.05);
   const sq = S.onGround ? Math.max(0, Math.min(1, (S.slip - 3.5) / 6)) : 0;
   noiseGain.gain.setTargetAtTime(sq * 0.22, t, 0.05);
 }
@@ -866,6 +867,7 @@ $('bQ').onclick = () => { qi = (qi + 1) % QUALITIES.length; applyQuality(); };
 $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
 $('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 0.3; PL.spd = 0; PL.vy = 0; } else respawn(); };
 $('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
+$('bFoot').onclick = () => { startAudio(); setMode(mode === 'foot' ? 'car' : 'foot'); };
 function applyQuality() {
   const q = QUALITIES[qi]; resize(); buildComposer(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = TILE_ERR[qi];
   sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
@@ -1019,6 +1021,24 @@ function updatePlaneCamera(dt, t) {
   camera.lookAt(camLook); camera.updateProjectionMatrix();
 }
 function setMode(m) {
+  const prev = mode;
+  if (prev === 'foot' && m !== 'foot') { // remonter dans la voiture (elle vient à toi si elle est loin)
+    if (!footNear()) { S.x = FT.x; S.z = FT.z; S.h = FT.yaw; respawn(); } else toast('En voiture !');
+    camera.near = 0.3; camera.rotation.order = 'XYZ'; camera.updateProjectionMatrix(); footAmbience(false);
+    if (document.pointerLockElement) document.exitPointerLock();
+    if (m === 'foot') return;
+  }
+  if (m === 'foot') {
+    if (prev === 'plane') { S.x = PL.x; S.z = PL.z; respawn(); plane.visible = false; }
+    mode = 'foot'; document.documentElement.classList.remove('flying'); document.documentElement.classList.add('walking');
+    const lx = Math.cos(S.h), lz = -Math.sin(S.h); // portière conducteur (gauche)
+    FT.x = S.x + lx * 1.9; FT.z = S.z + lz * 1.9; FT.yaw = S.h + 0.35; FT.pitch = -0.05; FT.vx = FT.vz = FT.vy = 0; FT.ground = true; FT.run = 0;
+    footCollide(); FT.y = surfaceH(FT.x, FT.z); FT.fov = camera.fov;
+    S.vx = S.vz = S.yawRate = 0; S.vf = 0; $('bFoot').textContent = 'VOITURE'; footAmbience(true);
+    toast(isTouch ? 'À pied : pouce gauche pour marcher (poussé à fond = courir), glisse à droite pour regarder' : 'À pied : ZQSD, Maj = courir, Espace = sauter, clic = regarder à la souris, E = voiture');
+    return;
+  }
+  document.documentElement.classList.remove('walking'); $('bFoot').textContent = 'À PIED';
   mode = m;
   document.documentElement.classList.toggle('flying', m === 'plane');
   if (m === 'plane') {
@@ -1029,10 +1049,151 @@ function setMode(m) {
     plane.visible = true; S.vx = S.vz = S.yawRate = 0; S.vf = 0; camYaw = PL.yaw;
     $('bPlane').textContent = 'VOITURE'; toast('Avion en papier : GAZ pour avancer, joystick haut/bas pour monter/descendre');
   } else {
-    if (Math.hypot(PL.x - S.x, PL.z - S.z) > 40) { S.x = PL.x; S.z = PL.z; respawn(); }
+    if (prev === 'plane' && Math.hypot(PL.x - S.x, PL.z - S.z) > 40) { S.x = PL.x; S.z = PL.z; respawn(); }
     camYaw = S.h; $('bPlane').textContent = 'AVION ✈';
   }
 }
+
+
+// ---------------- à pied : première personne, yeux à 1,80 m ----------------
+const FT = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vz: 0, vy: 0, ground: true, run: 0, spd: 0, ph: 0, mx: 0, mz: 0, runLock: false, stickRun: false, jump: false, land: 0, fov: 72 };
+const EYE = 1.80, WALK = 1.55, RUN = 6.4, BODY_R = 0.32; window.__FT = FT;
+function footCollide() {
+  for (let iter = 0; iter < 2; iter++) {
+    const ci = Math.floor(FT.x / CELL), cj = Math.floor(FT.z / CELL);
+    for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
+      const a = segGrid.get(key(i, j));
+      if (a) for (const s of a) {
+        const ax = segs[4 * s], az = segs[4 * s + 1], dx = segs[4 * s + 2] - ax, dz = segs[4 * s + 3] - az, L2 = dx * dx + dz * dz || 1;
+        const t = Math.max(0, Math.min(1, ((FT.x - ax) * dx + (FT.z - az) * dz) / L2));
+        const px = ax + t * dx - FT.x, pz = az + t * dz - FT.z, d = Math.hypot(px, pz);
+        if (d < BODY_R && d > 1e-4) push(-px / d, -pz / d, BODY_R - d);
+      }
+      const tr = treeGrid.get(key(i, j));
+      if (tr) for (const [tx, tz] of tr) { const px = tx - FT.x, pz = tz - FT.z, d = Math.hypot(px, pz), rr = BODY_R + 0.3; if (d < rr && d > 1e-4) push(-px / d, -pz / d, rr - d); }
+    }
+    // la voiture garée est un obstacle (boîte 4,6 × 2 m)
+    if (car.visible) {
+      const fx = Math.sin(S.h), fz = Math.cos(S.h), dx = FT.x - S.x, dz = FT.z - S.z, u = dx * fx + dz * fz, v = dx * fz - dz * fx;
+      const hu = 2.3 + BODY_R, hv = 1.0 + BODY_R;
+      if (Math.abs(u) < hu && Math.abs(v) < hv) { if (hu - Math.abs(u) < hv - Math.abs(v)) { const p = (hu - Math.abs(u)) * Math.sign(u || 1); FT.x += fx * p; FT.z += fz * p; } else { const p = (hv - Math.abs(v)) * Math.sign(v || 1); FT.x += fz * p; FT.z -= fx * p; } }
+    }
+  }
+  function push(nx, nz, pen) { FT.x += nx * pen; FT.z += nz * pen; const vn = FT.vx * nx + FT.vz * nz; if (vn < 0) { FT.vx -= vn * nx; FT.vz -= vn * nz; } }
+}
+function footStep(dt) {
+  const kb = a => a.some(c => keys[c]);
+  let f = (kb(['KeyW', 'KeyZ', 'ArrowUp']) ? 1 : 0) - (kb(['KeyS', 'ArrowDown']) ? 1 : 0) + FT.mz;
+  let s = (kb(['KeyD', 'ArrowRight']) ? 1 : 0) - (kb(['KeyA', 'KeyQ', 'ArrowLeft']) ? 1 : 0) + FT.mx;
+  const len = Math.hypot(f, s); if (len > 1) { f /= len; s /= len; }
+  const wantRun = (keys.ShiftLeft || keys.ShiftRight || FT.runLock || FT.stickRun) && f > 0.25;
+  FT.run += ((wantRun ? 1 : 0) - FT.run) * Math.min(1, dt * (wantRun ? 2.5 : 5));
+  const vmax = WALK + (RUN - WALK) * FT.run;
+  const fx = Math.sin(FT.yaw), fz = Math.cos(FT.yaw), rx = -fz, rz = fx;
+  const tvx = (fx * f + rx * s) * vmax, tvz = (fz * f + rz * s) * vmax, acc = FT.ground ? (len > 0.05 ? 9 : 12) : 1.5;
+  FT.vx += (tvx - FT.vx) * Math.min(1, dt * acc); FT.vz += (tvz - FT.vz) * Math.min(1, dt * acc);
+  FT.x += FT.vx * dt; FT.z += FT.vz * dt; footCollide();
+  const gh = surfaceH(FT.x, FT.z);
+  if ((keys.Space || FT.jump) && FT.ground) { FT.vy = 4.3; FT.ground = false; FT.jump = false; }
+  if (FT.ground && FT.y - gh < 0.45 && FT.y - gh > -0.6) { FT.y += (gh - FT.y) * Math.min(1, dt * 18); FT.vy = 0; }
+  else { FT.vy -= 9.81 * dt; FT.y += FT.vy * dt; FT.ground = false; if (FT.y <= gh) { if (FT.vy < -4.5) { FT.land = Math.min(1, -FT.vy / 12); thud(FT.land * 0.5); } FT.y = gh; FT.vy = 0; FT.ground = true; } }
+  if (FT.y < gh - 0.6) FT.y = gh; // jamais sous le sol
+  FT.spd = Math.hypot(FT.vx, FT.vz);
+  // pas : une foulée de 0,75 m en marchant, 1,4 m en courant
+  const stride = 0.75 + 0.65 * FT.run, prev = FT.ph;
+  if (FT.ground) FT.ph += FT.spd * dt / stride * Math.PI;
+  if (Math.floor(prev / Math.PI) !== Math.floor(FT.ph / Math.PI) && FT.spd > 0.4) footstep(0.5 + 0.5 * FT.run);
+  S.thr = 0; S.vf = 0; S.vx = S.vz = 0;
+}
+function footCamera(dt) {
+  const amp = Math.min(1, FT.spd / WALK) * (0.032 + 0.05 * FT.run);
+  const by = Math.abs(Math.sin(FT.ph)) * amp * 1.4 - FT.land * 0.12, bx = Math.cos(FT.ph) * amp * 0.7;
+  FT.land *= Math.pow(0.02, dt);
+  const rx = -Math.cos(FT.yaw), rz = Math.sin(FT.yaw);
+  camera.position.set(FT.x + rx * bx * -1, FT.y + EYE - 0.08 + by, FT.z + rz * bx * -1);
+  camera.rotation.order = 'YXZ'; camera.rotation.set(FT.pitch, FT.yaw + Math.PI, -bx * 0.25 - (FT.mx * 0.015 * FT.run));
+  FT.fov += ((72 + 10 * FT.run * Math.min(1, FT.spd / RUN)) - FT.fov) * Math.min(1, dt * 4); camera.fov = FT.fov;
+  camera.near = 0.08; camera.updateProjectionMatrix();
+}
+let footBuf = null;
+function footstep(k) {
+  if (!AC) return; const t = AC.currentTime;
+  if (!footBuf) { footBuf = AC.createBuffer(1, AC.sampleRate * 0.12 | 0, AC.sampleRate); const d = footBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3); }
+  const src = AC.createBufferSource(); src.buffer = footBuf; src.playbackRate.value = 0.75 + Math.random() * 0.35;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900 + 700 * k + Math.random() * 300;
+  const g = AC.createGain(); g.gain.value = 0.25 + 0.3 * k; src.connect(lp); lp.connect(g); g.connect(master); src.start(t);
+}
+// ambiance de ville (vent + rumeur lointaine) quand on marche
+let amb = null;
+function footAmbience(on) {
+  if (!AC) return;
+  if (!amb) { const b = AC.createBuffer(1, AC.sampleRate * 3, AC.sampleRate), d = b.getChannelData(0); let l = 0; for (let i = 0; i < d.length; i++) { l = 0.985 * l + 0.015 * (Math.random() * 2 - 1); d[i] = l * 4; } const s = AC.createBufferSource(); s.buffer = b; s.loop = true; const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; amb = AC.createGain(); amb.gain.value = 0; s.connect(f); f.connect(amb); amb.connect(master); s.start(); }
+  amb.gain.setTargetAtTime(on ? 0.22 : 0, AC.currentTime, 0.6);
+}
+// regard : souris (verrouillage du pointeur) ou glissement du doigt à droite de l'écran
+renderer.domElement.addEventListener('click', () => { if (mode === 'foot' && !isTouch && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.(); });
+addEventListener('mousemove', e => { if (mode !== 'foot' || document.pointerLockElement !== renderer.domElement) return; FT.yaw -= e.movementX * 0.0022; FT.pitch = Math.max(-1.45, Math.min(1.45, FT.pitch - e.movementY * 0.0022)); });
+// commandes tactiles du mode à pied
+document.body.insertAdjacentHTML('beforeend', `<div id="foot"><div id="fStickBase"><div id="fStickKnob"></div></div><div id="fLookHint">Glisse pour regarder</div>
+  <button class="fBtn" id="fRun" aria-label="Courir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"/><path d="M8 21l3-6 3 2v4M6 11l3-3 4 1 3 4h3M11 15l-1-5"/></svg><span>COURIR</span></button>
+  <button class="fBtn" id="fJump" aria-label="Sauter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg><span>SAUTER</span></button>
+  <button class="fBtn" id="fCar" aria-label="Monter en voiture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14v-5l-2-5H7l-2 5z"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg><span>MONTER</span></button>
+  <div id="fCross"></div></div>`);
+{
+  const st = document.createElement('style');
+  st.textContent = `#foot{position:fixed;inset:0;z-index:4;display:none;touch-action:none}.walking #foot{display:block}.walking #touch{display:none!important}
+  #fCross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,.75);box-shadow:0 0 0 1.5px rgba(0,0,0,.35);pointer-events:none}
+  #fStickBase{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:radial-gradient(circle,rgba(255,255,255,.04),rgba(255,255,255,.12));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;pointer-events:none}
+  #fStickKnob{position:absolute;left:41px;top:41px;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#c9d0dc 55%,#8b95a6);box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  #fStickBase.run{border-color:#ffb547;box-shadow:0 0 24px rgba(255,181,71,.55)}
+  #fLookHint{position:absolute;right:calc(26% - 60px);bottom:calc(100px + env(safe-area-inset-bottom));font:700 11px -apple-system,sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.55);pointer-events:none;transition:opacity 1s}
+  .fBtn{position:absolute;width:68px;height:68px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);background:rgba(12,15,22,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:900 8.5px -apple-system,sans-serif;letter-spacing:1px;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:transform .08s}
+  .fBtn svg{width:24px;height:24px}.fBtn:active{transform:scale(.92)}
+  .fBtn.on{background:linear-gradient(180deg,#ffc56b,#ff9f1c);color:#1a1206;border-color:transparent;box-shadow:0 0 26px rgba(255,159,28,.55)}
+  #fRun{right:calc(24px + env(safe-area-inset-right));bottom:calc(28px + env(safe-area-inset-bottom))}
+  #fJump{right:calc(104px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));width:58px;height:58px}
+  #fCar{right:calc(174px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));width:58px;height:58px;display:none;border-color:#ffb547}
+  html:not(.is-touch) #fLookHint,html:not(.is-touch) .fBtn:not(#fCar){display:none}
+  html:not(.is-touch) #fCar{bottom:calc(24px + env(safe-area-inset-bottom));right:calc(24px + env(safe-area-inset-right))}
+  .walking #fCar.near{display:flex}
+  .walking #speedo{transform:scale(.72);transform-origin:right top}
+  .walking #hb,.walking #brk,.walking #gas{display:none}`;
+  document.head.appendChild(st);
+  const base = $('fStickBase'), knob = $('fStickKnob'), layer = $('foot');
+  let mid = null, mx0 = 0, my0 = 0, lid = null, lx = 0, ly = 0;
+  layer.addEventListener('touchstart', e => {
+    if (e.target.closest('.fBtn')) return; e.preventDefault(); startAudio();
+    for (const t of e.changedTouches) {
+      if (t.clientX < innerWidth * 0.45 && mid === null) { mid = t.identifier; mx0 = t.clientX; my0 = t.clientY; base.style.left = mx0 + 'px'; base.style.top = my0 + 'px'; base.style.display = 'block'; }
+      else if (lid === null) { lid = t.identifier; lx = t.clientX; ly = t.clientY; $('fLookHint').style.opacity = 0; }
+    }
+  }, { passive: false });
+  layer.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === mid) {
+        let dx = t.clientX - mx0, dy = t.clientY - my0; const d = Math.hypot(dx, dy), R = 56; if (d > R) { dx *= R / d; dy *= R / d; }
+        knob.style.left = (41 + dx) + 'px'; knob.style.top = (41 + dy) + 'px'; FT.mx = dx / R; FT.mz = -dy / R;
+        FT.stickRun = d > R * 1.25 && -dy > Math.abs(dx); base.classList.toggle('run', FT.stickRun || FT.runLock);
+      } else if (t.identifier === lid) {
+        FT.yaw -= (t.clientX - lx) * 0.0055; FT.pitch = Math.max(-1.45, Math.min(1.45, FT.pitch - (t.clientY - ly) * 0.0045)); lx = t.clientX; ly = t.clientY;
+      }
+    }
+  }, { passive: false });
+  const end = e => { for (const t of e.changedTouches) { if (t.identifier === mid) { mid = null; FT.mx = FT.mz = 0; FT.stickRun = false; base.style.display = 'none'; knob.style.left = knob.style.top = '41px'; } if (t.identifier === lid) lid = null; } };
+  layer.addEventListener('touchend', end); layer.addEventListener('touchcancel', end);
+  // souris sans verrouillage : glisser pour regarder
+  let drag = null; layer.addEventListener('mousedown', e => { if (!e.target.closest('.fBtn')) drag = { x: e.clientX, y: e.clientY }; });
+  addEventListener('mousemove', e => { if (!drag || mode !== 'foot') return; FT.yaw -= (e.clientX - drag.x) * 0.004; FT.pitch = Math.max(-1.45, Math.min(1.45, FT.pitch - (e.clientY - drag.y) * 0.004)); drag = { x: e.clientX, y: e.clientY }; });
+  addEventListener('mouseup', () => { drag = null; });
+  const tap = (id, fn) => { const b = $(id); b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); fn(b); }, { passive: false }); b.addEventListener('click', () => fn(b)); };
+  tap('fRun', b => { FT.runLock = !FT.runLock; b.classList.toggle('on', FT.runLock); });
+  tap('fJump', () => { FT.jump = true; });
+  tap('fCar', () => setMode('car'));
+}
+addEventListener('keydown', e => { if (e.code === 'KeyE' || e.code === 'KeyV') { if (mode === 'foot') setMode('car'); else if (mode === 'car') setMode('foot'); } if (mode === 'foot' && e.code === 'Space') e.preventDefault(); });
+function footNear() { return Math.hypot(FT.x - S.x, FT.z - S.z) < 4.5; }
+setInterval(() => { const b = $('fCar'); if (b) b.classList.toggle('near', mode === 'foot' && footNear()); }, 250);
 
 
 // ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
@@ -1178,11 +1339,11 @@ window.__S = S; window.__PL = PL; window.__setMode = setMode; window.__ps = plan
 function loop(now) {
   let dt = Math.min(0.05, (now - prev) / 1000); prev = now; const t = now / 1000;
   acc += dt; const h = 1 / 120;
-  while (acc >= h) { if (mode === 'plane') planeStep(h); else step(h); acc -= h; }
+  while (acc >= h) { if (mode === 'plane') planeStep(h); else if (mode === 'foot') footStep(h); else step(h); acc -= h; }
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
-  if (mode === 'plane') { updatePlaneVisual(); updatePlaneCamera(dt, t); } else updateCamera(dt, t);
-  const F = mode === 'plane' ? PL : S;
+  if (mode === 'plane') { updatePlaneVisual(); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
+  const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
   // sun follows car for shadows
   sun.position.set(F.x + sunDir.x * 300, F.y + sunDir.y * 300, F.z + sunDir.z * 300); sun.target.position.set(F.x, F.y, F.z);
   sky.position.copy(camera.position); lark.dome.position.copy(camera.position);
@@ -1196,9 +1357,9 @@ function loop(now) {
   if (cityTiles) { cityTiles.group.visible = cityMode !== 'google'; if (cityTiles.group.visible) { camera.updateMatrixWorld(); cityTiles.setResolutionFromRenderer(camera, renderer); cityTiles.update(); } }
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
-  const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : S.vf) * 3.6);
+  const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : mode === 'foot' ? FT.spd : S.vf) * 3.6);
   $('spd').firstChild.nodeValue = kmh;
-  $('gear').textContent = mode === 'plane' ? (PL.landed ? 'POSÉ' : 'ALT ' + Math.round(PL.y - groundH(PL.x, PL.z)) + ' m') : (S.vf < -0.5 ? 'R' : (kmh < 1 && !S.thr ? 'N' : S.gear));
+  $('gear').textContent = mode === 'foot' ? (FT.run > 0.5 ? 'COURSE' : 'À PIED') : mode === 'plane' ? (PL.landed ? 'POSÉ' : 'ALT ' + Math.round(PL.y - groundH(PL.x, PL.z)) + ' m') : (S.vf < -0.5 ? 'R' : (kmh < 1 && !S.thr ? 'N' : S.gear));
   $('rpm').firstElementChild.style.width = Math.min(100, S.rpm / 75) + '%';
   if ((streetT -= dt) < 0) {
     streetT = 0.4; const r = nearestRoad(F.x, F.z, 18); const nm = r ? roadNames[r.r.nid] : '';
