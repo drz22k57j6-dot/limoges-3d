@@ -27,6 +27,18 @@
   #touch { position:fixed; inset:0; z-index:4; display:none; }
   .is-touch #touch { display:block; }
   .flying #hb { display:none; }
+  .flying #touch { display:none !important; }
+  #dsticks { display:none; position:fixed; inset:0; z-index:5; pointer-events:none; }
+  .flying #dsticks { display:block; }
+  .dst { position:absolute; bottom:calc(22px + env(safe-area-inset-bottom)); width:150px; height:150px; border-radius:50%; background:rgba(8,14,22,.28); border:1.5px solid rgba(255,255,255,.35); pointer-events:auto; touch-action:none; }
+  .dst::before { content:''; position:absolute; left:50%; top:12px; bottom:12px; width:1px; background:rgba(255,255,255,.25); } .dst::after { content:''; position:absolute; top:50%; left:12px; right:12px; height:1px; background:rgba(255,255,255,.25); }
+  .dst span { position:absolute; bottom:-18px; left:0; right:0; text-align:center; font:700 9px/1 Arial; letter-spacing:.14em; color:rgba(255,255,255,.7); }
+  #dsL { left:calc(26px + env(safe-area-inset-left)); } #dsR { right:calc(26px + env(safe-area-inset-right)); }
+  .dkn { position:absolute; left:50%; top:50%; width:58px; height:58px; margin:-29px 0 0 -29px; border-radius:50%; background:rgba(255,255,255,.5); box-shadow:0 4px 14px rgba(0,0,0,.45); }
+  #pipBox { display:none; position:fixed; z-index:7; left:calc(14px + env(safe-area-inset-left)); top:calc(14px + env(safe-area-inset-top)); width:224px; height:126px; border:2px solid #31E6FF; border-radius:10px; overflow:hidden; background:#000; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+  #pipBox canvas { width:100%; height:100%; display:block; } #pipBox b { position:absolute; left:6px; top:5px; font:800 9px/1 Arial; letter-spacing:.14em; color:#31E6FF; text-shadow:0 1px 3px #000; }
+  .flying.pip #pipBox { display:block; } .flying.pip #mapwrap { display:none; }
+  .is-touch .flying #speedo { display:none; }
   .flying #stick { height:150px; bottom:calc(10px + env(safe-area-inset-bottom)); border-radius:40px; }
   .flying #knob { top:45px; }
   .is-touch #street { bottom:auto; top:calc(64px + env(safe-area-inset-top)); }
@@ -57,6 +69,7 @@
 <div class="hud" id="mapwrap"><canvas id="map" width="300" height="300"></canvas></div>
 <div class="hud" id="street"></div>
 <div class="hud" id="toast"></div>
+<div id="didCount" style="position:fixed;z-index:30;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top));font:700 12px/1 Arial;letter-spacing:.12em;color:#31E6FF;background:rgba(6,14,24,.7);padding:6px 10px;border-radius:8px;pointer-events:none"></div>
 <div class="hud" id="speedo"><div id="gear">N</div><div id="spd">0<small>KM/H</small></div><div id="rpm"><i></i></div></div>
 <div class="btns">
   <button class="b" id="bCam">CAMÉRA</button>
@@ -65,7 +78,10 @@
   <button class="b" id="bVille">VILLE…</button>
   <button class="b" id="bFoot">À PIED</button>
   <button class="b" id="bPlane">DRONE ✦</button>
+  <button class="b" id="bPip">RETOUR CAM</button>
   <button class="b" id="bRec">● REC</button>
+  <button class="b" id="bId">ID ✓</button>
+  <button class="b" id="bIdCol">COULEURS ID</button>
   <button class="b" id="bReset">↺</button>
 </div>
 <div id="touch">
@@ -74,18 +90,20 @@
   <div class="pedal" id="brk">FREIN</div>
   <div class="pedal" id="gas">GAZ</div>
 </div>
+<div id="dsticks"><div class="dst" id="dsL"><div class="dkn"></div><span>GAZ · LACET</span></div><div class="dst" id="dsR"><div class="dkn"></div><span>TANGAGE · ROULIS</span></div></div>
+<div id="pipBox"><canvas id="pip" width="320" height="180"></canvas><b id="pipLbl">CAMÉRA</b></div>
 <div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0</div>
 <script>
 // ---------- choice of city (?ville=paris), remembered on the phone ----------
 window.CITIES = {
   limoges: { id: 'limoges', nom: 'LIMOGES', zone: "VAL DE L'AURENCE · 6 × 6 KM", data: 'data/', X0: 562924, Y0: 6528957, lat: 45.84646501496012, lon: 1.233611398108212, geoid: 49.5, depart: '31 allée Le Gréco' },
   paris: { id: 'paris', nom: 'PARIS', zone: 'CENTRE · LOUVRE – BASTILLE · 6 × 6 KM', data: 'data/paris/', X0: 652087, Y0: 6862038, lat: 48.85659634742922, lon: 2.3469933375556065, geoid: 44.5, depart: 'Hôtel de Ville' } };
-(() => { let v = new URLSearchParams(location.search).get('ville'); try { if (!v) v = localStorage.getItem('ville'); if (v) localStorage.setItem('ville', v); } catch (e) {} window.CITY = window.CITIES[v] || window.CITIES.limoges; })();
+(() => { let v = new URLSearchParams(location.search).get('ville'); try { if (!v) v = localStorage.getItem('ville'); if (v) localStorage.setItem('ville', v); } catch (e) {} window.CITY = window.CITIES.paris; void v; })();   // projet : Paris uniquement
 </script>
 <div id="loader">
   <h1><span id="cityName">LIMOGES</span> <span>DRIVE</span></h1>
   <p id="cityZone">VAL DE L'AURENCE · 6 × 6 KM</p>
-  <div id="cityPick" style="margin:6px 0 10px;display:flex;gap:10px;justify-content:center"></div>
+  <div id="cityPick" style="margin:6px 0 10px;display:none;gap:10px;justify-content:center"></div>
   <script>
     document.getElementById('cityName').textContent = CITY.nom; document.getElementById('cityZone').textContent = CITY.zone;
     for (const c of Object.values(CITIES)) { const b = document.createElement('a'); b.textContent = c.nom; b.href = '?ville=' + c.id;
@@ -137,7 +155,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(62, 1, 0.3, 5000);
 
 const QUALITIES = [
-  { name: 'ULTRA', dpr: 2, shadow: 2048, shadowAll: true, far: 2600, trees: 2600, post: true, ao: true },
+  { name: 'ULTRA', dpr: (('ontouchstart' in window) ? 1.75 : 2), shadow: 2048, shadowAll: true, far: 2600, trees: 2600, post: true, ao: true },
   { name: 'HAUTE', dpr: 1.5, shadow: 2048, shadowAll: false, far: 2000, trees: 1500, post: true, ao: false },
   { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
@@ -247,7 +265,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=24';
+const V = '?v=26';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -285,40 +303,111 @@ const treeGrid = new Map();
 const roadGrid = new Map();
 function addTo(grid, x, z, v) { const k = key(Math.floor(x / CELL), Math.floor(z / CELL)); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(v); }
 let segs, segRing, allRings; const ringTop = []; const ringGrid = new Map(); // walls x1,z1,x2,z2
-const buildingLabelSprites = new Map(); let buildingLabelTick = 0;
-function stableBuildingId(i) {
-  const r=allRings[i]; let x=0,z=0,n=r.length/2;
-  for(let k=0;k<r.length;k+=2){x+=r[k];z+=r[k+1]} x/=n;z/=n;
-  let h=2166136261; const s=CITY.id+'|'+x.toFixed(1)+'|'+z.toFixed(1);
-  for(let k=0;k<s.length;k++){h^=s.charCodeAt(k);h=Math.imul(h,16777619)}
-  return (CITY.id==='paris'?'PAR':'LIM')+'-B-'+(h>>>0).toString(36).toUpperCase().padStart(7,'0');
-}
-function makeBuildingLabel(i){
-  const id=stableBuildingId(i), c=document.createElement('canvas');c.width=512;c.height=144;
-  const x=c.getContext('2d');x.clearRect(0,0,512,144);x.shadowColor='rgba(0,0,0,.75)';x.shadowBlur=18;x.fillStyle='rgba(7,19,34,.96)';
-  x.beginPath();x.roundRect(9,9,494,126,22);x.fill();x.shadowBlur=0;x.strokeStyle='#31E6FF';x.lineWidth=7;x.stroke();
-  x.fillStyle='#31E6FF';x.font='700 24px Arial';x.textAlign='center';x.fillText('IDENTIFIANT BÂTIMENT',256,43);
-  x.fillStyle='#FFFFFF';x.font='900 54px Arial';x.fillText(id,256,105);
-  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
-  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
-  sprite.scale.set(8,2.25,1);sprite.renderOrder=20;sprite.userData.buildingIndex=i;scene.add(sprite);buildingLabelSprites.set(i,sprite);return sprite;
-}
-function updateBuildingLabels(dt){
-  if((buildingLabelTick-=dt)>0)return;buildingLabelTick=.22;
-  if(mode!=='plane'){for(const s of buildingLabelSprites.values())s.visible=false;return;}
-  const radius=190,ci=Math.floor(PL.x/CELL),cj=Math.floor(PL.z/CELL),R=Math.ceil(radius/CELL),candidates=new Set();
-  for(let a=ci-R;a<=ci+R;a++)for(let b=cj-R;b<=cj+R;b++){const list=ringGrid.get(key(a,b));if(list)for(const i of list)candidates.add(i)}
-  const near=[];
-  for(const i of candidates){const r=allRings[i];let x=0,z=0,n=r.length/2;for(let k=0;k<r.length;k+=2){x+=r[k];z+=r[k+1]}x/=n;z/=n;const d=Math.hypot(x-PL.x,z-PL.z);if(d<radius)near.push({i,x,z,d});}
-  near.sort((a,b)=>a.d-b.d);const shown=new Set();
-  for(const b of near.slice(0,18)){shown.add(b.i);let s=buildingLabelSprites.get(b.i);if(!s)s=makeBuildingLabel(b.i);
-    const r=allRings[b.i];let best=Infinity,bx=b.x,bz=b.z;
-    for(let k=0;k<r.length;k+=2){const j=(k+2)%r.length,ax=r[k],az=r[k+1],dx=r[j]-ax,dz=r[j+1]-az,L=dx*dx+dz*dz||1;
-      const t=THREE.MathUtils.clamp(((PL.x-ax)*dx+(PL.z-az)*dz)/L,0,1),px=ax+t*dx,pz=az+t*dz,d=(PL.x-px)**2+(PL.z-pz)**2;
-      if(d<best){best=d;bx=px;bz=pz;}}
-    const ground=surfaceH(b.x,b.z),top=ringTop[b.i];s.position.set(bx,Math.max(ground+4,top-1.5),bz);s.visible=true;
+// ---------- caméra du drone : identifiant IGN réel de chaque bâtiment vu ----------
+// Chaque bâtiment des tuiles 3D porte son identifiant IGN BD TOPO (cleabs, ex. BATIMENT0000000241900027).
+// Toutes les 0,25 s, une petite image « d'identifiants » (un code couleur exact par bâtiment) est rendue depuis
+// la caméra du drone : on sait ainsi quels bâtiments sont réellement visibles (pas cachés derrière d'autres),
+// et où ils sont à l'écran. Les étiquettes sont dessinées dans l'image, donc présentes dans la vidéo.
+const DID = { list: [null], index: new Map(), meshes: new Set(), labels: new Map(), seen: new Map(), info: new Map(), cells: new Map(), tick: 0, on: true, colors: false, W: 192, H: 108 };
+window.__DID = DID;
+const didRT = new THREE.WebGLRenderTarget(DID.W, DID.H, { depthBuffer: true }); const didPix = new Uint8Array(DID.W * DID.H * 4);
+const didMat = new THREE.ShaderMaterial({ vertexShader: 'attribute vec3 idc; varying vec3 v; void main(){ v = idc; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }', fragmentShader: 'varying vec3 v; void main(){ gl_FragColor = vec4(v, 1.0); }' });
+const didColMat = new THREE.ShaderMaterial({ uniforms: { sd: { value: new THREE.Vector3(0.4, 0.8, 0.3) } },
+  vertexShader: 'attribute vec3 hc; varying vec3 v; varying vec3 n; void main(){ v = hc; n = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform vec3 sd; varying vec3 v; varying vec3 n; void main(){ float l = 0.55 + 0.45 * max(dot(normalize(n), normalize(sd)), 0.0); gl_FragColor = vec4(v * l, 1.0); }' });
+function didHash(id) { let h = 2166136261; for (let k = 0; k < id.length; k++) { h ^= id.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; }
+function didStableColor(id) { const h = didHash(id); return new THREE.Color().setHSL((h % 360) / 360, 0.62 + ((h >>> 9) % 30) / 100, 0.46 + ((h >>> 17) % 18) / 100); }
+// appelé pour chaque maillage de bâtiments chargé : code exact par bâtiment (idc) et couleur stable (hc)
+function didPrep(o) {
+  const g = o.geometry, ba = g.getAttribute('_batchid'), ids = o.userData.ids; if (!ba || !ids) return;
+  const n = ba.count, idc = new Float32Array(n * 3), hc = new Float32Array(n * 3), pos = g.getAttribute('position'), box = new Map(), cols = new Map();
+  for (let v = 0; v < n; v++) {
+    const b = Math.round(ba.getX(v)), id = ids[b]; if (!id) continue;
+    let k = DID.index.get(id); if (!k) { k = DID.list.length; DID.list.push(id); DID.index.set(id, k); }
+    idc[3 * v] = (k & 255) / 255; idc[3 * v + 1] = ((k >> 8) & 255) / 255; idc[3 * v + 2] = ((k >> 16) & 255) / 255;
+    let c = cols.get(id); if (!c) { c = didStableColor(id); cols.set(id, c); } hc[3 * v] = c.r; hc[3 * v + 1] = c.g; hc[3 * v + 2] = c.b;
+    const x = pos.getX(v), y = pos.getY(v), z = pos.getZ(v); let bb = box.get(k); if (!bb) box.set(k, bb = [x, y, z, x, y, z]);
+    bb[0] = Math.min(bb[0], x); bb[1] = Math.min(bb[1], y); bb[2] = Math.min(bb[2], z); bb[3] = Math.max(bb[3], x); bb[4] = Math.max(bb[4], y); bb[5] = Math.max(bb[5], z);
   }
-  for(const [i,s] of buildingLabelSprites)if(!shown.has(i))s.visible=false;
+  g.setAttribute('idc', new THREE.BufferAttribute(idc, 3)); g.setAttribute('hc', new THREE.BufferAttribute(hc, 3));
+  o.userData.didBox = box; o.userData.matReal = o.material; DID.meshes.add(o);
+  if (DID.colors) o.material = didColMat;
+}
+function didCentre(k) { // centre monde du bâtiment k (boîte dans le maillage qui le contient)
+  for (const o of DID.meshes) { const bb = o.userData.didBox && o.userData.didBox.get(k); if (bb) { const c = new THREE.Vector3((bb[0] + bb[3]) / 2, (bb[1] + bb[4]) / 2, (bb[2] + bb[5]) / 2), t = new THREE.Vector3((bb[0] + bb[3]) / 2, bb[4], (bb[2] + bb[5]) / 2); o.updateWorldMatrix(true, false); c.applyMatrix4(o.matrixWorld); t.applyMatrix4(o.matrixWorld); return { c, top: Math.max(t.y, c.y) }; } }
+  return null;
+}
+// adresse et usage (fichiers d'identité par km², sources IGN) pour la 2e ligne de l'étiquette
+function didInfo(id, at) {
+  if (DID.info.has(id)) return DID.info.get(id); DID.info.set(id, null);
+  const i = Math.floor((at.x + 3000) / 1000), j = Math.floor((-at.z + 3000) / 1000), key2 = i + '_' + j;
+  let p = DID.cells.get(key2); if (!p) { p = fetch(CITY.data + 'identite/' + key2 + '.json' + V).then(r => r.ok ? r.json() : {}).catch(() => ({})); DID.cells.set(key2, p); }
+  p.then(cell => { const e = cell[id]; if (!e) return; const a = e.adresses && e.adresses[0] ? e.adresses[0].label.replace(/, Paris (\d+)e? Arrondissement/, ' · $1e') : ''; DID.info.set(id, { adr: a, usage: e.usage || '', h: e.hauteur_m }); const L = DID.labels.get(id); if (L) didDraw(L, id); });
+  return null;
+}
+function didDraw(L, id) {
+  const c = L.cv, x = c.getContext('2d'), inf = DID.info.get(id), col = '#' + didStableColor(id).getHexString(), filmed = DID.seen.get(id);
+  x.clearRect(0, 0, 640, 170); x.fillStyle = 'rgba(6,14,24,.86)'; x.beginPath(); x.roundRect(6, 6, 628, 158, 16); x.fill();
+  x.fillStyle = col; x.fillRect(6, 6, 14, 158);
+  x.fillStyle = '#9fb3c4'; x.font = '600 22px Arial'; x.textAlign = 'left'; x.fillText('IGN BD TOPO' + (filmed && filmed.n > 8 ? '  ·  ● FILMÉ' : ''), 36, 40);
+  x.fillStyle = '#fff'; x.font = '800 36px ui-monospace,Menlo,monospace'; x.fillText(id, 36, 88);
+  x.fillStyle = '#d9e4ec'; x.font = '500 24px Arial'; x.fillText(inf ? (inf.adr || inf.usage || '') + (inf.h ? '  ·  ' + Math.round(inf.h) + ' m' : '') : '…', 36, 134);
+  L.tex.needsUpdate = true;
+}
+function didLabel(id) {
+  let L = DID.labels.get(id); if (L) return L;
+  const cv = document.createElement('canvas'); cv.width = 640; cv.height = 170; const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, toneMapped: false, sizeAttenuation: false }));
+  sp.scale.set(0.24, 0.064, 1); sp.renderOrder = 20; sp.center.set(0.5, 0); scene.add(sp);
+  L = { sp, cv, tex, pos: new THREE.Vector3(), ok: false }; DID.labels.set(id, L); didDraw(L, id); return L;
+}
+function didToggleColors(on) {
+  DID.colors = on; for (const o of DID.meshes) if (o.parent) o.material = on ? didColMat : o.userData.matReal;
+  toast(on ? 'Code couleur unique par bâtiment (identifiant IGN)' : 'Rendu normal');
+}
+const _dv = new THREE.Vector3();
+function updateBuildingLabels(dt) {
+  if (mode !== 'plane' || !DID.on || !cityTiles) { for (const L of DID.labels.values()) L.sp.visible = false; return; }
+  for (const L of DID.labels.values()) if (L.ok) L.sp.position.lerp(L.pos, Math.min(1, dt * 8));
+  if ((DID.tick -= dt) > 0) return; DID.tick = 0.25;
+  // passe d'identifiants : seuls les bâtiments, avec leur code exact
+  for (const o of DID.meshes) { if (!o.parent) { DID.meshes.delete(o); continue; } o.material = didMat; }
+  const vis = []; scene.traverseVisible(o => { if (o.isMesh || o.isPoints || o.isLine || o.isSprite) { if (!DID.meshes.has(o) && o !== sky && o.visible) { vis.push(o); } } });
+  for (const o of vis) o.visible = false;
+  const bg = scene.background, fog = scene.fog; scene.background = null; scene.fog = null;
+  renderer.setRenderTarget(didRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
+  renderer.readRenderTargetPixels(didRT, 0, 0, DID.W, DID.H, didPix); renderer.setRenderTarget(null);
+  scene.background = bg; scene.fog = fog; for (const o of vis) o.visible = true;
+  for (const o of DID.meshes) o.material = DID.colors ? didColMat : o.userData.matReal;
+  // pixels par bâtiment et centre à l'écran
+  const acc = new Map();
+  for (let p = 0; p < DID.W * DID.H; p++) { const k = didPix[4 * p] | (didPix[4 * p + 1] << 8) | (didPix[4 * p + 2] << 16); if (!k) continue; let a = acc.get(k); if (!a) acc.set(k, a = [0, 0, 0, -1]); a[0]++; a[1] += p % DID.W; const py = (p / DID.W) | 0; a[2] += py; if (py > a[3]) a[3] = py; }   // lignes comptées depuis le bas
+  const now = performance.now() / 1000, rec = gameRecorder && gameRecorder.state === 'recording';
+  const vis2 = [...acc.entries()].filter(([k, a]) => a[0] >= 18 && DID.list[k]).sort((a, b) => b[1][0] - a[1][0]);
+  for (const [k, a] of vis2) { const id = DID.list[k]; let s = DID.seen.get(id); if (!s) DID.seen.set(id, s = { first: now, last: now, n: 0, px: 0, rec: 0 }); s.last = now; s.n++; s.px = Math.max(s.px, a[0]); if (rec) s.rec++; }
+  const shown = new Set();
+  const placed = [];
+  for (const [k, a] of vis2.slice(0, 16)) {
+    if (placed.length >= 7) break;
+    const id = DID.list[k], b = didCentre(k); if (!b) continue;
+    const L = didLabel(id); shown.add(id); didInfo(id, b.c);
+    // point de l'écran où le bâtiment est vu (son milieu horizontal, son haut visible), à la distance du bâtiment
+    const nx = (a[1] / a[0] + 0.5) / DID.W * 2 - 1, ny = Math.min(0.82, (a[3] + 0.5) / DID.H * 2 - 1 + 0.02);
+    if (placed.some(q => Math.abs(q[0] - nx) < 0.36 && Math.abs(q[1] - ny) < 0.2)) continue;   // pas d'étiquettes empilées
+    placed.push([nx, ny]);
+    _dv.set(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
+    const d = camera.position.distanceTo(b.c); L.pos.copy(camera.position).addScaledVector(_dv, d * 0.92);
+    if (!L.ok || !L.sp.visible) { L.sp.position.copy(L.pos); L.ok = true; }
+    L.sp.visible = true; if (DID.seen.get(id).n === 9) didDraw(L, id);
+  }
+  for (const [id, L] of DID.labels) if (!shown.has(id)) L.sp.visible = false;
+  if (DID.labels.size > 120) for (const [id, L] of DID.labels) if (!L.sp.visible) { L.sp.material.map.dispose(); L.sp.material.dispose(); scene.remove(L.sp); DID.labels.delete(id); if (DID.labels.size < 60) break; }
+  const ct = $('didCount'); if (ct) ct.textContent = 'Bâtiments filmés : ' + [...DID.seen.values()].filter(s => s.n > 8).length;
+}
+// journal de vol : chaque bâtiment vu (identifiant IGN, 1re et dernière fois, nombre de vues), avec la vidéo
+function didJournal(t0) {
+  const L = []; for (const [id, s] of DID.seen) if (s.rec > 0) L.push({ id, debut_s: +(s.first - t0).toFixed(1), fin_s: +(s.last - t0).toFixed(1), vues: s.rec, pixels_max: s.px });
+  return { ville: CITY.id, date: new Date().toISOString(), source: 'identifiants IGN BD TOPO (cleabs)', batiments: L.sort((a, b) => a.debut_s - b.debut_s) };
 }
 function parseBuildings(buf) {
   const dv = new DataView(buf); const n = dv.getUint32(0, true); let o = 4; const arr = []; const rings = []; const sr = [];
@@ -911,12 +1000,16 @@ function thud(k) {
 // ---------------- UI / touch ----------------
 let toastT;
 function toast(s) { const e = $('toast'); e.textContent = s; e.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => e.style.opacity = 0, 1600); }
-$('bCam').onclick = () => { nextCam(); $('bCam').textContent = mode === 'plane' ? CAMS[camMode] : 'CAMÉRA'; startAudio(); };
+$('bCam').onclick = () => { if (mode === 'plane') { GIMBAL.i = (GIMBAL.i + 1) % GIMBAL.dirs.length; toast('Nacelle : ' + GIMBAL.dirs[GIMBAL.i][0]); return; } nextCam(); $('bCam').textContent = 'CAMÉRA'; startAudio(); };
+$('bPip').onclick = () => { PIP.on = !PIP.on; document.documentElement.classList.toggle('pip', PIP.on); toast(PIP.on ? 'Retour caméra : touche la vignette pour inverser' : 'Retour caméra fermé'); };
+$('pipBox').onclick = () => { if (gameRecorder && gameRecorder.state === 'recording') { toast('Pendant l\'enregistrement, la caméra reste en plein écran'); return; } droneView = droneView === 'cam' ? 'pilot' : 'cam'; };
 $('bTime').onclick = () => { ti = (ti + 1) % TIMES.length; applyTime(); };
-$('bQ').onclick = () => { qi = (qi + 1) % QUALITIES.length; applyQuality(); };
+$('bQ').onclick = () => { if (gameRecorder && gameRecorder.state === 'recording') { toast('Qualité verrouillée pendant l\'enregistrement'); return; } qi = (qi + 1) % QUALITIES.length; applyQuality(); };
 $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
 $('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 18; PL.spd = 0; PL.vy = 0; } else respawn(); };
 $('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
+$('bId').onclick = () => { DID.on = !DID.on; $('bId').textContent = DID.on ? 'ID ✓' : 'ID ✗'; };
+$('bIdCol').onclick = () => { didToggleColors(!DID.colors); $('bIdCol').classList.toggle('on', DID.colors); };
 $('bFoot').onclick = () => { const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : S; location.href = 'apied/?x=' + F.x.toFixed(1) + '&z=' + F.z.toFixed(1) + '&h=' + F.h.toFixed(3) + '&ville=' + CITY.id; };
 
 // High-quality in-game drone recording: captures the actual game renderer, not a separate preview.
@@ -925,7 +1018,7 @@ $('bRec').onclick=()=>{
  if(gameRecorder&&gameRecorder.state!=='inactive'){gameRecorder.stop();return}
  if(mode!=='plane'){toast('Passe en mode DRONE pour filmer');return}
  try{
-   camMode=0;updatePlaneCamera(0,performance.now()/1000);$('bCam').textContent='CAMÉRA DROITE';
+   droneView='cam';
    
   // Keep the user's selected render quality. Forcing ULTRA on phones overloads the GPU and can make buildings look softer or stutter during recording.
    toast('Enregistrement avec la qualité graphique actuelle')
@@ -939,14 +1032,18 @@ $('bRec').onclick=()=>{
    const blob=new Blob(gameChunks,{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
    a.href=url;a.download='paris-drone-'+new Date().toISOString().replace(/[:.]/g,'-')+'.'+(mime.includes('mp4')?'mp4':'webm');
    document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},60000);
-   $('bRec').textContent='● REC';$('bRec').classList.remove('on');toast('Vidéo enregistrée · '+Math.round(blob.size/1048576)+' Mo');
+   $('bRec').textContent='● REC';$('bRec').classList.remove('on');
+   const J=didJournal(recordStarted/1000),jb=new Blob([JSON.stringify(J,null,1)],{type:'application/json'}),ju=URL.createObjectURL(jb),ja=document.createElement('a');
+   ja.href=ju;ja.download=a.download.replace(/\.(mp4|webm)$/,'')+'-batiments.json';setTimeout(()=>{document.body.appendChild(ja);ja.click();setTimeout(()=>{URL.revokeObjectURL(ju);ja.remove()},60000)},800);
+   toast('Vidéo enregistrée · '+Math.round(blob.size/1048576)+' Mo · '+J.batiments.length+' bâtiments identifiés');
   };
+  for(const v of DID.seen.values())v.rec=0;
   gameRecorder.start(1000);recordStarted=performance.now();$('bRec').textContent='■ STOP';$('bRec').classList.add('on');toast('Enregistrement du jeu en haute qualité · 60 i/s');
  }catch(e){toast('Vidéo : '+e.message)}
 };
 
 function applyQuality() {
-  const q = QUALITIES[qi]; resize(); buildComposer(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = TILE_ERR[qi];
+  const q = QUALITIES[qi]; resize(); buildComposer(); $('bQ').textContent = q.name; if (tiles) tiles.errorTarget = TILE_ERR[qi]; if (cityTiles) cityTiles.errorTarget = [3, 6, 12][qi];
   sun.shadow.mapSize.set(q.shadow, q.shadow); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
   chunks.forEach(c => c.obj.traverse(o => { if (o.isMesh) o.castShadow = q.shadowAll && !c.roads; }));
   treeChunks.forEach(c => c.obj.castShadow = q.shadowAll);
@@ -1000,8 +1097,9 @@ const sideCamPod=new THREE.Group();sideCamPod.position.set(.58,-.11,.12);droneBo
 const sideCamHousing=new THREE.Mesh(new THREE.BoxGeometry(.24,.19,.28),droneMat);sideCamPod.add(sideCamHousing);
 const sideCamLens=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.12,24),lensMat);sideCamLens.rotation.z=-Math.PI/2;sideCamLens.position.x=.17;sideCamPod.add(sideCamLens);
 const sideCamGlass=new THREE.Mesh(new THREE.CircleGeometry(.057,24),new THREE.MeshBasicMaterial({color:0x36dfff,emissive:0x0a3b52}));sideCamGlass.rotation.y=Math.PI/2;sideCamGlass.position.x=.235;sideCamPod.add(sideCamGlass);
+droneBody.scale.setScalar(0.55);   // envergure hélices comprises ≈ 1,5 m (drone de cinéma)
 drone.visible=false;
-const PL = { x:0,y:0,z:0,yaw:0,spd:0,vy:0,bank:0,pitch:0,landed:false,t:0,gimbalPitch:0 };
+const PL = { x:0,y:0,z:0,yaw:0,spd:0,vx:0,vz:0,vy:0,bank:0,pitch:0,landed:false,t:0,gimbalPitch:0 };
 function planeGround(x,z){
  let g=surfaceH(x,z);
  const a=ringGrid.get(key(Math.floor(x/CELL),Math.floor(z/CELL)));
@@ -1009,71 +1107,104 @@ function planeGround(x,z){
  for(let k=0,j=r.length/2-1;k<r.length/2;j=k++){const xi=r[2*k],zi=r[2*k+1],xj=r[2*j],zj=r[2*j+1];if(((zi>z)!==(zj>z))&&(x<(xj-xi)*(z-zi)/(zj-zi)+xi))inside=!inside}
  if(inside)g=Math.max(g,ringTop[i]);}return g;
 }
+// Drone quadrirotor, commandes classiques (mode 2) :
+//  manche gauche  = gaz (monter / descendre) et lacet (tourner sur place)
+//  manche droit   = tangage (avancer / reculer) et roulis (glisser à gauche / à droite)
+//  clavier : Z/S tangage, Q/D roulis, ←/→ lacet, Espace/Maj ou ↑/↓ gaz.
+// Contact strict : le drone ne touche un mur, un toit ou le sol que lorsque sa coque y est réellement
+// (rayon de la coque et des hélices 0,78 m, patins à 0,21 m sous le centre) ; aucune marge invisible.
+const DS = { lx: 0, ly: 0, rx: 0, ry: 0 };
+const DR = { R: 0.78, LEG: 0.21, VMAX: 16, VZ: 5, YAW: 1.6 };
+function droneWalls(x, y, z, r) { // pousse hors des murs plus hauts que le drone, au contact exact
+  let hit = false; const ci = Math.floor(x / CELL), cj = Math.floor(z / CELL);
+  for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
+    const a = segGrid.get(key(i, j)); if (!a) continue;
+    for (const si of a) { if (ringTop[segRing[si]] <= y - DR.LEG) continue;
+      const ax = segs[4 * si], az = segs[4 * si + 1], dx = segs[4 * si + 2] - ax, dz = segs[4 * si + 3] - az, L2 = dx * dx + dz * dz || 1;
+      const q = THREE.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / L2, 0, 1), px = x - (ax + q * dx), pz = z - (az + q * dz), d = Math.hypot(px, pz);
+      if (d < r && d > 1e-5) { x += px / d * (r - d); z += pz / d * (r - d); hit = { nx: px / d, nz: pz / d }; } }
+  }
+  return [x, z, hit];
+}
 function planeStep(dt){
  const kb=a=>a.some(c=>keys[c]);
- const forward=Math.max(inp.thr,kb(['KeyW','KeyZ','ArrowUp'])?1:0);
- const backward=Math.max(inp.brk,kb(['KeyS','ArrowDown'])?1:0);
- let turn=inp.steer+(kb(['KeyA','KeyQ','ArrowLeft'])?1:0)-(kb(['KeyD','ArrowRight'])?1:0);
- turn=THREE.MathUtils.clamp(turn,-1,1);
- let climb=inp.climb+(kb(['Space'])?1:0)-(kb(['ShiftLeft','ShiftRight'])?1:0);
- climb=THREE.MathUtils.clamp(climb,-1,1);
- const desiredSpeed=(forward-backward*.7)*18;
- PL.spd+=(desiredSpeed-PL.spd)*Math.min(1,dt*(forward||backward?1.7:1.0));
- PL.yaw+=turn*1.25*dt;
- const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw);
- let nx=PL.x+fx*PL.spd*dt,nz=PL.z+fz*PL.spd*dt;
- const ground=planeGround(nx,nz);
- const desiredVy=climb*5.8;
- PL.vy+=(desiredVy-PL.vy)*Math.min(1,dt*2.8);
- let ny=PL.y+PL.vy*dt;
- const floor=ground+7.5;
- if(ny<floor){ny=floor;PL.vy=Math.max(0,PL.vy)}
- ny=Math.min(420,Math.max(floor,ny));
- // Prevent passing through building walls when flying below their roofs.
- const ci=Math.floor(nx/CELL),cj=Math.floor(nz/CELL);
- for(let i=ci-1;i<=ci+1;i++)for(let j=cj-1;j<=cj+1;j++){
-  const a=segGrid.get(key(i,j));if(!a)continue;
-  for(const si of a){const top=ringTop[segRing[si]];if(ny>top+1.2)continue;
-   const ax=segs[4*si],az=segs[4*si+1],bx=segs[4*si+2],bz=segs[4*si+3],dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz||1;
-   const q=THREE.MathUtils.clamp(((nx-ax)*dx+(nz-az)*dz)/L2,0,1),px=nx-(ax+q*dx),pz=nz-(az+q*dz),d=Math.hypot(px,pz);
-   if(d<2.1&&d>1e-4){nx+=px/d*(2.1-d);nz+=pz/d*(2.1-d);PL.spd*=.55}
-  }
- }
- const LIM=2950;PL.x=THREE.MathUtils.clamp(nx,-LIM,LIM);PL.z=THREE.MathUtils.clamp(nz,-LIM,LIM);PL.y=ny;
- PL.bank+=( -turn*.22-PL.bank)*Math.min(1,dt*4);
- PL.pitch+=(-PL.spd*.006-PL.pitch)*Math.min(1,dt*3);
- PL.gimbalPitch+=(THREE.MathUtils.clamp(-climb*.12,-.28,.35)-PL.gimbalPitch)*Math.min(1,dt*2.5);
- PL.t+=dt;PL.landed=false;
- S.rpm=1800+Math.abs(PL.spd)*35+Math.abs(PL.vy)*50;S.thr=Math.max(forward,backward,Math.abs(climb))*.45;S.slip=0;S.onGround=false;
+ const pitch=THREE.MathUtils.clamp(DS.ry+(kb(['KeyW','KeyZ'])?1:0)-(kb(['KeyS'])?1:0),-1,1);
+ const roll=THREE.MathUtils.clamp(DS.rx+(kb(['KeyD'])?1:0)-(kb(['KeyA','KeyQ'])?1:0),-1,1);
+ const yaw=THREE.MathUtils.clamp(-DS.lx+(kb(['ArrowLeft'])?1:0)-(kb(['ArrowRight'])?1:0),-1,1);
+ const thr=THREE.MathUtils.clamp(DS.ly+(kb(['Space','ArrowUp'])?1:0)-(kb(['ShiftLeft','ShiftRight','ArrowDown'])?1:0),-1,1);
+ const ex=x=>Math.sign(x)*x*x*.55+x*.45;               // courbe « expo » : précision autour du centre
+ PL.yaw+=ex(yaw)*DR.YAW*dt;
+ const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw),rx=-Math.cos(PL.yaw),rz=Math.sin(PL.yaw);
+ const wantX=(fx*ex(pitch)+rx*ex(roll))*DR.VMAX,wantZ=(fz*ex(pitch)+rz*ex(roll))*DR.VMAX;
+ const k=Math.min(1,dt*(pitch||roll?1.8:2.6));        // inertie, puis freinage actif quand on lâche
+ PL.vx=(PL.vx||0)+(wantX-(PL.vx||0))*k; PL.vz=(PL.vz||0)+(wantZ-(PL.vz||0))*k;
+ PL.vy+=(ex(thr)*DR.VZ-PL.vy)*Math.min(1,dt*3);
+ let nx=PL.x+PL.vx*dt,nz=PL.z+PL.vz*dt,ny=PL.y+PL.vy*dt;
+ // murs : contact exact avec la coque
+ const [wx,wz,hit]=droneWalls(nx,ny,nz,DR.R); nx=wx;nz=wz;
+ if(hit){const vn=PL.vx*hit.nx+PL.vz*hit.nz;if(vn<0){PL.vx-=vn*hit.nx;PL.vz-=vn*hit.nz;if(vn<-3)thud(Math.min(1,-vn/10))}}
+ // sol, toits : les patins se posent au contact
+ const floor=planeGround(nx,nz)+DR.LEG;
+ if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}PL.landed=thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6}else PL.landed=false;
+ if(PL.landed){PL.vx*=.8;PL.vz*=.8}
+ ny=Math.min(500,ny);
+ const LIM=2990;PL.x=THREE.MathUtils.clamp(nx,-LIM,LIM);PL.z=THREE.MathUtils.clamp(nz,-LIM,LIM);PL.y=ny;
+ PL.spd=Math.hypot(PL.vx,PL.vz);
+ // attitude réelle d'un quadri : penche dans le sens de l'accélération
+ const lf=(PL.vx*fx+PL.vz*fz)/DR.VMAX,ls=(PL.vx*rx+PL.vz*rz)/DR.VMAX;
+ PL.pitch+=(-lf*.32-PL.pitch)*Math.min(1,dt*5); PL.bank+=(ls*.32-PL.bank)*Math.min(1,dt*5);
+ PL.t+=dt;
+ S.rpm=PL.landed&&thr<=0?0:1800+PL.spd*35+Math.abs(PL.vy)*60;S.thr=PL.landed?0:.35+Math.max(Math.abs(pitch),Math.abs(roll),Math.abs(thr))*.4;S.slip=0;S.onGround=false;
+}
+// manches tactiles
+for (const [id, kx, ky] of [['dsL', 'lx', 'ly'], ['dsR', 'rx', 'ry']]) {
+  const el = document.getElementById(id), kn = el.querySelector('.dkn'); let tid = null;
+  const set = t => { const r = el.getBoundingClientRect(), R = r.width / 2 - 20; let dx = t.clientX - r.left - r.width / 2, dy = t.clientY - r.top - r.height / 2; const L = Math.hypot(dx, dy); if (L > R) { dx *= R / L; dy *= R / L; }
+    kn.style.transform = `translate(${dx}px,${dy}px)`; DS[kx] = dx / R; DS[ky] = -dy / R; };
+  el.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0]; tid = t.identifier; set(t); startAudio(); }, { passive: false });
+  el.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === tid) set(t); }, { passive: false });
+  const end = e => { for (const t of e.changedTouches) if (t.identifier === tid) { tid = null; kn.style.transform = ''; DS[kx] = 0; DS[ky] = 0; } };
+  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
 }
 function updatePlaneVisual(dt){
  drone.position.set(PL.x,PL.y+Math.sin(PL.t*2.1)*.025,PL.z);drone.rotation.set(0,PL.yaw,0);
  droneBody.rotation.set(PL.pitch,0,PL.bank,'YXZ');
- for(const r of rotors)r.rotor.rotation.y+=dt*(22+Math.abs(PL.spd)*1.8)*r.dir;
- camGimbal.rotation.set(PL.gimbalPitch,0,-PL.bank);drone.updateMatrixWorld(true);
+ for(const r of rotors)r.rotor.rotation.y+=dt*(S.rpm>0?42+Math.abs(PL.spd)*2:0)*r.dir;
+ camGimbal.rotation.set(-PL.pitch-GIMBAL.tilt,GIMBAL.yaw,-PL.bank,'YXZ');drone.updateMatrixWorld(true);
 }
+// Caméra du drone : nacelle stabilisée 3 axes (horizon toujours droit), orientable : avant, droite, gauche, plongée.
+const GIMBAL = { dirs: [['AVANT', 0, -0.12], ['DROITE', -Math.PI / 2, -0.08], ['GAUCHE', Math.PI / 2, -0.08], ['PLONGÉE', 0, -1.45]], i: 1, yaw: -Math.PI / 2, tilt: -0.08, fov: 50 };
+let droneView = 'cam';   // 'cam' : plein écran = caméra du drone ; 'pilot' : vue pilote, la caméra en petit
+function gimbalPose(pos, look) {
+  const g = GIMBAL.dirs[GIMBAL.i]; const y = PL.yaw + GIMBAL.yaw, cp = Math.cos(GIMBAL.tilt);
+  pos.set(0, -0.2, 0.25).applyMatrix4(drone.matrixWorld);
+  look.set(pos.x + Math.sin(y) * cp * 50, pos.y + Math.sin(GIMBAL.tilt) * 50, pos.z + Math.cos(y) * cp * 50); void g;
+}
+function pilotPose(pos, look) {
+  const cfx = Math.sin(camYaw), cfz = Math.cos(camYaw);
+  pos.set(PL.x - cfx * 9, PL.y + 3.2, PL.z - cfz * 9); look.set(PL.x + cfx * 4, PL.y + 0.4, PL.z + cfz * 4);
+}
+const _gp = new THREE.Vector3(), _gl = new THREE.Vector3();
 function updatePlaneCamera(dt,t){
- const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw);
  let dy=PL.yaw-camYaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));camYaw+=dy*Math.min(1,dt*4);
- const cfx=Math.sin(camYaw),cfz=Math.cos(camYaw);
- if(camMode===0){
-   // Independent right-side gimbal camera: records façades, not the pilot/player view.
-   const p=new THREE.Vector3(.78,-.08,.18).applyMatrix4(drone.matrixWorld);
-   const right=new THREE.Vector3(Math.cos(PL.yaw),0,-Math.sin(PL.yaw));
-   const forward=new THREE.Vector3(fx,0,fz);
-   const target=p.clone().addScaledVector(right,42).addScaledVector(forward,10).add(new THREE.Vector3(0,PL.gimbalPitch*18,0));
-   camPos.lerp(p,Math.min(1,dt*14));camLook.lerp(target,Math.min(1,dt*12));
-   camera.fov+=(52-camera.fov)*Math.min(1,dt*5);
- }else if(camMode===1){
-  tmp.set(PL.x-cfx*13,PL.y+5,PL.z-cfz*13);camPos.lerp(tmp,Math.min(1,dt*4));
-  camLook.lerp(new THREE.Vector3(PL.x,PL.y-1,PL.z),Math.min(1,dt*5));camera.fov+=(52-camera.fov)*Math.min(1,dt*3);
- }else if(camMode===2){
-  tmp.set(PL.x,PL.y+22,PL.z+.1);camPos.lerp(tmp,Math.min(1,dt*5));camLook.lerp(new THREE.Vector3(PL.x,PL.y-30,PL.z),Math.min(1,dt*6));camera.fov+=(48-camera.fov)*Math.min(1,dt*3);
- }else{
-  const a=t*.22;tmp.set(PL.x+Math.cos(a)*18,PL.y+7,PL.z+Math.sin(a)*18);camPos.lerp(tmp,Math.min(1,dt*2.5));
-  camLook.lerp(new THREE.Vector3(PL.x,PL.y,PL.z),Math.min(1,dt*3));camera.fov+=(48-camera.fov)*Math.min(1,dt*2);
- }
+ const g=GIMBAL.dirs[GIMBAL.i];
+ let gy=g[1]-GIMBAL.yaw;gy=Math.atan2(Math.sin(gy),Math.cos(gy));GIMBAL.yaw+=gy*Math.min(1,dt*3);GIMBAL.tilt+=(g[2]-GIMBAL.tilt)*Math.min(1,dt*3);
+ if(droneView==='cam'){gimbalPose(_gp,_gl);camPos.copy(_gp);camLook.lerp(_gl,Math.min(1,dt*10));camera.fov+=(GIMBAL.fov-camera.fov)*Math.min(1,dt*4);}
+ else{pilotPose(_gp,_gl);camPos.lerp(_gp,Math.min(1,dt*5));camLook.lerp(_gl,Math.min(1,dt*6));camera.fov+=(60-camera.fov)*Math.min(1,dt*3);}
  camera.position.copy(camPos);camera.lookAt(camLook);camera.updateProjectionMatrix();
+}
+// retour vidéo en petit (l'autre vue), 15 images/s, hors de l'image enregistrée
+const PIP = { on: false, t: 0, cam: new THREE.PerspectiveCamera(55, 16 / 9, 0.3, 4000), rt: new THREE.WebGLRenderTarget(320, 180), px: new Uint8Array(320 * 180 * 4), img: null };
+function updatePip(dt) {
+  if (!PIP.on || mode !== 'plane' || (PIP.t -= dt) > 0) return; PIP.t = 1 / 15;
+  if (droneView === 'cam') { pilotPose(_gp, _gl); PIP.cam.fov = 60; $('pipLbl').textContent = 'PILOTE'; } else { gimbalPose(_gp, _gl); PIP.cam.fov = GIMBAL.fov; $('pipLbl').textContent = 'CAMÉRA · ' + GIMBAL.dirs[GIMBAL.i][0]; }
+  PIP.cam.position.copy(_gp); PIP.cam.lookAt(_gl); PIP.cam.updateProjectionMatrix(); PIP.cam.updateMatrixWorld();
+  const labs = [...DID.labels.values()].filter(L => L.sp.visible); for (const L of labs) L.sp.visible = droneView === 'pilot';
+  drone.visible = droneView === 'cam'; renderer.setRenderTarget(PIP.rt); renderer.render(scene, PIP.cam); renderer.readRenderTargetPixels(PIP.rt, 0, 0, 320, 180, PIP.px); renderer.setRenderTarget(null);
+  for (const L of labs) L.sp.visible = true;
+  const c = $('pip').getContext('2d'); if (!PIP.img) PIP.img = c.createImageData(320, 180);
+  const d = PIP.img.data; for (let y = 0; y < 180; y++) d.set(PIP.px.subarray((179 - y) * 1280, (180 - y) * 1280), y * 1280);
+  c.putImageData(PIP.img, 0, 0);
 }
 function setMode(m){
  const prev=mode;
@@ -1093,8 +1224,8 @@ function setMode(m){
  document.documentElement.classList.toggle('flying',m==='plane');
  if(m==='plane'){
   const rx=Math.cos(S.h),rz=-Math.sin(S.h);
-  if(!drone.visible||Math.hypot(PL.x-S.x,PL.z-S.z)>40){PL.x=S.x+rx*4;PL.z=S.z+rz*4;PL.y=planeGround(PL.x,PL.z)+18;PL.yaw=S.h;PL.spd=0;PL.vy=0;PL.landed=false;PL.gimbalPitch=0}
-  drone.visible=true;S.vx=S.vz=S.yawRate=0;S.vf=0;camYaw=PL.yaw;camMode=0;$('bPlane').textContent='VOITURE';$('bCam').textContent='GIMBAL';toast('Drone prêt : GAZ avance · joystick tourne et monte/descend');
+  if(!drone.visible||Math.hypot(PL.x-S.x,PL.z-S.z)>40){PL.x=S.x+rx*4;PL.z=S.z+rz*4;PL.y=planeGround(PL.x,PL.z)+DR.LEG;PL.yaw=S.h;PL.spd=0;PL.vx=0;PL.vz=0;PL.vy=0;PL.landed=true;PL.gimbalPitch=0}
+  drone.visible=true;S.vx=S.vz=S.yawRate=0;S.vf=0;camYaw=PL.yaw;camMode=0;$('bPlane').textContent='VOITURE';$('bCam').textContent='GIMBAL';toast('Drone posé · manche gauche : gaz et lacet · manche droit : avancer et glisser');
  }else{
   if(prev==='plane'&&Math.hypot(PL.x-S.x,PL.z-S.z)>40){S.x=PL.x;S.z=PL.z;respawn()}
   camYaw=S.h;$('bPlane').textContent='DRONE ✦';$('bCam').textContent='CAMÉRA';
@@ -1255,7 +1386,7 @@ async function startCityTiles() {
       import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
     const t = new TilesRenderer(CITY.data + 'tuiles/tileset.json' + V);
     t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
-    t.errorTarget = [6, 8, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
+    t.errorTarget = [3, 6, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
     const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 });
     t.addEventListener('load-model', ({ scene: sc }) => {
       sc.traverse(o => {
@@ -1263,7 +1394,7 @@ async function startCityTiles() {
         const n = o.material.name, m = n === 'lointain' ? far : BMAT[n];
         if (m) { o.material.dispose(); o.material = m; }
         let p = o; while (p && !p.userData.ids) p = p.parent; if (p) o.userData.ids = p.userData.ids;
-        o.castShadow = o.receiveShadow = true;
+        o.castShadow = o.receiveShadow = true; try { didPrep(o); } catch (e) { console.warn('identifiants', e); }
       });
     });
     t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
@@ -1373,7 +1504,8 @@ async function main() {
     renderer.compile(scene, camera);
     $('ltxt').textContent = 'Prêt — départ : ' + CITY.depart;
     $('go').style.display = 'block';
-    $('go').onclick = () => { startAudio(); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
+    $('go').onclick = () => { startAudio(); if (qi !== 0) { qi = 0; applyQuality(); } setMode('plane'); $('loader').style.opacity = 0; setTimeout(() => $('loader').remove(), 800); };
+    $('bPlane').style.display = 'none';   // plus de voiture : drone et FPS à pied
     if (/autostart/.test(location.hash)) $('go').click();
     await startCityTiles();
     renderer.setAnimationLoop(loop);
@@ -1389,7 +1521,8 @@ function loop(now) {
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
-  updateBuildingLabels(dt);
+  if (mode === 'plane') drone.visible = true; updateBuildingLabels(dt); updatePip(dt);
+  if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
   // sun follows car for shadows
   sun.position.set(F.x + sunDir.x * 300, F.y + sunDir.y * 300, F.z + sunDir.z * 300); sun.target.position.set(F.x, F.y, F.z);

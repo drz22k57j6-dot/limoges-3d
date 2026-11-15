@@ -2,8 +2,8 @@
 (() => {
   const base = new URL('.', document.currentScript.src).href; // racine du site
   const MODES = [
-    { id: '3d', ic: '🚗', name: 'Limoges 3D', href: base },
-    { id: 'apied', ic: '🚶', name: 'À pied (Saltline)', href: base + 'apied/' },
+    { id: '3d', ic: '🛸', name: 'Drone (Paris)', href: base },
+    { id: 'apied', ic: '🎯', name: 'FPS à pied (Paris)', href: base + 'apied/' },
     { id: 'metro', ic: '🚇', name: 'Métro de Paris', href: base + 'metro/' },
     { id: 'carte', ic: '🗺️', name: 'Carte des bâtiments', href: base + 'carte/' },
     { id: 'studio', ic: '🏗️', name: 'Générateur', href: base + 'studio/' },

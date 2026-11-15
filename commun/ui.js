@@ -8,6 +8,10 @@
     bVille: svg("<path d='M3 21V9l6-4v16M9 21V3l8 4v14M17 21v-9l4 2v7M2 21h20'/>"),
     bFoot: svg("<circle cx='13' cy='4' r='2'/><path d='M9 21l2-6 3 2v4M8 12l2-4 3 1 2 3 3 1M11 15l-1-5'/>"),
     bPlane: svg("<path d='M10 21l2-1 2 1v-2l-1.5-1V13l8 3v-2l-8-5V4a1.5 1.5 0 0 0-3 0v5l-8 5v2l8-3v5L8 19z'/>"),
+    bPip: svg("<rect x='2' y='4' width='20' height='16' rx='2'/><rect x='12' y='11' width='8' height='7' rx='1' fill='black'/>"),
+    bRec: svg("<circle cx='12' cy='12' r='8'/><circle cx='12' cy='12' r='3.5' fill='black'/>"),
+    bId: svg("<path d='M4 6v12M7 6v12M10 6v12M14 6v12M16 6v12M20 6v12'/>"),
+    bIdCol: svg("<path d='M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2.5-1.5H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3z'/><circle cx='7.5' cy='11' r='1.2'/><circle cx='10' cy='7' r='1.2'/><circle cx='15' cy='7.5' r='1.2'/>"),
     bReset: svg("<path d='M3 12a9 9 0 1 0 3-6.7'/><path d='M3 4v5h5'/>"),
   };
   function icons() { for (const [id, v] of Object.entries(IC)) { const b = document.getElementById(id); if (b) b.style.setProperty('--ic', v); } }

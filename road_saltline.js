@@ -284,11 +284,18 @@ normal = normalize(mat3(viewMatrix) * normalize(nW + vec3(-gNxz.x, 0.0, -gNxz.y)
   /** kerbs (granite grey), gutters (smooth concrete) and bridge parapets, one merged mesh. */
   function buildKerbs(buf) {
     if (!buf || buf.byteLength < 8) return [];
-    const dv = new DataView(buf); const nP = dv.getUint32(0, true), nI = dv.getUint32(4, true);
-    if (!nP) return [];
-    const P = new Float32Array(buf.slice(8, 8 + nP * 16)), I = new Uint32Array(buf.slice(8 + nP * 16, 8 + nP * 16 + nI * 4));
+    const dv = new DataView(buf); let nP = dv.getUint32(0, true), nI = dv.getUint32(4, true), P, I;
+    if (nP === 0x4B425232) { // compact (secteurs) : positions 2 cm en uint16 depuis l'origine du secteur, type en uint8
+      nP = dv.getUint32(4, true); nI = dv.getUint32(8, true); if (!nP) return [];
+      const ox = dv.getFloat32(12, true), oy = dv.getFloat32(16, true), oz = dv.getFloat32(20, true), q = new Uint16Array(buf, 24, nP * 3), k = new Uint8Array(buf, 24 + nP * 6, nP);
+      let o = 24 + nP * 7; o += (4 - o % 4) % 4; I = nP > 65535 ? new Uint32Array(buf, o, nI) : new Uint16Array(buf, o, nI);
+      P = new Float32Array(nP * 4); for (let i = 0; i < nP; i++) { P[4 * i] = ox + q[3 * i] * 0.02; P[4 * i + 1] = oy + q[3 * i + 1] * 0.02; P[4 * i + 2] = oz + q[3 * i + 2] * 0.02; P[4 * i + 3] = k[i]; }
+    } else {
+      if (!nP) return [];
+      P = new Float32Array(buf.slice(8, 8 + nP * 16)); I = new Uint32Array(buf.slice(8 + nP * 16, 8 + nP * 16 + nI * 4));
+    }
     const pos = new Float32Array(nP * 3), col = new Float32Array(nP * 3);
-    const C = [[0.62, 0.61, 0.58], [0.50, 0.49, 0.47], [0.66, 0.65, 0.62]];
+    const C = [[0.62, 0.61, 0.58], [0.50, 0.49, 0.47], [0.66, 0.65, 0.62], [0.40, 0.40, 0.39], [0.55, 0.53, 0.49]];   // bordure, caniveau, parapet, trottoir (Paris : asphalte), terre-plein / îlot
     for (let i = 0; i < nP; i++) {
       pos[3 * i] = P[4 * i]; pos[3 * i + 1] = P[4 * i + 1]; pos[3 * i + 2] = P[4 * i + 2];
       const c = C[P[4 * i + 3] | 0] || C[0], n = 0.94 + 0.06 * Math.sin(P[4 * i] * 1.7 + P[4 * i + 2] * 2.3);
