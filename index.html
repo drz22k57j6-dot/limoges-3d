@@ -301,7 +301,7 @@ function makeBuildingLabel(i){
   x.fillStyle='#FFFFFF';x.font='900 54px Arial';x.fillText(id,256,105);
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
-  sprite.scale.set(12,3.375,1);sprite.renderOrder=1000;sprite.userData.buildingIndex=i;scene.add(sprite);buildingLabelSprites.set(i,sprite);return sprite;
+  sprite.scale.set(8,2.25,1);sprite.renderOrder=20;sprite.userData.buildingIndex=i;scene.add(sprite);buildingLabelSprites.set(i,sprite);return sprite;
 }
 function updateBuildingLabels(dt){
   if((buildingLabelTick-=dt)>0)return;buildingLabelTick=.22;
@@ -311,7 +311,7 @@ function updateBuildingLabels(dt){
   const near=[];
   for(const i of candidates){const r=allRings[i];let x=0,z=0,n=r.length/2;for(let k=0;k<r.length;k+=2){x+=r[k];z+=r[k+1]}x/=n;z/=n;const d=Math.hypot(x-PL.x,z-PL.z);if(d<radius)near.push({i,x,z,d});}
   near.sort((a,b)=>a.d-b.d);const shown=new Set();
-  for(const b of near.slice(0,90)){shown.add(b.i);let s=buildingLabelSprites.get(b.i);if(!s)s=makeBuildingLabel(b.i);
+  for(const b of near.slice(0,18)){shown.add(b.i);let s=buildingLabelSprites.get(b.i);if(!s)s=makeBuildingLabel(b.i);
     const r=allRings[b.i];let best=Infinity,bx=b.x,bz=b.z;
     for(let k=0;k<r.length;k+=2){const j=(k+2)%r.length,ax=r[k],az=r[k+1],dx=r[j]-ax,dz=r[j+1]-az,L=dx*dx+dz*dz||1;
       const t=THREE.MathUtils.clamp(((PL.x-ax)*dx+(PL.z-az)*dz)/L,0,1),px=ax+t*dx,pz=az+t*dz,d=(PL.x-px)**2+(PL.z-pz)**2;
@@ -927,12 +927,13 @@ $('bRec').onclick=()=>{
  try{
    camMode=0;updatePlaneCamera(0,performance.now()/1000);$('bCam').textContent='CAMÉRA DROITE';
    
-  if(qi!==0){qi=0;applyQuality();toast('Qualité ULTRA activée pour la capture')}
+  // Keep the user's selected render quality. Forcing ULTRA on phones overloads the GPU and can make buildings look softer or stutter during recording.
+   toast('Enregistrement avec la qualité graphique actuelle')
   const canvas=renderer.domElement;
-  const stream=canvas.captureStream(60);
+  const stream=canvas.captureStream(30);
   const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
   if(!mime)throw new Error('Enregistrement vidéo non pris en charge sur ce navigateur');
-  gameChunks=[];gameRecorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:32000000});
+  gameChunks=[];gameRecorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:18000000});
   gameRecorder.ondataavailable=e=>{if(e.data&&e.data.size)gameChunks.push(e.data)};
   gameRecorder.onstop=()=>{
    const blob=new Blob(gameChunks,{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
