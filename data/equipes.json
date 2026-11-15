@@ -1,1 +1,21 @@
-{"equipes": []}
+{
+ "equipes": [
+  {
+   "id": "test-robot-1",
+   "nom": "Test Robot",
+   "couleur": "#30d158",
+   "embleme": "⭐",
+   "devise": "test",
+   "description": "équipe de test, sera supprimée",
+   "qg": {
+    "id": "TESTQG1",
+    "lat": 45.8458,
+    "lon": 1.2326,
+    "adresse": "test"
+   },
+   "auteur": "drz22k57j6-dot",
+   "maj": "2026-11-15T00:55:48.293Z",
+   "cree": "2026-11-15T00:55:48.293Z"
+  }
+ ]
+}
