@@ -171,7 +171,6 @@ function init(D, X) {
       sl('gfx.far', 'Distance d\'affichage', 400, 6000, 50, () => X.q().far, v => X.setFar(v), v => Math.round(v) + ' m'),
       tog('gfx.shadows', 'Ombres', () => X.shadows(), v => X.setShadows(v)),
       seg('gfx.shadowsize', 'Qualité des ombres', [[1024, 'Basse'], [2048, 'Haute'], [4096, 'Ultra']], () => X.q().shadow, v => X.setShadowSize(v)),
-      tog('gfx.grass', 'Herbe 3D', () => X.GFX.grass, v => X.GFX.grass = v),
       tog('gfx.trees', 'Arbres', () => X.GFX.trees, v => X.setTrees(v)),
       tog('gfx.voirie', 'Voirie réelle (Plan de voirie de Paris)', () => X.GFX.voirie, v => X.setVoirie(v), 'Trottoirs, bordures et passages piétons aux vraies formes ; sinon routes estimées'),
       sec('Post-traitement'),

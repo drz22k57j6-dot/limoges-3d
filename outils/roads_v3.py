@@ -1,6 +1,6 @@
 # Road network v3 (run inside build.py, which defines LINES, X0, Y0, H0, mesh_h, ortho_rgb, OUTD, L, earcut...).
 # - one asphalt surface per area: union of every carriageway, inner corners rounded like real kerb lines
-# - per vertex road coordinates for the Saltline paint shader (distance along, across, half width, lanes, line flags)
+# - per vertex road coordinates for the road shader (commun/chaussee.js) (distance along, across, half width, lanes, line flags)
 # - paint decals: give-way lines at minor entries, zebra crossings, one-way arrows
 # - roundabout islands: raised grass with a kerb
 import math

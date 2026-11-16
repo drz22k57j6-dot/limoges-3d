@@ -1,4 +1,4 @@
-"""Masque « où pousse l'herbe » pour l'herbe 3D (style Larkhollow), 2 m/pixel sur les 6 × 6 km.
+"""Masque « où pousse l'herbe » (zones vertes), 2 m/pixel sur les 6 × 6 km.
 Sources : BD ORTHO (couleur), LiDAR HD MNH (hauteur de végétation), BD TOPO bâtiments + surfaces en eau, chaussée v3.
 Sortie : herbe_masque.jpg (R = bord de route / sentier → herbe courte, G = densité d'herbe, B = sol nu).
 Usage : python3 -I herbe_masque.py <dl> <chaussee_v3.wkb> <sortie.jpg>"""

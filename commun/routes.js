@@ -97,7 +97,7 @@ function source(r, key) {
 }
 
 // ---------------------------------------------------------------- masque des anciennes surfaces (shader)
-const ROADMAT = SR.material.clone(); { const ob = SR.material.onBeforeCompile; ROADMAT.onBeforeCompile = function (sh, r) { ob.call(this, sh, r); }; ROADMAT.customProgramCacheKey = () => 'road_saltline_edit'; ROADMAT.name = 'route_editee'; }
+const ROADMAT = SR.material.clone(); { const ob = SR.material.onBeforeCompile; ROADMAT.onBeforeCompile = function (sh, r) { ob.call(this, sh, r); }; ROADMAT.customProgramCacheKey = () => 'chaussee_edit'; ROADMAT.name = 'route_editee'; }
 const MAXS = 512;
 const maskData = new Float32Array(MAXS * 2 * 4);
 const maskTex = new THREE.DataTexture(maskData, MAXS, 2, THREE.RGBAFormat, THREE.FloatType);

@@ -20,18 +20,12 @@
 ODbL : les fichiers de données dérivés d'OSM / Ville de Paris doivent rester publiables sous ODbL.
 Le code, lui, peut rester propriétaire.
 
-## À régler avant toute vente, licence ou levée de fonds
+## Code
 
-Ces fichiers reprennent du code d'autres jeux, sans licence connue. Ils doivent être réécrits ou
-remplacés :
+Tout le code du dépôt est original. Le 17/11/2026 ont été supprimés définitivement : le mode FPS à
+pied, le métro, la carte et le système d'équipes, ainsi que le code repris d'autres jeux (asphalte,
+arbres, herbe 3D, ciel). Ils sont remplacés par `commun/chaussee.js`, `commun/arbres.js` et
+`commun/ciel.js`, écrits pour ce projet.
 
-- `road_saltline.js` : shader d'asphalte repris de « Saltline: Blacktop »
-- `plateau_trees.js` : arbres repris du jeu « Plateau » (moteur Blacktop)
-- `herbe_lark.js` : herbe reprise de « Larkhollow »
-- `lumiere_lark.js` : ciel et lumière repris de « Larkhollow »
-
-Modèles générés avec Meshy (dont la Tour Eiffel) : vérifier la licence du forfait utilisé
-(les forfaits gratuits peuvent imposer une licence ouverte sur les créations).
-
-Supprimé le 17/11/2026 (conservé sur la branche `jeu-complet`) : mode FPS à pied (`apied/`, copie
-de « Saltline : Cargo »), métro, carte et système d'équipes.
+Reste à vérifier : la licence des modèles générés avec Meshy (dont la Tour Eiffel) selon le forfait
+utilisé (les forfaits gratuits peuvent imposer une licence ouverte sur les créations).
