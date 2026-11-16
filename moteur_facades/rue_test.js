@@ -2,6 +2,7 @@
 // Mêmes paramètres de quartier que moteur_facades/apercu.html. Une seule rue d'essai à la fois.
 // v3 : teintes générées par quartier (16e homogène crème, 7e pierre variée, 19e enduits colorés), commerces fermés tagués.
 let createKit, buildBuilding;
+import { solRue } from '../moteur_sol/rue.js';
 
 const QUARTIERS = {
   '7e': { road: 11, side: 3.8, styles: [['classique', 1]], pShop: .45, pClosed: .22, tagP: .45, wear: [.15, .4], wid: [12, 20], seed: 100, verdure: .5,
@@ -18,7 +19,9 @@ function teinte(T, C, R) {
 }
 
 let KIT = null;
-export async function buildTestStreet(T, ctx, voirieTex) {
+// sol : { MS, VO } (moteur_sol) facultatif — s'il est fourni, le sol de la rue vient du moteur de sol
+const ABANDON = { '7e': 0.18, '16e': 0.04, '19e': 0.75 };
+export async function buildTestStreet(T, ctx, voirieTex, sol) {
   if (!buildBuilding) ({ createKit, buildBuilding } = await import('./facades.js' + new URL(import.meta.url).search));
   const C = QUARTIERS[ctx] || QUARTIERS['7e'];
   if (!KIT) KIT = createKit(T, new URL('./tex/', import.meta.url).href);
@@ -31,13 +34,16 @@ export async function buildTestStreet(T, ctx, voirieTex) {
   const L = 150, S = C.side, RD = C.road, zOpp = S * 2 + RD;
   // socle (cache la pelouse sous la rue), trottoirs, bordures, chaussée, passage piéton
   add(new T.BoxGeometry(L + 10, .6, zOpp + 30), new T.MeshStandardMaterial({ color: 0x6f6b64, roughness: 1 }), 0, -.31, zOpp / 2);
-  add(new T.BoxGeometry(L, .14, S), vt('trottoir', [L / 2.5, S / 2.5], 0xb9b7b3), 0, .07, S / 2);
-  add(new T.BoxGeometry(L, .16, .24), vt('bordure', [L / 1.2, .2], 0xcac8c3), 0, .08, S + .12);
-  const rd = new T.Mesh(new T.PlaneGeometry(L, RD), vt('chaussee', [L / 3, RD / 3])); rd.rotation.x = -Math.PI / 2; rd.position.set(0, .02, S + RD / 2); rd.receiveShadow = true; G.add(rd);
-  add(new T.BoxGeometry(L, .16, .24), vt('bordure', [L / 1.2, .2], 0xcac8c3), 0, .08, S + RD - .12);
-  add(new T.BoxGeometry(L, .14, S), vt('trottoir', [L / 2.5, S / 2.5], 0xb9b7b3), 0, .07, S + RD + S / 2);
-  const zp = new T.MeshStandardMaterial({ color: 0xd9d8d2, roughness: .6 });
-  for (let k = 0; k < Math.floor(RD); k++) { const g = new T.Mesh(new T.PlaneGeometry(4, .5), zp); g.rotation.x = -Math.PI / 2; g.position.set(18, .03, S + .6 + k); G.add(g); }
+  if (sol) { sol.MS.abandon = ABANDON[ctx] ?? 0.2; const g = solRue(T, sol.MS, sol.VO, { L, S, RD, seed: C.seed, passages: [18] }); g.traverse(n => { if (n.isMesh) n.castShadow = false; }); G.add(g); }
+  else {
+    add(new T.BoxGeometry(L, .14, S), vt('trottoir', [L / 2.5, S / 2.5], 0xb9b7b3), 0, .07, S / 2);
+    add(new T.BoxGeometry(L, .16, .24), vt('bordure', [L / 1.2, .2], 0xcac8c3), 0, .08, S + .12);
+    const rd = new T.Mesh(new T.PlaneGeometry(L, RD), vt('chaussee', [L / 3, RD / 3])); rd.rotation.x = -Math.PI / 2; rd.position.set(0, .02, S + RD / 2); rd.receiveShadow = true; G.add(rd);
+    add(new T.BoxGeometry(L, .16, .24), vt('bordure', [L / 1.2, .2], 0xcac8c3), 0, .08, S + RD - .12);
+    add(new T.BoxGeometry(L, .14, S), vt('trottoir', [L / 2.5, S / 2.5], 0xb9b7b3), 0, .07, S + RD + S / 2);
+    const zp = new T.MeshStandardMaterial({ color: 0xd9d8d2, roughness: .6 });
+    for (let k = 0; k < Math.floor(RD); k++) { const g = new T.Mesh(new T.PlaneGeometry(4, .5), zp); g.rotation.x = -Math.PI / 2; g.position.set(18, .03, S + .6 + k); G.add(g); }
+  }
   // lampadaires et potelets
   const fer = new T.MeshStandardMaterial({ color: 0x22302a, metalness: .5, roughness: .5 }), lan = new T.MeshStandardMaterial({ color: 0xf0e6c8, emissive: 0x221a08, roughness: .3 }), pot = new T.MeshStandardMaterial({ color: 0x3b3326, metalness: .4, roughness: .5 });
   for (const zz of [S - .4, S + RD + .4]) for (let x = -L / 2 + 8; x < L / 2; x += 26) { add(new T.CylinderGeometry(.07, .13, 6.5, 12), fer, x, 3.25, zz); add(new T.CylinderGeometry(.16, .28, .6, 6), lan, x, 6.6, zz); add(new T.ConeGeometry(.32, .3, 6), fer, x, 7.05, zz); }

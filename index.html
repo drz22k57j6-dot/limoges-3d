@@ -127,7 +127,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { initDronePhoto } from './drone/photo.js?v=34';
-import { createVoirie } from './commun/voirie.js?v=38';
+import { createVoirie } from './commun/voirie.js?v=39';
+import { createMoteurSol } from './moteur_sol/moteur.js?v=1';
 import { createMoteurTextures } from './moteur_textures/moteur.js?v=1';
 import { initAgent } from './drone/agent.js';
 import { createSky } from './commun/ciel.js';
@@ -1323,7 +1324,9 @@ window.__drone = {
     if (window.__rueTest) { scene.remove(window.__rueTest); window.__rueTest = null; }
     const [cx, cz] = window.__drone.ll(2.2995, 48.8551);
     await window.__drone.teleport(cx, cz, { nom: 'Rue test ' + ctx, dist: 0, alt: 30 });
-    const g = await buildTestStreet(THREE, ctx, 'data/tex/voirie/'), th = -0.80, zm = g.userData.zMid, L = g.userData.L;
+    if (!STREAM.MS) { STREAM.MS = createMoteurSol(THREE); window.__MS = STREAM.MS; onFrameHooks.push(() => STREAM.MS.majCamera(camera.position)); }
+    if (!STREAM.VO) STREAM.VO = createVoirie(THREE, { base: 'data/tex/voirie/', v: V, sol: STREAM.MS });
+    const g = await buildTestStreet(THREE, ctx, 'data/tex/voirie/', { MS: STREAM.MS, VO: STREAM.VO }), th = -0.80, zm = g.userData.zMid, L = g.userData.L;
     const dir = [Math.cos(th), -Math.sin(th)];
     let gy = -1e9; for (let t = -L / 2; t <= L / 2; t += L / 6) for (const o of [-20, 0, 20]) gy = Math.max(gy, planeGround(cx + dir[0] * t + Math.sin(th) * o, cz + dir[1] * t + Math.cos(th) * o));
     g.rotation.y = th; g.position.set(cx - zm * Math.sin(th), gy + .05, cz - zm * Math.cos(th));
@@ -1663,8 +1666,10 @@ async function sectorVis(k) {
   const [v3, pt, dc, kb, sg, vo] = await Promise.all([real ? null : g('routes_v3.wasm'), g('routes_ponts.wasm'), real ? null : g('routes_deco.wasm'), real ? null : g('routes_bordures.wasm'), has('signalisation.json') ? fetch(CITY.data + 'secteurs/' + k + '/signalisation.json' + V).then(r => r.json()).catch(() => null) : null, real ? g('voirie.wasm') : null]);
   if ((!real && has('routes_v3.wasm') && !v3) || (!real && has('routes_bordures.wasm') && !kb) || (real && !vo)) { if (STREAM.vis.get(k) === ent) STREAM.vis.delete(k); STREAM.complete = false; return; }   // échec réseau : redemandé au tour suivant
   const SR = STREAM.SR;
-  if (!STREAM.VO) STREAM.VO = createVoirie(THREE, { base: 'data/tex/voirie/', v: V });
-  ent.ms = [].concat(v3 ? SR.buildV3(v3) : [], pt ? SR.buildV3(pt) : [], dc ? SR.buildDeco(dc) : [], sg && sg.length ? SR.buildSignals(sg) : [], kb ? SR.buildKerbs(kb) : [], vo ? STREAM.VO.build(vo) : []);
+  if (!STREAM.MS) { STREAM.MS = createMoteurSol(THREE); window.__MS = STREAM.MS; onFrameHooks.push(() => STREAM.MS.majCamera(camera.position)); }
+  if (!STREAM.VO) STREAM.VO = createVoirie(THREE, { base: 'data/tex/voirie/', v: V, sol: STREAM.MS });
+  const sd = real && has('sol_details.wasm') ? await g('sol_details.wasm') : null;
+  ent.ms = [].concat(v3 ? SR.buildV3(v3) : [], pt ? SR.buildV3(pt) : [], dc ? SR.buildDeco(dc) : [], sg && sg.length ? SR.buildSignals(sg) : [], kb ? SR.buildKerbs(kb) : [], vo ? STREAM.VO.build(vo) : [], sd ? STREAM.MS.construire(sd) : []);
   if (STREAM.vis.get(k) !== ent) { freeMeshes(ent.ms); return; }
   for (const m of ent.ms) { scene.add(m); chunks.push({ obj: m, c: new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()) }); }
 }

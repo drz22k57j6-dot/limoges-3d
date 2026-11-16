@@ -3,7 +3,7 @@
 // Rendu : textures photo (Poly Haven, CC0) en 1k, sans répétition visible (échantillonnage décalé par zones,
 // technique « texture no tile » d'Inigo Quilez), variations de couleur à grande échelle, usure et détails
 // (caniveau pavé, salissures le long des bordures, taches d'huile, rustines, chewing-gums, peinture usée).
-export function createVoirie(T, { base, v = '' }) {
+export function createVoirie(T, { base, v = '', sol = null }) {   // sol : moteur de sol (moteur_sol/moteur.js), facultatif
   const TL = new T.TextureLoader();
   const tex = (n, srgb) => { const t = TL.load(base + n + '.webp' + v); t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 8; if (srgb) t.colorSpace = T.SRGBColorSpace; return t; };
   const set = n => ({ map: tex(n + '_c', true), normalMap: tex(n + '_n'), roughnessMap: tex(n + '_r') });
@@ -45,19 +45,20 @@ export function createVoirie(T, { base, v = '' }) {
     const m = new T.MeshStandardMaterial({ ...tset, color: id === 1 ? 0xb9b7b3 : (id === 2 ? 0xcac8c3 : 0xffffff), roughness: 1, metalness: 0, side: id === 2 ? T.DoubleSide : T.FrontSide });
     if (id === 3) { m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -1; }
     m.onBeforeCompile = sh => {
-      sh.uniforms.tGut = { value: tGut };
+      sh.uniforms.tGut = { value: tGut }; sh.uniforms.uAbandon = sol ? sol.uniformes.uAbandon : { value: 0 };
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aux; varying vec3 vWP; varying vec2 vAux;')
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWP=(modelMatrix*vec4(transformed,1.)).xyz; vAux=aux;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tGut; float vPaint=0.;\n' + NOISE)
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tGut; uniform float uAbandon; float vPaint=0.;\n' + NOISE + (sol ? sol.glslCommun : ''))
         .replace('#include <map_fragment>', T.ShaderChunk.map_fragment.replace('texture2D( map, vMapUv )', 'ntex( map, vMapUv )'))
         .replace('#include <normal_fragment_maps>', T.ShaderChunk.normal_fragment_maps.replaceAll('texture2D( normalMap, vNormalMapUv )', 'ntex( normalMap, vNormalMapUv )'))
         .replace('#include <color_fragment>', `#include <color_fragment>
           { float m1=fbm(vWP.xz*.03), m2=fbm(vWP.xz*.12+7.); diffuseColor.rgb*=mix(.80,1.10,m1)*mix(.94,1.04,m2); }
-          ${DETAIL[id]}`)
+          ${DETAIL[id]}
+          ${sol ? sol.glsl(id) : ''}`)
         .replace('#include <roughnessmap_fragment>', T.ShaderChunk.roughnessmap_fragment.replace('texture2D( roughnessMap, vRoughnessMapUv )', 'ntex( roughnessMap, vRoughnessMapUv )')
           + '\nroughnessFactor*=mix(.85,1.1,fbm(vWP.xz*.08+3.)); roughnessFactor=mix(roughnessFactor,.55,vPaint);');
     };
-    m.customProgramCacheKey = () => 'voirie' + id;
+    m.customProgramCacheKey = () => 'voirie' + id + (sol ? 's' : '');
     m.name = 'voirie_' + id;
     return (MATS[id] = m);
   }
@@ -91,5 +92,5 @@ export function createVoirie(T, { base, v = '' }) {
     }
     return out;
   }
-  return { build, materials: MATS };
+  return { build, material, materials: MATS };
 }
