@@ -129,6 +129,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { initDronePhoto } from './drone/photo.js?v=34';
+import { createVoirie } from './commun/voirie.js?v=38';
 import { initAgent } from './drone/agent.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
@@ -164,7 +165,7 @@ const QUALITIES = [
   { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
 let qi = isTouch ? 1 : 0;
-const GFX = { grass: true, trees: true };
+const GFX = { grass: true, trees: true, voirie: true };
 // ---------------- cinematic post-processing ----------------
 const GradeShader = {
   uniforms: { tDiffuse: { value: null }, time: { value: 0 }, sat: { value: 1.08 }, contrast: { value: 1.04 }, vig: { value: 0.25 }, grain: { value: 0.015 }, warm: { value: new THREE.Vector3(1.01, 1.0, 0.98) } },
@@ -270,7 +271,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=36';
+const V = '?v=38';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1322,12 +1323,14 @@ window.__dev = {
   bloom: { s: 0.18 }, setBloom: v => { window.__dev.bloom.s = v; if (bloomPass) bloomPass.strength = v; },
   exposure: () => renderer.toneMappingExposure, setExposure: v => { renderer.toneMappingExposure = v; },
   setTrees: b => { GFX.trees = b; treeChunks.forEach(c => c.obj.visible = b); },
+  setVoirie: b => { GFX.voirie = b; for (const [k, ent] of STREAM.vis) freeMeshes(ent.ms); STREAM.vis.clear(); STREAM.complete = false; streamUpdate(PL.x, PL.z, true); },
   world: () => WORLD.mode, setWorld: m => setWorld(m),
   times: TIMES.map(t => t.name), time: () => ti, setTime: i => { ti = i; applyTime(); },
   sun: () => TIMES[ti], setSun: (elev, az) => { TIMES[ti].elev = elev; TIMES[ti].az = az; applyTime(); },
   gimbalDirs: GIMBAL.dirs.map(d => d[0]), setGimbal: i => { GIMBAL.i = i; GIMBAL.man = 0; }, setTilt: deg => { GIMBAL.dirs[GIMBAL.i][2] = deg * Math.PI / 180; GIMBAL.man = 0; },
   view: () => droneView, setView: v => { if (droneView !== v) $('pipBox').click(); },
   info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures }),
+  names: () => { const m = {}; scene.traverse(o => { if (o.isMesh) m[o.name || '?'] = (m[o.name || '?'] || 0) + 1; }); return m; },
   wire: b => { scene.overrideMaterial = b ? new THREE.MeshBasicMaterial({ wireframe: true, color: 0x22ffcc }) : null; },
   pos: () => ({ x: PL.x, y: PL.y, z: PL.z, sol: planeGround(PL.x, PL.z), X: PL.x + CITY.X0, Y: CITY.Y0 - PL.z }),
 };
@@ -1343,8 +1346,12 @@ window.__drone = {
     toast('Téléportation : ' + (o.nom || 'adresse') + '…');
     const I = STREAM.idx, t0 = performance.now();
     if (I) { const k = Math.floor((PL.x + I.RX) / 1000) + '_' + Math.floor((-PL.z + I.RY) / 1000); sectorPhys(k); streamUpdate(PL.x, PL.z, true); }
-    const ready = () => { if (!I) return true; const si = Math.floor((PL.x + I.RX) / 1000), sj = Math.floor((-PL.z + I.RY) / 1000), k = si + '_' + sj; if (!I.secteurs[k]) return true; const tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2); return STREAM.phys.has(k) && (!(I.relief || []).includes(tk) || STREAM.relief.has(tk)); };
-    while (!ready() && performance.now() - t0 < 20000) await new Promise(r => setTimeout(r, 200));
+    // le relief doit être réellement chargé (STREAM.relief marque la demande, pas la fin) : sinon le drone se pose à la mauvaise altitude
+    const ready = () => { if (!I) return true; const si = Math.floor((PL.x + I.RX) / 1000), sj = Math.floor((-PL.z + I.RY) / 1000), k = si + '_' + sj; if (!I.secteurs[k]) return true;
+      const tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2);
+      const relOk = !(I.relief || []).includes(tk) || relief.some(t => PL.x >= t.x0 && PL.x <= t.x0 + 2000 && -PL.z >= t.y0 && -PL.z <= t.y0 + 2000);
+      return STREAM.phys.has(k) && relOk; };
+    while (!ready() && performance.now() - t0 < 45000) await new Promise(r => setTimeout(r, 200));
     let y = planeGround(PL.x, PL.z) + (o.alt ?? 60); const inB = insideBuilding(PL.x, y, PL.z); if (inB) y = inB.top + DR.LEG + 10;
     PL.y = y; PL.vx = PL.vy = PL.vz = 0;
     toast((o.nom || 'Adresse') + ' ✓');
@@ -1652,10 +1659,13 @@ function sectorPhys(k) {   // une fois chargée, la physique d'un secteur reste 
 async function sectorVis(k) {
   if (STREAM.vis.has(k)) return; const ent = { ms: [] }; STREAM.vis.set(k, ent);
   const inf = STREAM.idx.secteurs[k]; if (!inf) return; const has = f => inf.fichiers.includes(f), g = f => has(f) ? sGet('secteurs/' + k + '/' + f).catch(() => null) : null;
-  const [v3, pt, dc, kb, sg] = await Promise.all([g('routes_v3.wasm'), g('routes_ponts.wasm'), g('routes_deco.wasm'), g('routes_bordures.wasm'), has('signalisation.json') ? fetch(CITY.data + 'secteurs/' + k + '/signalisation.json' + V).then(r => r.json()).catch(() => null) : null]);
-  if ((has('routes_v3.wasm') && !v3) || (has('routes_bordures.wasm') && !kb)) { if (STREAM.vis.get(k) === ent) STREAM.vis.delete(k); STREAM.complete = false; return; }   // échec réseau : redemandé au tour suivant
+  // voirie réelle (Plan de voirie de Paris) quand elle existe : remplace la chaussée, les bordures et les marquages estimés
+  const real = has('voirie.wasm') && GFX.voirie;
+  const [v3, pt, dc, kb, sg, vo] = await Promise.all([real ? null : g('routes_v3.wasm'), g('routes_ponts.wasm'), real ? null : g('routes_deco.wasm'), real ? null : g('routes_bordures.wasm'), has('signalisation.json') ? fetch(CITY.data + 'secteurs/' + k + '/signalisation.json' + V).then(r => r.json()).catch(() => null) : null, real ? g('voirie.wasm') : null]);
+  if ((!real && has('routes_v3.wasm') && !v3) || (!real && has('routes_bordures.wasm') && !kb) || (real && !vo)) { if (STREAM.vis.get(k) === ent) STREAM.vis.delete(k); STREAM.complete = false; return; }   // échec réseau : redemandé au tour suivant
   const SR = STREAM.SR;
-  ent.ms = [].concat(v3 ? SR.buildV3(v3) : [], pt ? SR.buildV3(pt) : [], dc ? SR.buildDeco(dc) : [], sg && sg.length ? SR.buildSignals(sg) : [], kb ? SR.buildKerbs(kb) : []);
+  if (!STREAM.VO) STREAM.VO = createVoirie(THREE, { base: 'data/tex/voirie/', v: V });
+  ent.ms = [].concat(v3 ? SR.buildV3(v3) : [], pt ? SR.buildV3(pt) : [], dc ? SR.buildDeco(dc) : [], sg && sg.length ? SR.buildSignals(sg) : [], kb ? SR.buildKerbs(kb) : [], vo ? STREAM.VO.build(vo) : []);
   if (STREAM.vis.get(k) !== ent) { freeMeshes(ent.ms); return; }
   for (const m of ent.ms) { scene.add(m); chunks.push({ obj: m, c: new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()) }); }
 }
@@ -1845,7 +1855,7 @@ main();
 <script src="commun/equipes.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=35"></script>
+<script type="module" src="drone/reglages.js?v=38"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>
