@@ -53,14 +53,45 @@ export async function buildTestStreet(T, ctx, voirieTex, sol) {
   for (const zz of [S - .4, S + RD + .4]) for (let x = -L / 2 + 8; x < L / 2; x += 26) { add(new T.CylinderGeometry(.07, .13, 6.5, 12), fer, x, 3.25, zz); add(new T.CylinderGeometry(.16, .28, .6, 6), lan, x, 6.6, zz); add(new T.ConeGeometry(.32, .3, 6), fer, x, 7.05, zz); }
   for (const zz of [S - .3, S + RD + .3]) for (let x = -L / 2; x < L / 2; x += 1.7) { if (Math.abs(x - 18) < 3) continue; add(new T.CylinderGeometry(.05, .06, .9, 10), pot, x, .55, zz); }
   // immeubles mitoyens des deux côtés
-  for (const side of [0, 1]) {
+  const bati = (side, x, w, extra) => {
+    const st0 = pick(C.styles);
+    const b = buildBuilding(T, KIT, { width: w, seed: 1 + Math.floor(R() * 1e6), style: st0, trottoir: S, wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: teinte(T, C, R), pShop: C.pShop, pClosed: C.pClosed, tagP: C.tagP, verdure: C.verdure, depth: 14, ...extra });
+    if (side === 0) b.position.set(x, 0, 0); else { b.rotation.y = Math.PI; b.position.set(x + w, 0, zOpp); }
+    G.add(b);
+  };
+  if (rue?.cotes?.[0]?.[0]?.x0 !== undefined) {
+    // façades réelles : largeur = front de parcelle cadastrale, commerces à leur position réelle, trous = rues transversales
+    const chaus = vt('chaussee', [4, 4], 0x9a9a9a);
+    for (const side of [0, 1]) {
+      let fin = 0;
+      for (const e of rue.cotes[side]) {
+        const shops = e.shops.map((s, k) => ({ type: s.t, nom: s.nom, u: s.u, id: e.nums[0] + '-' + k }));
+        const st = shops.length && C.styles.some(([v]) => v === 'moderne') && R() < .2 ? 'modeste' : undefined;
+        bati(side, -L / 2 + e.x0, e.w, { shops, shopBuilder: buildShop, numero: e.nums.join('-'), ...(st ? { style: st } : {}), ...(e.w > 35 && !shops.length ? { style: "moderne" } : {}) });
+        if (e.x0 - fin > 4) {   // rue transversale : chaussée qui s'enfonce dans l'îlot
+          const gw = e.x0 - fin, gx = -L / 2 + fin + gw / 2;
+          add(new T.PlaneGeometry(gw, 40).rotateX(-Math.PI / 2), chaus, gx, .02, side === 0 ? -20 : zOpp + 20);
+          // immeubles qui bordent la rue transversale (vue en profondeur, pas de vide)
+          const xa = -L / 2 + fin, xb = -L / 2 + e.x0, sg = side === 0 ? -1 : 1, z0 = side === 0 ? 0 : zOpp;
+          for (const [px, rot] of [[xa, Math.PI / 2], [xb, -Math.PI / 2]]) {
+            const b = buildBuilding(T, KIT, { width: 22, seed: 1 + Math.floor(R() * 1e6), style: pick(C.styles), wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: teinte(T, C, R), shops: [], verdure: C.verdure, depth: 12 });
+            const zs = z0 + sg * 2.6, ze = z0 + sg * 24.6;
+            b.rotation.y = rot === Math.PI / 2 ? (side === 0 ? Math.PI / 2 : Math.PI / 2) : -Math.PI / 2;
+            // rot +π/2 : façade vers +x, longueur vers -z ; rot -π/2 : façade vers -x, longueur vers +z
+            b.position.set(px + (rot > 0 ? .06 : -.06), 0, rot > 0 ? Math.max(zs, ze) : Math.min(zs, ze));
+            G.add(b);
+          }
+        }
+        fin = e.x0 + e.w;
+      }
+    }
+  } else for (const side of [0, 1]) {
     let x = -L / 2; const file = rue ? rue.cotes[side].slice() : null;
     while (x < L / 2 - 6) {
       const w = Math.min(L / 2 - x, C.wid[0] + R() * (C.wid[1] - C.wid[0]));
-      const adr = file?.shift(), st0 = pick(C.styles), shops = adr ? adr.shops.map((s, k) => ({ type: s.t, nom: s.nom, id: adr.num + '-' + k })) : undefined;
-      const b = buildBuilding(T, KIT, { width: w, seed: 1 + Math.floor(R() * 1e6), style: st0 === 'moderne' && shops?.length ? 'modeste' : st0, shops, shopBuilder: rue ? buildShop : undefined, numero: adr?.num, trottoir: S, wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: teinte(T, C, R), pShop: C.pShop, pClosed: C.pClosed, tagP: C.tagP, verdure: C.verdure, depth: 14 });
-      if (side === 0) b.position.set(x, 0, 0); else { b.rotation.y = Math.PI; b.position.set(x + w, 0, zOpp); }
-      G.add(b); x += w;
+      const adr = file?.shift(), shops = adr ? adr.shops.map((s, k) => ({ type: s.t, nom: s.nom, id: adr.num + '-' + k })) : undefined;
+      bati(side, x, w, { shops, shopBuilder: rue ? buildShop : undefined, numero: adr?.num });
+      x += w;
     }
   }
   G.userData = { zMid: S + RD / 2, L };

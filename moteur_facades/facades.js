@@ -384,7 +384,10 @@ export function buildBuilding(T, M, o) {
   G.mur.push(box(T, W, Htop, D - REC - DEEP, W / 2, Htop / 2, -REC - DEEP - (D - REC - DEEP) / 2));
   for (const x of [.06, W - .06]) G.mur.push(box(T, .12, Htop, DEEP, x, Htop / 2, -REC - DEEP / 2));
   const shopName = ['BOULANGERIE', 'PHARMACIE', 'CAFÉ', 'TABAC', 'FLEURS', 'PRESSING', 'LIBRAIRIE', 'OPTIQUE', 'BOUCHERIE', 'FROMAGERIE', 'ÉPICERIE', 'RESTAURANT', 'CAVE À VINS', 'IMMOBILIER', 'COIFFURE', 'BISTROT', 'LAVERIE', 'TRAITEUR'];
-  const doorBay = Math.min(B - 1, Math.floor(B / 2) + (R() < .5 ? 0 : (R() < .5 ? -1 : 1)));
+  let doorBay = Math.min(B - 1, Math.floor(B / 2) + (R() < .5 ? 0 : (R() < .5 ? -1 : 1)));
+  // commerces positionnés (u = position réelle le long de la façade, 0..1) : la porte d'immeuble va dans la travée la plus éloignée des commerces
+  const posees = o.shops && o.shops.length && o.shops.every(s => s.u !== undefined);
+  if (posees && B > o.shops.length) { let best = -1; for (let b = 0; b < B; b++) { const c = (b + .5) / B, dmin = Math.min(...o.shops.map(s => Math.abs(s.u - c))) - Math.abs(c - .5) * .15; if (dmin > best) { best = dmin; doorBay = b; } } }
   const oriel = style === 'riche' && B >= 5 && R() < .75;
   const orielBays = oriel ? (B % 2 ? [Math.floor(B / 2)] : [B / 2 - 1, B / 2]) : [];
   const cochere = R() < ({ riche: .9, classique: .75, modeste: .3 }[style] ?? .6);
@@ -397,8 +400,10 @@ export function buildBuilding(T, M, o) {
   if (commerce && o.shops && o.shopBuilder) {
     const bays = []; for (let b = 0; b < B; b++) if (b !== doorBay) bays.push(b);
     const n = Math.min(o.shops.length, bays.length);
-    bays.forEach((b, i) => { const k = Math.min(n - 1, Math.floor(i * n / bays.length)); bayShop[b] = { shop: o.shops[k], k }; });
-    for (const b of bays) { const k = bayShop[b].k, grp = bays.filter(x => bayShop[x].k === k); Object.assign(bayShop[b], { first: b === grp[0], last: b === grp[grp.length - 1], gx0: grp[0] * bw, gx1: (grp[grp.length - 1] + 1) * bw }); }
+    if (posees) bays.forEach(b => { const c = (b + .5) / B; let k = 0; o.shops.slice(0, n).forEach((s, i) => { if (Math.abs(s.u - c) < Math.abs(o.shops[k].u - c)) k = i; }); bayShop[b] = { shop: o.shops[k], k }; });
+    else bays.forEach((b, i) => { const k = Math.min(n - 1, Math.floor(i * n / bays.length)); bayShop[b] = { shop: o.shops[k], k }; });
+    // un commerce sans travée (trop de commerces pour la façade) est ignoré ; les groupes restent contigus
+    for (const b of bays) { const k = bayShop[b].k; let grp = [b]; for (let x = b - 1; x >= 0 && bayShop[x]?.k === k; x--) grp.unshift(x); for (let x = b + 1; x < B && bayShop[x]?.k === k; x++) grp.push(x); Object.assign(bayShop[b], { first: b === grp[0], last: b === grp[grp.length - 1], gx0: grp[0] * bw, gx1: (grp[grp.length - 1] + 1) * bw }); }
   }
 
   for (let f = 0; f < F.length; f++) {
@@ -428,7 +433,10 @@ export function buildBuilding(T, M, o) {
         windowUnit(T, G, R, cx, e0, ew, e1 - e0, REC, { pOpen: .04, deep: .9, floorDrop: .3 });
       } else gArr.push(box(T, ww, y0 + hh - top, REC, cx, (top + y0 + hh) / 2, -REC / 2));
       if (base) {
-        if (style !== 'modeste') for (let yy = .42; yy < hh - .15; yy += .42) { G.rdc.push(box(T, pierW + .002, .05, .03, cx - ww / 2 - pierW / 2, yy, .005)); G.rdc.push(box(T, pierW + .002, .05, .03, cx + ww / 2 + pierW / 2, yy, .005)); }
+        if (style !== 'modeste') for (let yy = .42, i = 0; yy < hh - .15; yy += .42, i++) for (const sx of [-1, 1]) {   // refends : assises en relief, joints verticaux décalés
+          const px = cx + sx * (ww / 2 + pierW / 2); G.rdc.push(box(T, pierW + .002, .36, .035, px, yy - .21, .017));
+          if (pierW > .5) G.rdc.push(box(T, .03, .36, .05, px + (i % 2 ? .2 : -.2) * pierW, yy - .21, .01));
+        }
         if (commerce && !isDoor && o.shopBuilder) {
           const sh = bayShop[b]; o.shopBuilder({ T, G, extra, M, R, H, cx, y0: y0 + sill, ww, wh, REC, bw, shop: sh.shop, first: sh.first, last: sh.last, gx0: sh.gx0, gx1: sh.gx1, style, wear, reno, tagP: o.tagP ?? .5, trottoir: o.trottoir ?? 3.5, hh, ent });
         } else if (commerce && !isDoor) {
@@ -446,6 +454,11 @@ export function buildBuilding(T, M, o) {
       G.moul.push(box(T, cw, wh + cw, cz, cx - ww / 2 - cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));
       G.moul.push(box(T, cw, wh + cw, cz, cx + ww / 2 + cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));
       G.moul.push(box(T, ww + 2 * cw, cw, cz, cx, y0 + sill + wh + cw / 2, cz / 2));
+      if (style !== 'modeste' && f !== nobleF) {   // agrafe (clé sculptée) au-dessus de chaque fenêtre
+        const k = new T.Shape(); k.moveTo(-.09, 0); k.lineTo(.09, 0); k.lineTo(.13, .32); k.lineTo(-.13, .32); k.closePath();
+        G.moul.push(ext(T, k, .09, 1).translate(cx, y0 + sill + wh - .06, 0));
+        if (style === 'riche' && f === nobleF + 1) G.moul.push(new T.SphereGeometry(.09, 8, 6).scale(1, 1.2, .6).translate(cx, y0 + sill + wh + .12, .09));   // mascaron
+      }
       if (style === 'modeste') {
         const pm = M.persienne[Math.floor((o.seed || 1) % M.persienne.length)], closed = R() < .14;
         for (const sd of [-1, 1]) {

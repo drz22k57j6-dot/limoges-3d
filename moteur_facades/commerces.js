@@ -169,7 +169,7 @@ export function buildShop(c) {
   // --- extérieur : store banne, drapeau, terrasse, étals
   if (c.first && t.store && sr() < t.store) store(c, t, col, enc, (shop.nom || t.nom || NOMS[shop.type] || '').toUpperCase());
   if (c.last && t.drapeau) drapeau(c, t.drapeau);
-  if (t.terrasse && sr() < t.terrasse && c.trottoir > 2.6) terrasse(c, sr);
+  if (t.terrasse && sr() < t.terrasse && c.trottoir > 2.5) terrasse(c, sr);
   if (t.dehors && R() < (t.pDehors ?? .5) && c.trottoir > 2.2) dehors(c, t.dehors, cx, ww);
   if (t.ardoise && c.first && sr() < t.ardoise) ardoise(c, c.gx0 + .6);
   if (t.dab && c.last) { extra.push([H.box(T, .5, .7, .08, cx + ww / 2 + .02, y0 + 1.25, .02), M.paint(0x6c7378, .3, .6)], [new T.PlaneGeometry(.22, .16).translate(cx + ww / 2 + .02, y0 + 1.35, .065), emis(T, 0x7fb4e0, .8)]); }
@@ -294,16 +294,58 @@ function drapeau(c, kind) {   // enseigne perpendiculaire : croix verte de pharm
   if (kind === 'croix') { const m = emis(T, 0x18c048, 1.8); extra.push([c.H.box(T, .1, .7, .24, x, y, z), m], [c.H.box(T, .1, .24, .7, x, y, z), m], [c.H.box(T, .08, .78, .32, x, y, z), c.M.paint(0x1a1a1a, .4)]); }
   else { extra.push([new T.OctahedronGeometry(.32, 0).scale(.25, 1.4, 1).translate(x, y - .05, z), emis(T, 0xd0202a, .9)]); }
 }
-function terrasse(c, sr) {   // tables de bistrot et chaises en rotin sur le trottoir, parfois paravents
-  const { T, G, R, H, gx0, gx1, y0 } = c, d = Math.min(2.4, c.trottoir - 1.6), col = pick(sr, [0xb08850, 0x2f4a3a, 0x7a2a2a, 0x222222, 0xe8e4dc]);
+// tressage façon chaise de bistrot parisienne (rotin + Rilsan coloré)
+const TRESSES = [['#f2efe6', '#1d3a6a'], ['#f2efe6', '#a0262c'], ['#e9dcc0', '#2b2b2b'], ['#f2efe6', '#2f6b4f'], ['#d9c49a', '#7a4a2a'], ['#f2efe6', '#e2a23a']];
+function tresse(T, k) {
+  return mat(T, 'tresse' + k, () => {
+    const [a, b] = TRESSES[k], cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d');
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) { g.fillStyle = (x + y) % 2 ? a : b; g.fillRect(x * 8, y * 8, 8, 8); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x * 8, y * 8 + 7, 8, 1); g.fillRect(x * 8 + 7, y * 8, 1, 8); }
+    const t = new T.CanvasTexture(cv); t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(3, 3);
+    return new T.MeshStandardMaterial({ map: t, roughness: .7, side: T.DoubleSide });
+  });
+}
+function chaiseBistrot(c, x, z, rot, k) {
+  const { T, extra } = c, m = new T.Matrix4().makeRotationY(rot).setPosition(x, 0, z);
+  const cadre = c.M.paint(0xa77b45, .55), tr = tresse(T, k), P = (g, mm) => extra.push([g.applyMatrix4(m), mm]);
+  for (const [a, b] of [[-.19, .17], [.19, .17], [-.17, -.17], [.17, -.17]]) P(new T.CylinderGeometry(.012, .012, .47, 5).translate(a, .235, b), cadre);
+  P(new T.BoxGeometry(.42, .03, .4).translate(0, .47, 0), tr);
+  P(new T.TorusGeometry(.21, .014, 4, 14, Math.PI).rotateX(Math.PI / 2).rotateY(Math.PI).translate(0, .47, 0), cadre);
+  P(new T.CylinderGeometry(.22, .22, .3, 12, 1, true, Math.PI / 2 + .55, Math.PI - 1.1).translate(0, .66, .02), tr);
+  P(new T.TorusGeometry(.22, .016, 4, 12, Math.PI - 1.1).rotateX(Math.PI / 2).rotateY(2.59).translate(0, .81, .02), cadre);
+  for (const sx of [-1, 1]) P(new T.CylinderGeometry(.012, .012, .36, 5).translate(sx * .18, .64, -.1), cadre);
+}
+function tableBistrot(c, x, z, rond) {
+  const { T, extra, M } = c, plateau = c.M.paint(rond ? 0xe9e6df : 0x9aa0a4, .22, rond ? .05 : .7);
+  extra.push([rond ? new T.CylinderGeometry(.3, .3, .025, 18).translate(x, .74, z) : new T.BoxGeometry(.6, .025, .6).translate(x, .74, z), plateau]);
+  extra.push([new T.CylinderGeometry(.03, .04, .72, 6).translate(x, .37, z), M.fonte]);
+  for (let i = 0; i < 3; i++) extra.push([new T.BoxGeometry(.04, .03, .28).translate(0, .02, .12).rotateY(i * 2.09).translate(x, 0, z), M.fonte]);
+}
+// terrasse parisienne : chaises côte à côte tournées vers la rue, petites tables rondes, parfois terrasse fermée vitrée
+function terrasse(c, sr) {
+  const { T, G, R, H, gx0, gx1, extra, M } = c;
   if (!c.first) return;
-  for (let x = gx0 + .7; x < gx1 - .4; x += 1.25) for (let r = 0; r < Math.max(1, Math.floor(d / 1.1)); r++) {
-    if (R() < .12) continue; const z = .7 + r * 1.1;
-    G.vc.push(H.vc(T, new T.CylinderGeometry(.3, .3, .03, 14).translate(x, .74, z), pick(R, [0x9aa0a4, 0xf2efe8, 0x3a3a3a])), H.vc(T, new T.CylinderGeometry(.025, .025, .74, 6).translate(x, .37, z), 0x222222), H.vc(T, new T.CylinderGeometry(.18, .2, .03, 10).translate(x, .015, z), 0x222222));
-    H.chaise(T, G, R, x - .42, 0, z, col, Math.PI / 2 + (R() - .5) * .4); H.chaise(T, G, R, x + .42, 0, z, col, -Math.PI / 2 + (R() - .5) * .4);
-    if (R() < .3) G.vc.push(H.vc(T, new T.CylinderGeometry(.035, .03, .13, 6).translate(x + .08, .82, z), 0xf2f0e6));
+  const libre = 1.8, d = Math.min(3.2, c.trottoir - libre); if (d < .8) return;
+  const k = Math.floor(sr() * TRESSES.length), rangs = d > 2.2 ? 2 : 1, rond = sr() < .8, fermee = d > 1.6 && sr() < .3;
+  for (let r = 0; r < rangs; r++) {
+    const zc = .55 + r * 1.15;
+    for (let x = gx0 + .55; x < gx1 - .5; x += 1.15) {
+      if (R() < .08) continue;
+      tableBistrot(c, x, zc + .45, rond);
+      for (const dx of [-.24, .24]) if (R() < .93) chaiseBistrot(c, x + dx + (R() - .5) * .05, zc, (R() - .5) * .25, k);   // côte à côte, face à la rue
+      if (R() < .35) { G.vc.push(H.vc(T, new T.CylinderGeometry(.03, .025, .11, 8).translate(x + .1, .81, zc + .4), 0xf2f0e6)); G.vc.push(H.vc(T, new T.CylinderGeometry(.035, .03, .07, 8).translate(x - .1, .79, zc + .5), 0xdde8ea)); }   // tasse, verre
+    }
   }
-  if (sr() < .4) for (const x of [gx0 + .1, gx1 - .1]) { G.vc.push(H.vc(T, new T.BoxGeometry(.04, 1.4, d).translate(x, .75, .4 + d / 2), 0x333333)); c.G.vit.push(H.box(T, .01, 1.2, d - .1, x, .75, .4 + d / 2)); }
+  if (fermee) {   // terrasse fermée : soubassement bois, vitrage, montants
+    const z1 = .3 + d, cad = c.M.paint(0x3a2a1c, .4);
+    extra.push([H.box(T, gx1 - gx0, .55, .06, (gx0 + gx1) / 2, .27, z1), cad]);
+    for (let x = gx0; x <= gx1 + .01; x += (gx1 - gx0) / Math.max(1, Math.round((gx1 - gx0) / 1.3))) extra.push([H.box(T, .06, 2.3, .06, x, 1.15, z1), cad]);
+    G.vit.push(H.box(T, gx1 - gx0, 1.6, .01, (gx0 + gx1) / 2, 1.35, z1));
+    for (const x of [gx0, gx1]) { extra.push([H.box(T, .06, .55, d, x, .27, .3 + d / 2), cad]); G.vit.push(H.box(T, .01, 1.6, d, x, 1.35, .3 + d / 2)); }
+    extra.push([H.box(T, gx1 - gx0 + .1, .08, d + .2, (gx0 + gx1) / 2, 2.32, .3 + d / 2), cad]);
+  } else if (sr() < .5) for (const x of [gx0 + .1, gx1 - .1]) {   // bacs à fleurs sur roulettes en bout de terrasse
+    G.vc.push(H.vc(T, new T.BoxGeometry(.4, .45, .9).translate(x, .23, .3 + d / 2), 0x2b2b2b));
+    H.plante(T, G, R, x, .45, .3 + d / 2, .3, sr() < .5);
+  }
 }
 function dehors(c, kind, cx, ww) {
   const { T, G, R, H, y0 } = c, z = .55;

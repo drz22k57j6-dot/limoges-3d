@@ -20,28 +20,29 @@ def typ(c):
     if c[:3] == 'SA2': return 'beaute'
     if c[:3] == 'SB2': return 'banque'
     return 'autre'
-RUES = {'7e': (7, 'RUE', 'CLER', 'Rue Cler'), '16e': (16, 'AV', 'VICTOR HUGO', 'Avenue Victor-Hugo'), '19e': (19, 'RUE', 'MEAUX', 'Rue de Meaux')}
-out = {}
-for k, (arr, tv, lv, nom) in RUES.items():
-    rows = [r for r in d if r['lib_voie'] == lv and r['typ_voie'] == tv and r['sit'] in ('R', 'A') and r['num']]
-    cotes = []
-    for par in (0, 1):
-        adr = {}
-        for r in rows:
-            if r['num'] % 2 != par: continue
-            key = (r['num'], r['let'] or '')
-            nm = (r['ens'] or '').strip()
-            adr.setdefault(key, []).append((r['seq'] or 0, {'t': typ(r['codact']), 'nom': '' if nm in ('', 'SANS ENSEIGNE', 'NC') else nm, 'code': r['codact']}))
-        keys = sorted(adr)
-        seq, prev = [], None
-        for key in keys:
-            if prev is not None:
-                for n in range(prev + 2, key[0], 2): seq.append({'num': n, 'shops': []})   # immeuble sans local commercial
-            seq.append({'num': f'{key[0]}{key[1]}', 'shops': [s for _, s in sorted(adr[key], key=lambda x: x[0])]})
-            prev = key[0]
-        # on démarre la rue test sur le tronçon le plus commerçant (fenêtre de 10 adresses)
-        best = max(range(max(1, len(seq) - 9)), key=lambda i: sum(min(3, len(a['shops'])) for a in seq[i:i + 10]))
-        cotes.append(seq[best:])
-    out[k] = {'rue': nom, 'cotes': cotes, 'source': 'APUR BDCOM 2023 (ODbL)'}
-    print(k, nom, [len(c) for c in cotes], sum(len(a['shops']) for c in cotes for a in c), 'commerces')
-json.dump(out, open(f'{D}/../../moteur_facades/data/commerces_rues_test.json', 'w'), ensure_ascii=False, separators=(',', ':'))
+if __name__ == '__main__':
+    RUES = {"7e": (7, 'RUE', 'CLER', 'Rue Cler'), '16e': (16, 'AV', 'VICTOR HUGO', 'Avenue Victor-Hugo'), '19e': (19, 'RUE', 'MEAUX', 'Rue de Meaux')}
+    out = {}
+    for k, (arr, tv, lv, nom) in RUES.items():
+        rows = [r for r in d if r['lib_voie'] == lv and r['typ_voie'] == tv and r['sit'] in ('R', 'A') and r['num']]
+        cotes = []
+        for par in (0, 1):
+            adr = {}
+            for r in rows:
+                if r['num'] % 2 != par: continue
+                key = (r['num'], r['let'] or '')
+                nm = (r['ens'] or '').strip()
+                adr.setdefault(key, []).append((r['seq'] or 0, {'t': typ(r['codact']), 'nom': '' if nm in ('', 'SANS ENSEIGNE', 'NC') else nm, 'code': r['codact']}))
+            keys = sorted(adr)
+            seq, prev = [], None
+            for key in keys:
+                if prev is not None:
+                    for n in range(prev + 2, key[0], 2): seq.append({'num': n, 'shops': []})   # immeuble sans local commercial
+                seq.append({'num': f'{key[0]}{key[1]}', 'shops': [s for _, s in sorted(adr[key], key=lambda x: x[0])]})
+                prev = key[0]
+            # on démarre la rue test sur le tronçon le plus commerçant (fenêtre de 10 adresses)
+            best = max(range(max(1, len(seq) - 9)), key=lambda i: sum(min(3, len(a['shops'])) for a in seq[i:i + 10]))
+            cotes.append(seq[best:])
+        out[k] = {'rue': nom, 'cotes': cotes, 'source': 'APUR BDCOM 2023 (ODbL)'}
+        print(k, nom, [len(c) for c in cotes], sum(len(a['shops']) for c in cotes for a in c), 'commerces')
+    json.dump(out, open(f'{D}/../../moteur_facades/data/commerces_rues_test.json', 'w'), ensure_ascii=False, separators=(',', ':'))
