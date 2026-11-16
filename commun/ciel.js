@@ -43,9 +43,14 @@ void main(){
       const U = mat.uniforms;
       U.uZenith.value.copy(zenith); U.uHorizon.value.copy(horizon); U.uGround.value.copy(horizon).multiplyScalar(0.6);
       U.uSunDir.value.copy(sunDir); U.uSun.value.copy(sunColor).multiplyScalar(sunDir.y > -0.05 ? 1 : 0); U.uGlow.value = glow;
+      // l'environnement (lumière d'ambiance et reflets) utilise un ciel désaturé : sinon les rues à l'ombre virent au bleu
+      const z0 = U.uZenith.value.clone(), h0 = U.uHorizon.value.clone(), g0 = U.uGround.value.clone();
+      const gris = c => { const l = c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722; c.lerp(new T.Color(l, l, l), 0.7); };
+      gris(U.uZenith.value); gris(U.uHorizon.value); gris(U.uGround.value);
       const tm = renderer.toneMapping; renderer.toneMapping = T.NoToneMapping;
       if (envRT) envRT.dispose(); envRT = pmrem.fromScene(envScene, 0, 0.1, 1000);
       renderer.toneMapping = tm;
+      U.uZenith.value.copy(z0); U.uHorizon.value.copy(h0); U.uGround.value.copy(g0);
     },
   };
 }

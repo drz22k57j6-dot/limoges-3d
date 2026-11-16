@@ -42,7 +42,7 @@ export function createVoirie(T, { base, v = '', sol = null }) {   // sol : moteu
   function material(id) {
     if (MATS[id]) return MATS[id];
     const tset = set({ 0: 'chaussee', 1: 'trottoir', 2: 'bordure', 3: 'chaussee', 4: 'pave' }[id]);
-    const m = new T.MeshStandardMaterial({ ...tset, color: id === 1 ? 0xb9b7b3 : (id === 2 ? 0xcac8c3 : 0xffffff), roughness: 1, metalness: 0, side: id === 2 ? T.DoubleSide : T.FrontSide });
+    const m = new T.MeshStandardMaterial({ ...tset, color: id === 1 ? 0xb9b7b3 : (id === 2 ? 0xcac8c3 : 0xffffff), roughness: 1, metalness: 0, envMapIntensity: 0.35, side: id === 2 ? T.DoubleSide : T.FrontSide });
     if (id === 3) { m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -1; }
     m.onBeforeCompile = sh => {
       sh.uniforms.tGut = { value: tGut }; sh.uniforms.uAbandon = sol ? sol.uniformes.uAbandon : { value: 0 };

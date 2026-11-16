@@ -127,11 +127,11 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { initDronePhoto } from './drone/photo.js?v=34';
-import { createVoirie } from './commun/voirie.js?v=39';
-import { createMoteurSol } from './moteur_sol/moteur.js?v=1';
+import { createVoirie } from './commun/voirie.js?v=40';
+import { createMoteurSol } from './moteur_sol/moteur.js?v=2';
 import { createMoteurTextures } from './moteur_textures/moteur.js?v=1';
 import { initAgent } from './drone/agent.js';
-import { createSky } from './commun/ciel.js';
+import { createSky } from './commun/ciel.js?v=2';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -218,7 +218,7 @@ scene.fog = new THREE.Fog(0xbcd2e6, 300, 2000);
 // sun : couleur et intensité du soleil ; sky / ground : lumière d'ambiance venant du ciel et du sol ;
 // horizon (= brouillard) et zenith : couleurs du ciel
 const TIMES = [
-  { name: 'JOUR', elev: 48, az: 150, exp: 0.98, night: 0, sun: [1, 0.91, 0.79, 3.37], sky: [0.28, 0.38, 0.49], ground: [1.21, 1.17, 0.89], horizon: [0.15, 0.24, 0.31], zenith: [0.02, 0.07, 0.26], glow: 0.35 },
+  { name: 'JOUR', elev: 48, az: 150, exp: 0.98, night: 0, sun: [1, 0.91, 0.79, 3.37], sky: [0.34, 0.37, 0.41], ground: [1.0, 0.97, 0.86], horizon: [0.15, 0.24, 0.31], zenith: [0.02, 0.07, 0.26], glow: 0.35 },
   { name: 'GOLDEN', elev: 6, az: 250, exp: 1.04, night: 0.15, sun: [1, 0.54, 0.19, 2.31], sky: [0.22, 0.23, 0.21], ground: [0.18, 0.14, 0.08], horizon: [0.15, 0.16, 0.11], zenith: [0.02, 0.04, 0.12], glow: 0.6 },
   { name: 'NUIT', elev: -8, az: 300, exp: 1.15, night: 1, sun: [0, 0, 0, 0], sky: [0.0014, 0.0018, 0.0033], ground: [0.0006, 0.0009, 0.0016], horizon: [0.0004, 0.0006, 0.0014], zenith: [0.0006, 0.0009, 0.003], glow: 0 },
 ];

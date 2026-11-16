@@ -227,7 +227,7 @@ export function createMoteurSol(T) {
          } }`,
     // trottoir : asphalte coulé gris, reprises rectangulaires, taches
     1: `{ vec3 base = vec3(.33,.32,.31)*(.9+.2*vn(vWP.xz*.35))*(.92+.16*vn(vWP.xz*9.));
-         diffuseColor.rgb = mix(diffuseColor.rgb, base*1.15, .6);
+         diffuseColor.rgb = mix(diffuseColor.rgb, base*.85, .75);   // asphalte coulé parisien : gris moyen-foncé
          vec2 c1=floor(vWP.xz/vec2(1.6,3.2)), c2=floor((vWP.xz+vec2(.7,1.3))/vec2(2.7,1.2));
          float rep = max(step(.94,h21(c1+41.)), step(.965,h21(c2+77.)));
          diffuseColor.rgb *= mix(1., .78+.25*h21(c1+3.), rep);
