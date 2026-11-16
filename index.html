@@ -128,6 +128,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { initDronePhoto } from './drone/photo.js?v=34';
 import { createVoirie } from './commun/voirie.js?v=38';
+import { createMoteurTextures } from './moteur_textures/moteur.js?v=1';
 import { initAgent } from './drone/agent.js';
 import { createSky } from './commun/ciel.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
@@ -251,7 +252,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=42';
+const V = '?v=43';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -709,6 +710,7 @@ function setupCity(gT, gO) {
         m.envMapIntensity = m.name === 'bitume' ? 0.6 : 1; m.needsUpdate = true;
       }
       if (/facade|mur/.test(m.name)) { m.color.multiplyScalar(0.95); m.envMapIntensity = 1; }
+      if (/facade|mur|pignon/.test(m.name)) MT.appliquer(m, MT.PROFILS.facade); else if (/^toit/.test(m.name)) MT.appliquer(m, MT.PROFILS.toit);
       BMAT[m.name] = m;
       if (m.name === 'eau') {
         m.normalMap = waterNormal; waterNormal.offset.copy(m.map.offset); waterNormal.repeat.copy(m.map.repeat);
@@ -1527,7 +1529,7 @@ async function startCityTiles() {
     const t = new TilesRenderer(CITY.data + 'tuiles/tileset.json' + V);
     t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
     t.errorTarget = [3, 6, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
-    const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 });
+    const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 }); MT.appliquer(far, MT.PROFILS.facade);
     t.addEventListener('load-model', ({ scene: sc }) => {
       sc.traverse(o => {
         if (!o.isMesh) return;
@@ -1616,6 +1618,7 @@ const carBlob = (() => {
 car.add(carBlob);
 let terrainRoot = null, objetsRoot = null;
 const BMAT = {}; let cityTiles = null;
+const MT = createMoteurTextures(THREE); window.__MT = MT;   // moteur de textures isolé (moteur_textures/moteur.js)
 let grass = null; const grassP = new THREE.Vector3();
 
 // ---------------- Paris entier : chargement par secteurs autour du drone ----------------
@@ -1707,7 +1710,7 @@ function placeModel(m, g) {
     root.add(inner); root.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg);
   }
   root.position.set(m.centre_local[0], m.sol_alt - H0v, m.centre_local[1]); root.name = 'modele_' + m.id;
-  o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; if (n.material && n.material.map) n.material.map.anisotropy = 8; } });
+  o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; if (n.material && n.material.map) n.material.map.anisotropy = 8; for (const mt of [].concat(n.material)) if (mt && mt.isMeshStandardMaterial) MT.appliquer(mt, MT.PROFILS.monument); } });
   return root;
 }
 // ---------------- poubelles (bacs roulants, 10 variantes) : placement GÉNÉRÉ devant des immeubles (pas une donnée mesurée) ----------------
