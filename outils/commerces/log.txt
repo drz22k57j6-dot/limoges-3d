@@ -1,0 +1,41 @@
++ pip install openpyxl pandas
++ cd outils/commerces
++ curl -sSL -w '%{http_code}\n' -A Mozilla/5.0 -o bdcom.xlsx https://www.apur.org/open_data/BDCOM_2023_OD.xlsx
+200
++ ls -la
+total 44
+drwxr-xr-x 2 runner runner  4096 Nov 16 22:51 .
+drwxr-xr-x 3 runner runner  4096 Nov 16 22:50 ..
+-rw-r--r-- 1 runner runner 28672 Nov 16 22:51 bdcom.xlsx
+-rw-r--r-- 1 runner runner    30 Nov 16 22:50 demande.txt
+-rw-r--r-- 1 runner runner   176 Nov 16 22:51 log.txt
++ python3 -
++ rm -f bdcom.xlsx
++ Q='[out:json][timeout:300];area["ref:INSEE"="75056"][admin_level=8]->.p;(nwr(area.p)["shop"];nwr(area.p)["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|fuel|car_rental|cinema|theatre|nightclub|clinic|dentist|doctors)$"];nwr(area.p)["craft"];nwr(area.p)["office"~"estate_agent|insurance"];);out center tags;'
++ curl -sS -m 600 --data-urlencode 'data=[out:json][timeout:300];area["ref:INSEE"="75056"][admin_level=8]->.p;(nwr(area.p)["shop"];nwr(area.p)["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|fuel|car_rental|cinema|theatre|nightclub|clinic|dentist|doctors)$"];nwr(area.p)["craft"];nwr(area.p)["office"~"estate_agent|insurance"];);out center tags;' https://overpass-api.de/api/interpreter -o osm.json
++ python3 -
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/lib/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
++ rm -f osm.json
++ ls -la
+total 28
+drwxr-xr-x 2 runner runner 4096 Nov 16 22:51 .
+drwxr-xr-x 3 runner runner 4096 Nov 16 22:50 ..
+-rw-r--r-- 1 runner runner 3194 Nov 16 22:51 bdcom_info.txt
+-rw-r--r-- 1 runner runner 4702 Nov 16 22:51 bdcom_t_nomenclature_2023.csv.gz
+-rw-r--r-- 1 runner runner   30 Nov 16 22:50 demande.txt
+-rw-r--r-- 1 runner runner 2205 Nov 16 22:51 log.txt
