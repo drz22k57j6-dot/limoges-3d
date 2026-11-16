@@ -1,1 +1,6 @@
-{"modeles": []}
+{"modeles": [
+ {"id": "BATIMENT0000000245157267", "nom": "Hôtel de Ville de Paris", "fichier": "hotel_de_ville.glb",
+  "centre_local": [406.12, 22.23], "sol_alt": 33.0, "toit_alt": 84.4, "longueur_m": 144.2, "largeur_m": 89.4, "rotation_deg": -110.4,
+  "source": "Modèle 3D fourni par Sid (Blender), allégé (230 000 triangles, textures 2048 px). Position, longueur, largeur et orientation calées sur l'emprise IGN BD TOPO ; hauteur jusqu'au campanile mesurée au LiDAR HD (51,4 m au-dessus du sol).",
+  "verifie": "dimensions, orientation et hauteur : mesurées (IGN) ; façade principale (horloge, porte centrale) tournée vers la place de l'Hôtel de Ville, à l'ouest"}
+]}
