@@ -22,20 +22,39 @@ jobs:
           set -x
           pip install openpyxl pandas >/dev/null
           cd outils/commerces
-          curl -sSL -w '%{http_code}\n' -A "Mozilla/5.0" -o bdcom.xlsx https://www.apur.org/open_data/BDCOM_2023_OD.xlsx || true
-          ls -la
+          curl -sS -A "Mozilla/5.0" "https://opendata.apur.org/api/search/v1/collections/all/items?q=bdcom&limit=50" -o hub.json; head -c 3000 hub.json; echo
           python3 - <<'PY'
-          import pandas as pd, os
-          if os.path.getsize('bdcom.xlsx') > 10000:
-              x = pd.read_excel('bdcom.xlsx', sheet_name=None)
-              with open('bdcom_info.txt', 'w') as f:
-                  for k, d in x.items():
-                      f.write(f'== {k} {d.shape}\n{list(d.columns)}\n{d.head(8).to_string()}\n\n')
-                      d.to_csv(f'bdcom_{k[:20].replace(" ","_")}.csv.gz', index=False, compression='gzip')
+          import json, subprocess, os
+          try:
+              d = json.load(open('hub.json'))
+          except Exception as e:
+              print('hub KO', e); d = {'features': []}
+          for f in d.get('features', []):
+              p = f.get('properties', {}); t = (p.get('title') or '') ; i = f.get('id')
+              print('ITEM', i, t, p.get('type'), p.get('url'))
+              if '2023' in t and p.get('type') == 'Feature Service' and p.get('url'):
+                  u = p['url'].rstrip('/')
+                  if not u.split('/')[-1].isdigit(): u += '/0'
+                  out = []; off = 0
+                  while True:
+                      q = f"{u}/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultOffset={off}&resultRecordCount=2000"
+                      r = subprocess.run(['curl', '-sS', '-A', 'Mozilla/5.0', q], capture_output=True, text=True).stdout
+                      try: j = json.loads(r)
+                      except Exception: print('bad', r[:300]); break
+                      feats = j.get('features', [])
+                      for g in feats:
+                          a = g['attributes']; geo = g.get('geometry') or {}
+                          a['_lon'] = geo.get('x'); a['_lat'] = geo.get('y'); out.append(a)
+                      off += len(feats)
+                      if not feats or not j.get('exceededTransferLimit'): break
+                  print(t, len(out))
+                  if out:
+                      import gzip
+                      name = ''.join(c if c.isalnum() else '_' for c in t)[:40]
+                      json.dump(out, gzip.open(f'bdcom_{name}.json.gz', 'wt'), ensure_ascii=False)
           PY
-          rm -f bdcom.xlsx
-          Q='[out:json][timeout:300];area["ref:INSEE"="75056"][admin_level=8]->.p;(nwr(area.p)["shop"];nwr(area.p)["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|fuel|car_rental|cinema|theatre|nightclub|clinic|dentist|doctors)$"];nwr(area.p)["craft"];nwr(area.p)["office"~"estate_agent|insurance"];);out center tags;'
-          curl -sS -m 600 --data-urlencode "data=$Q" https://overpass-api.de/api/interpreter -o osm.json || curl -sS -m 600 --data-urlencode "data=$Q" https://overpass.kumi.systems/api/interpreter -o osm.json
+          Q='[out:json][timeout:600][bbox:48.815,2.224,48.902,2.470];(nwr["shop"];nwr["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|cinema|theatre|nightclub|dentist|doctors)$"];nwr["craft"];nwr["office"~"estate_agent|insurance"];);out center tags;'
+          curl -sS -m 600 -A "limoges-3d (github actions)" --data-urlencode "data=$Q" https://overpass-api.de/api/interpreter -o osm.json; head -c 300 osm.json; echo; python3 -c "import json;json.load(open('osm.json'))" || curl -sS -m 600 -A "limoges-3d (github actions)" --data-urlencode "data=$Q" https://overpass.private.coffee/api/interpreter -o osm.json; head -c 300 osm.json
           python3 - <<'PY'
           import json, gzip
           d = json.load(open('osm.json'))
