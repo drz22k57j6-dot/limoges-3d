@@ -38,6 +38,1549 @@
    "rayon_m": 20,
    "source": "Modèle 3D fourni par Sid, allégé (300 000 triangles, textures 2048 px, 4,2 Mo). Centre et orientation calés sur les volumes IGN BD TOPO de la tour (3 étages). Échelle uniforme : base de 124,9 m entre piliers (valeur officielle) ; les étages du modèle tombent alors aux bonnes hauteurs (1er ≈ 58 m, 2e ≈ 116 m).",
    "verifie": "base, orientation et position : IGN ; hauteur résultante ≈ 291 m (le modèle n'a pas les antennes qui portent la tour à 330 m)"
+  },
+  {
+   "id": "BATIMENT0000000000157326",
+   "ids": [
+    "BATIMENT0000000000157326"
+   ],
+   "nom": "Arc de Triomphe",
+   "fichier": "ol/arc-de-triomphe.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3795.01,
+    -1943.17
+   ],
+   "sol_alt": 58.87,
+   "cap_deg": 0,
+   "longueur_m": 46.8,
+   "largeur_m": 57.7,
+   "hauteur_m": 50,
+   "rayon_m": 28.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/arc-de-triomphe/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245184964",
+   "ids": [
+    "BATIMENT0000000245184964",
+    "BATIMENT0000000245184963"
+   ],
+   "nom": "Arc de Triomphe du Carrousel",
+   "fichier": "ol/arc-du-carrousel.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1028.55,
+    -579.23
+   ],
+   "sol_alt": 35.59,
+   "cap_deg": 0,
+   "longueur_m": 16.6,
+   "largeur_m": 20.0,
+   "hauteur_m": 18,
+   "rayon_m": 10.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/arc-du-carrousel/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000227881314",
+   "ids": [
+    "BATIMENT0000000227881314"
+   ],
+   "nom": "Barrière du Trône - Philippe Auguste",
+   "fichier": "ol/barriere-du-trone-philippe-auguste.glb",
+   "placement": "ancre",
+   "centre_local": [
+    3766.64,
+    988.41
+   ],
+   "sol_alt": 52.0,
+   "cap_deg": 0,
+   "longueur_m": 12.3,
+   "largeur_m": 12.3,
+   "hauteur_m": 28,
+   "rayon_m": 6.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/barriere-du-trone-philippe-auguste/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000161034",
+   "ids": [
+    "BATIMENT0000000000161034",
+    "BATIMENT0000000000161035"
+   ],
+   "nom": "Bourse de Commerce",
+   "fichier": "ol/bourse-de-commerce.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -299.84,
+    -694.3
+   ],
+   "sol_alt": 35.87,
+   "cap_deg": 0,
+   "longueur_m": 69.3,
+   "largeur_m": 67.2,
+   "hauteur_m": 36.3,
+   "rayon_m": 34.6,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/bourse-de-commerce/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000161473",
+   "ids": [
+    "BATIMENT0000000000161473"
+   ],
+   "nom": "Centre Georges Pompidou",
+   "fichier": "ol/centre-georges-pompidou.glb",
+   "placement": "ancre",
+   "centre_local": [
+    403.18,
+    -434.13
+   ],
+   "sol_alt": 34.42,
+   "cap_deg": 0,
+   "longueur_m": 109.7,
+   "largeur_m": 175.0,
+   "hauteur_m": 42.4,
+   "rayon_m": 87.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/centre-georges-pompidou/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245187138",
+   "ids": [
+    "BATIMENT0000000245187138"
+   ],
+   "nom": "Cirque d'Hiver",
+   "fichier": "ol/cirque-d-hiver.glb",
+   "placement": "ancre",
+   "centre_local": [
+    1515.72,
+    -753.25
+   ],
+   "sol_alt": 34.59,
+   "cap_deg": 0,
+   "longueur_m": 57.9,
+   "largeur_m": 87.0,
+   "hauteur_m": 17.2,
+   "rayon_m": 43.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/cirque-d-hiver/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245181629",
+   "ids": [
+    "BATIMENT0000000245181629",
+    "BATIMENT0000000245181646",
+    "BATIMENT0000000245181647",
+    "BATIMENT0000000245179064",
+    "BATIMENT0000000245181630",
+    "BATIMENT0000000245181631",
+    "BATIMENT0000000245179066",
+    "BATIMENT0000000245179063",
+    "BATIMENT0000000245181645",
+    "BATIMENT0000000245181648",
+    "BATIMENT0000000245181649"
+   ],
+   "nom": "Cité des Sciences et de l'Industrie",
+   "fichier": "ol/cite-des-sciences.glb",
+   "placement": "ancre",
+   "centre_local": [
+    3040.06,
+    -4322.58
+   ],
+   "sol_alt": 45.18,
+   "cap_deg": 0,
+   "longueur_m": 290.7,
+   "largeur_m": 258.6,
+   "hauteur_m": 40,
+   "rayon_m": 145.3,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/cite-des-sciences/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "OL_colonne-de-juillet",
+   "ids": [],
+   "nom": "Colonne de Juillet",
+   "fichier": "ol/colonne-de-juillet.glb",
+   "placement": "ancre",
+   "centre_local": [
+    1621.79,
+    394.6
+   ],
+   "sol_alt": 37.63,
+   "cap_deg": 0,
+   "longueur_m": 18.1,
+   "largeur_m": 18.0,
+   "hauteur_m": 46.3,
+   "rayon_m": 9.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/colonne-de-juillet/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241915132",
+   "ids": [
+    "BATIMENT0000000241915132"
+   ],
+   "nom": "Couvent Saint-François",
+   "fichier": "ol/couvent-saint-francois.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1256.44,
+    3366.77
+   ],
+   "sol_alt": 68.27,
+   "cap_deg": 0,
+   "longueur_m": 56.3,
+   "largeur_m": 53.3,
+   "hauteur_m": 20,
+   "rayon_m": 28.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/couvent-saint-francois/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245170200",
+   "ids": [
+    "BATIMENT0000000245170200"
+   ],
+   "nom": "Église nouvelle Saint-Honoré d'Eylau",
+   "fichier": "ol/eglise-nouvelle-saint-honore-d-eylau.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -4434.27,
+    -1352.23
+   ],
+   "sol_alt": 60.5,
+   "cap_deg": 0,
+   "longueur_m": 62.6,
+   "largeur_m": 36.4,
+   "hauteur_m": 16.0,
+   "rayon_m": 31.3,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/eglise-nouvelle-saint-honore-d-eylau/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000227876612",
+   "ids": [
+    "BATIMENT0000000227876612",
+    "BATIMENT0000000245184933",
+    "BATIMENT0000000253248238"
+   ],
+   "nom": "Église Saint-Germain l'Auxerrois",
+   "fichier": "ol/eglise-saint-germain-l-auxerrois.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -411.31,
+    -325.48
+   ],
+   "sol_alt": 35.29,
+   "cap_deg": 0,
+   "longueur_m": 80.7,
+   "largeur_m": 51.8,
+   "hauteur_m": 34,
+   "rayon_m": 40.4,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/eglise-saint-germain-l-auxerrois/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245172546",
+   "ids": [
+    "BATIMENT0000000245172546",
+    "BATIMENT0000000245172471"
+   ],
+   "nom": "Grand Palais",
+   "fichier": "ol/grand-palais.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2530.5,
+    -1084.76
+   ],
+   "sol_alt": 34.83,
+   "cap_deg": 0,
+   "longueur_m": 162.0,
+   "largeur_m": 241.4,
+   "hauteur_m": 60,
+   "rayon_m": 120.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/grand-palais/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000240771658",
+   "ids": [
+    "BATIMENT0000000240771658"
+   ],
+   "nom": "Grande Halle de la Villette",
+   "fichier": "ol/grande-halle-de-la-villette.glb",
+   "placement": "ancre",
+   "centre_local": [
+    3245.22,
+    -3790.02
+   ],
+   "sol_alt": 52.35,
+   "cap_deg": 0,
+   "longueur_m": 212.6,
+   "largeur_m": 246.4,
+   "hauteur_m": 19,
+   "rayon_m": 123.2,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/grande-halle-de-la-villette/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245164378",
+   "ids": [
+    "BATIMENT0000000245164378",
+    "BATIMENT0000000245164458",
+    "BATIMENT0000000245164380",
+    "BATIMENT0000000245164393"
+   ],
+   "nom": "Hôtel de Günsburg",
+   "fichier": "ol/hotel-de-gunsburg.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3769.37,
+    -2086.45
+   ],
+   "sol_alt": 55.94,
+   "cap_deg": 0,
+   "longueur_m": 52.9,
+   "largeur_m": 32.4,
+   "hauteur_m": 21,
+   "rayon_m": 26.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/hotel-de-gunsburg/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245185815",
+   "ids": [
+    "BATIMENT0000000245185815"
+   ],
+   "nom": "Hôtel de Lamoignon",
+   "fichier": "ol/hotel-de-lamoignon.glb",
+   "placement": "ancre",
+   "centre_local": [
+    1095.84,
+    -17.2
+   ],
+   "sol_alt": 36.21,
+   "cap_deg": 0,
+   "longueur_m": 60.0,
+   "largeur_m": 73.3,
+   "hauteur_m": 15,
+   "rayon_m": 36.6,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/hotel-de-lamoignon/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "OL_hotel-de-soubise",
+   "ids": [],
+   "nom": "Hôtel de Soubise",
+   "fichier": "ol/hotel-de-soubise.glb",
+   "placement": "ancre",
+   "centre_local": [
+    788.66,
+    -411.57
+   ],
+   "sol_alt": 36.1,
+   "cap_deg": 0,
+   "longueur_m": 88.8,
+   "largeur_m": 129.5,
+   "hauteur_m": 19,
+   "rayon_m": 64.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/hotel-de-soubise/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245197410",
+   "ids": [
+    "BATIMENT0000000245197410"
+   ],
+   "nom": "Hôtel de Sully",
+   "fichier": "ol/hotel-de-sully.glb",
+   "placement": "ancre",
+   "centre_local": [
+    1230.5,
+    229.57
+   ],
+   "sol_alt": 34.22,
+   "cap_deg": 0,
+   "longueur_m": 45.0,
+   "largeur_m": 68.4,
+   "hauteur_m": 16,
+   "rayon_m": 34.2,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/hotel-de-sully/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253247800",
+   "ids": [
+    "BATIMENT0000000253247800"
+   ],
+   "nom": "Hyatt Regency Paris Etoile",
+   "fichier": "ol/hyatt-regency-paris-etoile.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -4574.71,
+    -2668.76
+   ],
+   "sol_alt": 36.47,
+   "cap_deg": 0,
+   "longueur_m": 83.7,
+   "largeur_m": 86.2,
+   "hauteur_m": 174,
+   "rayon_m": 43.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/hyatt-regency-paris-etoile/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241930140",
+   "ids": [
+    "BATIMENT0000000241930140"
+   ],
+   "nom": "Institut d'Art et d'Archéologie",
+   "fichier": "ol/institut-d-art-et-d-archeologie.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -816.14,
+    1589.45
+   ],
+   "sol_alt": 53.09,
+   "cap_deg": 0,
+   "longueur_m": 34.2,
+   "largeur_m": 51.5,
+   "hauteur_m": 20,
+   "rayon_m": 25.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/institut-d-art-et-d-archeologie/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253244903",
+   "ids": [
+    "BATIMENT0000000253244903",
+    "BATIMENT0000000253244904",
+    "BATIMENT0000002007005296",
+    "BATIMENT0000000253244905",
+    "BATIMENT0000000241926729",
+    "BATIMENT0000000241926728",
+    "BATIMENT0000002007005295",
+    "BATIMENT0000000241926715"
+   ],
+   "nom": "Hôtel des Invalides",
+   "fichier": "ol/invalides.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2521.0,
+    54.06
+   ],
+   "sol_alt": 38.75,
+   "cap_deg": 0,
+   "longueur_m": 283.7,
+   "largeur_m": 272.7,
+   "hauteur_m": 100,
+   "rayon_m": 141.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/invalides/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000356564161",
+   "ids": [
+    "BATIMENT0000000356564161"
+   ],
+   "nom": "La Canopée des Halles",
+   "fichier": "ol/la-canopee-des-halles.glb",
+   "placement": "ancre",
+   "centre_local": [
+    16.37,
+    -589.56
+   ],
+   "sol_alt": 35.99,
+   "cap_deg": 0,
+   "longueur_m": 165.3,
+   "largeur_m": 177.3,
+   "hauteur_m": 15.3,
+   "rayon_m": 88.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/la-canopee-des-halles/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253248234",
+   "ids": [
+    "BATIMENT0000000253248234",
+    "BATIMENT0000000245185614"
+   ],
+   "nom": "La Samaritaine",
+   "fichier": "ol/la-samaritaine.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -335.41,
+    -301.67
+   ],
+   "sol_alt": 30.06,
+   "cap_deg": 0,
+   "longueur_m": 94.3,
+   "largeur_m": 123.7,
+   "hauteur_m": 32,
+   "rayon_m": 61.9,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/la-samaritaine/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245184875",
+   "ids": [
+    "BATIMENT0000000245184875",
+    "BATIMENT0000000245185612",
+    "BATIMENT0000000245185609",
+    "BATIMENT0000000245185610",
+    "BATIMENT0000000245185621",
+    "BATIMENT0000000245185608",
+    "BATIMENT0000000245185607",
+    "BATIMENT0000000245185620",
+    "BATIMENT0000000245185618",
+    "BATIMENT0000002007491720",
+    "BATIMENT0000000245185619",
+    "BATIMENT0000000245185617",
+    "BATIMENT0000000245185616",
+    "BATIMENT0000000253246143",
+    "BATIMENT0000000245160141",
+    "BATIMENT0000000245185611",
+    "BATIMENT0000000245160142",
+    "BATIMENT0000000253248249"
+   ],
+   "nom": "Palais du Louvre",
+   "fichier": "ol/louvre.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -813.47,
+    -498.84
+   ],
+   "sol_alt": 25.15,
+   "cap_deg": 0,
+   "longueur_m": 711.5,
+   "largeur_m": 467.3,
+   "hauteur_m": 38,
+   "rayon_m": 355.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/louvre/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245184969",
+   "ids": [
+    "BATIMENT0000000245184969"
+   ],
+   "nom": "Pyramide du Louvre",
+   "fichier": "ol/louvre-pyramid.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -813.28,
+    -497.87
+   ],
+   "sol_alt": 25.15,
+   "cap_deg": 0,
+   "longueur_m": 47.9,
+   "largeur_m": 47.7,
+   "hauteur_m": 21.7,
+   "rayon_m": 23.9,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/louvre-pyramid/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000158567",
+   "ids": [
+    "BATIMENT0000000000158567"
+   ],
+   "nom": "Église de la Madeleine",
+   "fichier": "ol/madeleine.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1640.12,
+    -1507.39
+   ],
+   "sol_alt": 35.71,
+   "cap_deg": 0,
+   "longueur_m": 95.5,
+   "largeur_m": 135.2,
+   "hauteur_m": 36.2,
+   "rayon_m": 67.6,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/madeleine/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253237583",
+   "ids": [
+    "BATIMENT0000000253237583",
+    "BATIMENT0000000253237577",
+    "BATIMENT0000000253237579",
+    "BATIMENT0000000253237581",
+    "BATIMENT0000000253237578",
+    "BATIMENT0000000245171313",
+    "BATIMENT0000000245171315",
+    "BATIMENT0000000253237582",
+    "BATIMENT0000000309681539",
+    "BATIMENT0000000253237580"
+   ],
+   "nom": "Maison de la Radio et de la Musique",
+   "fichier": "ol/maison-de-la-radio.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -5041.89,
+    413.01
+   ],
+   "sol_alt": 33.77,
+   "cap_deg": 0,
+   "longueur_m": 161.7,
+   "largeur_m": 161.9,
+   "hauteur_m": 68,
+   "rayon_m": 80.9,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/maison-de-la-radio/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241937879",
+   "ids": [
+    "BATIMENT0000000241937879",
+    "BATIMENT0000000241937880"
+   ],
+   "nom": "Marché Saint-Germain",
+   "fichier": "ol/marche-saint-germain.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -814.61,
+    494.36
+   ],
+   "sol_alt": 38.9,
+   "cap_deg": 0,
+   "longueur_m": 97.6,
+   "largeur_m": 82.0,
+   "hauteur_m": 16.2,
+   "rayon_m": 48.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/marche-saint-germain/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000160608",
+   "ids": [
+    "BATIMENT0000000000160608"
+   ],
+   "nom": "Musée d'Art Moderne de Paris",
+   "fichier": "ol/musee-d-art-moderne-de-paris.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3598.11,
+    -890.86
+   ],
+   "sol_alt": 33.26,
+   "cap_deg": 0,
+   "longueur_m": 100.4,
+   "largeur_m": 89.6,
+   "hauteur_m": 14,
+   "rayon_m": 50.2,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/musee-d-art-moderne-de-paris/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241935505",
+   "ids": [
+    "BATIMENT0000000241935505",
+    "BATIMENT0000000241935507"
+   ],
+   "nom": "Musée d'Orsay",
+   "fichier": "ol/musee-dorsay.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1497.77,
+    -383.18
+   ],
+   "sol_alt": 34.15,
+   "cap_deg": 0,
+   "longueur_m": 197.4,
+   "largeur_m": 140.2,
+   "hauteur_m": 35,
+   "rayon_m": 98.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/musee-dorsay/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000160624",
+   "ids": [
+    "BATIMENT0000000000160624",
+    "BATIMENT0000000245166053"
+   ],
+   "nom": "Musée Guimet",
+   "fichier": "ol/musee-guimet.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3910.5,
+    -1014.85
+   ],
+   "sol_alt": 46.84,
+   "cap_deg": 0,
+   "longueur_m": 73.3,
+   "largeur_m": 76.1,
+   "hauteur_m": 20,
+   "rayon_m": 38.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/musee-guimet/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245184819",
+   "ids": [
+    "BATIMENT0000000245184819",
+    "BATIMENT0000000305564422",
+    "BATIMENT0000000245184818",
+    "BATIMENT0000000245184816",
+    "BATIMENT0000000245184817",
+    "BATIMENT0000000245184146",
+    "BATIMENT0000000305564421"
+   ],
+   "nom": "Cathédrale Notre-Dame de Paris",
+   "fichier": "ol/notre-dame.glb",
+   "placement": "ancre",
+   "centre_local": [
+    210.65,
+    404.66
+   ],
+   "sol_alt": 33.95,
+   "cap_deg": 0,
+   "longueur_m": 133.8,
+   "largeur_m": 114.4,
+   "hauteur_m": 96,
+   "rayon_m": 66.9,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/notre-dame/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253251798",
+   "ids": [
+    "BATIMENT0000000253251798",
+    "BATIMENT0000000240763583",
+    "BATIMENT0000000253251814",
+    "BATIMENT0000000290021613",
+    "BATIMENT0000000240763582",
+    "BATIMENT0000000240763585",
+    "BATIMENT0000000240763581"
+   ],
+   "nom": "Église Notre-Dame-de-la-Croix",
+   "fichier": "ol/notre-dame-de-la-croix.glb",
+   "placement": "ancre",
+   "centre_local": [
+    2981.27,
+    -1312.59
+   ],
+   "sol_alt": 63.43,
+   "cap_deg": 0,
+   "longueur_m": 94.9,
+   "largeur_m": 63.9,
+   "hauteur_m": 78,
+   "rayon_m": 47.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/notre-dame-de-la-croix/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245198908",
+   "ids": [
+    "BATIMENT0000000245198908"
+   ],
+   "nom": "Obélisque de Louxor",
+   "fichier": "ol/obelisque-de-louxor.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1889.09,
+    -1003.4
+   ],
+   "sol_alt": 33.63,
+   "cap_deg": 0,
+   "longueur_m": 5.3,
+   "largeur_m": 5.3,
+   "hauteur_m": 33.4,
+   "rayon_m": 2.6,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/obelisque-de-louxor/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241936602",
+   "ids": [
+    "BATIMENT0000000241936602"
+   ],
+   "nom": "Odéon–Théâtre de l'Europe",
+   "fichier": "ol/odeon.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -613.27,
+    784.06
+   ],
+   "sol_alt": 43.4,
+   "cap_deg": 0,
+   "longueur_m": 37.6,
+   "largeur_m": 60.1,
+   "hauteur_m": 28,
+   "rayon_m": 30.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/odeon/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253247655",
+   "ids": [
+    "BATIMENT0000000253247655",
+    "BATIMENT0000000253245873",
+    "BATIMENT0000000253245869",
+    "BATIMENT0000000245200051"
+   ],
+   "nom": "Opéra Garnier",
+   "fichier": "ol/opera-garnier.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1106.35,
+    -1724.07
+   ],
+   "sol_alt": 35.64,
+   "cap_deg": 0,
+   "longueur_m": 100.6,
+   "largeur_m": 158.1,
+   "hauteur_m": 58,
+   "rayon_m": 79.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/opera-garnier/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253246142",
+   "ids": [
+    "BATIMENT0000000253246142",
+    "BATIMENT0000000241927831",
+    "BATIMENT0000000241927830",
+    "BATIMENT0000000316907249",
+    "BATIMENT0000000241935086",
+    "BATIMENT0000000241935088",
+    "BATIMENT0000000253246139"
+   ],
+   "nom": "Palais Bourbon",
+   "fichier": "ol/palais-bourbon.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2101.26,
+    -577.42
+   ],
+   "sol_alt": 33.54,
+   "cap_deg": 0,
+   "longueur_m": 164.2,
+   "largeur_m": 177.7,
+   "hauteur_m": 27.4,
+   "rayon_m": 88.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-bourbon/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245168717",
+   "ids": [
+    "BATIMENT0000000245168717",
+    "BATIMENT0000000245168716",
+    "BATIMENT0000000253247092",
+    "BATIMENT0000000253247090"
+   ],
+   "nom": "Palais de Chaillot",
+   "fichier": "ol/palais-de-chaillot.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -4297.42,
+    -660.07
+   ],
+   "sol_alt": 60.36,
+   "cap_deg": 0,
+   "longueur_m": 328.3,
+   "largeur_m": 335.1,
+   "hauteur_m": 30,
+   "rayon_m": 167.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-de-chaillot/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245190031",
+   "ids": [
+    "BATIMENT0000000245190031",
+    "BATIMENT0000000245159796",
+    "BATIMENT0000000245185646",
+    "BATIMENT0000000245185645",
+    "BATIMENT0000000245185647",
+    "BATIMENT0000000316903597"
+   ],
+   "nom": "Palais de Justice de Paris",
+   "fichier": "ol/palais-de-justice.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -185.28,
+    86.69
+   ],
+   "sol_alt": 31.27,
+   "cap_deg": 0,
+   "longueur_m": 242.2,
+   "largeur_m": 259.2,
+   "hauteur_m": 42.0,
+   "rayon_m": 129.6,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-de-justice/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245171830",
+   "ids": [
+    "BATIMENT0000000245171830"
+   ],
+   "nom": "Palais de l'Élysée",
+   "fichier": "ol/palais-de-lelysee.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2219.77,
+    -1544.89
+   ],
+   "sol_alt": 32.48,
+   "cap_deg": 0,
+   "longueur_m": 129.8,
+   "largeur_m": 128.6,
+   "hauteur_m": 12,
+   "rayon_m": 64.9,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-de-lelysee/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000160632",
+   "ids": [
+    "BATIMENT0000000000160632",
+    "BATIMENT0000000000160626",
+    "BATIMENT0000000000160635",
+    "BATIMENT0000000000160636",
+    "BATIMENT0000000000160633"
+   ],
+   "nom": "Palais de Tokyo",
+   "fichier": "ol/palais-de-tokyo.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3698.83,
+    -873.76
+   ],
+   "sol_alt": 32.89,
+   "cap_deg": 0,
+   "longueur_m": 74.4,
+   "largeur_m": 118.3,
+   "hauteur_m": 14,
+   "rayon_m": 59.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-de-tokyo/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241937838",
+   "ids": [
+    "BATIMENT0000000241937838",
+    "BATIMENT0000000241937839",
+    "BATIMENT0000000241937837",
+    "BATIMENT0000000241937840"
+   ],
+   "nom": "Palais du Luxembourg",
+   "fichier": "ol/palais-du-luxembourg.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -721.65,
+    897.18
+   ],
+   "sol_alt": 43.52,
+   "cap_deg": 0,
+   "longueur_m": 119.1,
+   "largeur_m": 152.7,
+   "hauteur_m": 32,
+   "rayon_m": 76.4,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-du-luxembourg/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245166256",
+   "ids": [
+    "BATIMENT0000000245166256"
+   ],
+   "nom": "Palais Galliera",
+   "fichier": "ol/palais-galliera.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3683.56,
+    -1040.68
+   ],
+   "sol_alt": 44.02,
+   "cap_deg": 0,
+   "longueur_m": 76.4,
+   "largeur_m": 61.7,
+   "hauteur_m": 13,
+   "rayon_m": 38.2,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-galliera/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253248247",
+   "ids": [
+    "BATIMENT0000000253248247",
+    "BATIMENT0000000245185223",
+    "BATIMENT0000002007520021"
+   ],
+   "nom": "Palais Royal",
+   "fichier": "ol/palais-royal.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -733.34,
+    -775.29
+   ],
+   "sol_alt": 34.48,
+   "cap_deg": 0,
+   "longueur_m": 170.8,
+   "largeur_m": 165.9,
+   "hauteur_m": 30,
+   "rayon_m": 85.4,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/palais-royal/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253232436",
+   "ids": [
+    "BATIMENT0000000253232436",
+    "BATIMENT0000000241930812"
+   ],
+   "nom": "Panthéon",
+   "fichier": "ol/pantheon.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -74.99,
+    1155.58
+   ],
+   "sol_alt": 58.56,
+   "cap_deg": 0,
+   "longueur_m": 118.3,
+   "largeur_m": 87.0,
+   "hauteur_m": 90,
+   "rayon_m": 59.1,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/pantheon/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245171551",
+   "ids": [
+    "BATIMENT0000000245171551"
+   ],
+   "nom": "Petit Palais",
+   "fichier": "ol/petit-palais.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2343.53,
+    -1068.42
+   ],
+   "sol_alt": 37.33,
+   "cap_deg": 0,
+   "longueur_m": 93.3,
+   "largeur_m": 130.0,
+   "hauteur_m": 42,
+   "rayon_m": 65.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/petit-palais/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000000158427",
+   "ids": [
+    "BATIMENT0000000000158427"
+   ],
+   "nom": "Porte Saint-Denis",
+   "fichier": "ol/porte-saint-denis.glb",
+   "placement": "ancre",
+   "centre_local": [
+    429.74,
+    -1463.96
+   ],
+   "sol_alt": 36.13,
+   "cap_deg": 0,
+   "longueur_m": 25.0,
+   "largeur_m": 14.3,
+   "hauteur_m": 25,
+   "rayon_m": 12.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/porte-saint-denis/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245193427",
+   "ids": [
+    "BATIMENT0000000245193427",
+    "BATIMENT0000000245193435",
+    "BATIMENT0000000356564156",
+    "BATIMENT0000000245193419",
+    "BATIMENT0000000245193434"
+   ],
+   "nom": "Porte Saint-Martin",
+   "fichier": "ol/porte-saint-martin.glb",
+   "placement": "ancre",
+   "centre_local": [
+    646.61,
+    -1390.22
+   ],
+   "sol_alt": 35.84,
+   "cap_deg": 0,
+   "longueur_m": 18.6,
+   "largeur_m": 10.5,
+   "hauteur_m": 18,
+   "rayon_m": 9.3,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/porte-saint-martin/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245173441",
+   "ids": [
+    "BATIMENT0000000245173441"
+   ],
+   "nom": "Rotonde de Chartres",
+   "fichier": "ol/rotonde-de-chartres.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2758.34,
+    -2654.46
+   ],
+   "sol_alt": 45.0,
+   "cap_deg": 0,
+   "longueur_m": 14.9,
+   "largeur_m": 14.9,
+   "hauteur_m": 20,
+   "rayon_m": 7.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/rotonde-de-chartres/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253248827",
+   "ids": [
+    "BATIMENT0000000253248827",
+    "BATIMENT0000000253248831",
+    "BATIMENT0000000253248847"
+   ],
+   "nom": "Basilique du Sacré-Cœur",
+   "fichier": "ol/sacre-coeur.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -263.66,
+    -3357.79
+   ],
+   "sol_alt": 119.16,
+   "cap_deg": 0,
+   "longueur_m": 54.9,
+   "largeur_m": 98.0,
+   "hauteur_m": 84,
+   "rayon_m": 49.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/sacre-coeur/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245164852",
+   "ids": [
+    "BATIMENT0000000245164852"
+   ],
+   "nom": "Cathédrale Saint-Alexandre-Nevsky",
+   "fichier": "ol/saint-alexandre-nevsky.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -3281.1,
+    -2364.66
+   ],
+   "sol_alt": 45.43,
+   "cap_deg": 0,
+   "longueur_m": 26.6,
+   "largeur_m": 29.0,
+   "hauteur_m": 48,
+   "rayon_m": 14.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-alexandre-nevsky/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245200209",
+   "ids": [
+    "BATIMENT0000000245200209"
+   ],
+   "nom": "Église Saint-Augustin",
+   "fichier": "ol/saint-augustin.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2043.52,
+    -2201.04
+   ],
+   "sol_alt": 35.01,
+   "cap_deg": 0,
+   "longueur_m": 61.6,
+   "largeur_m": 90.6,
+   "hauteur_m": 83,
+   "rayon_m": 45.3,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-augustin/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241937884",
+   "ids": [
+    "BATIMENT0000000241937884"
+   ],
+   "nom": "Église Saint-Germain des Prés",
+   "fichier": "ol/saint-germain-des-pres.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -919.28,
+    285.02
+   ],
+   "sol_alt": 36.58,
+   "cap_deg": 0,
+   "longueur_m": 102.0,
+   "largeur_m": 47.6,
+   "hauteur_m": 60,
+   "rayon_m": 51.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-germain-des-pres/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253252179",
+   "ids": [
+    "BATIMENT0000000253252179",
+    "BATIMENT0000000253252178",
+    "BATIMENT0000000253252188",
+    "BATIMENT0000000240770812",
+    "BATIMENT0000000253252195"
+   ],
+   "nom": "Église Saint-Jean-Baptiste de Belleville",
+   "fichier": "ol/saint-jean-baptiste-de-belleville.glb",
+   "placement": "ancre",
+   "centre_local": [
+    3121.61,
+    -2094.61
+   ],
+   "sol_alt": 98.77,
+   "cap_deg": 0,
+   "longueur_m": 32.0,
+   "largeur_m": 69.9,
+   "hauteur_m": 57,
+   "rayon_m": 34.9,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-jean-baptiste-de-belleville/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241933019",
+   "ids": [
+    "BATIMENT0000000241933019"
+   ],
+   "nom": "Chapelle Saint-Louis de la Salpêtrière",
+   "fichier": "ol/saint-louis-de-la-salpetriere.glb",
+   "placement": "ancre",
+   "centre_local": [
+    1241.87,
+    1972.59
+   ],
+   "sol_alt": 38.11,
+   "cap_deg": 0,
+   "longueur_m": 72.0,
+   "largeur_m": 70.6,
+   "hauteur_m": 50,
+   "rayon_m": 36.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-louis-de-la-salpetriere/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245181606",
+   "ids": [
+    "BATIMENT0000000245181606",
+    "BATIMENT0000000245181605"
+   ],
+   "nom": "Église Saint-Pierre de Montmartre",
+   "fichier": "ol/saint-pierre-de-montmartre.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -334.43,
+    -3349.78
+   ],
+   "sol_alt": 129.78,
+   "cap_deg": 0,
+   "longueur_m": 54.6,
+   "largeur_m": 32.5,
+   "hauteur_m": 26,
+   "rayon_m": 27.3,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-pierre-de-montmartre/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253245851",
+   "ids": [
+    "BATIMENT0000000253245851",
+    "BATIMENT0000000253245840",
+    "BATIMENT0000000253245835"
+   ],
+   "nom": "Église Saint-Roch",
+   "fichier": "ol/saint-roch.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1042.3,
+    -985.93
+   ],
+   "sol_alt": 34.78,
+   "cap_deg": 0,
+   "longueur_m": 90.3,
+   "largeur_m": 114.1,
+   "hauteur_m": 30,
+   "rayon_m": 57.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-roch/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000253245361",
+   "ids": [
+    "BATIMENT0000000253245361",
+    "BATIMENT0000000241937858",
+    "BATIMENT0000000241937855",
+    "BATIMENT0000000241937856",
+    "BATIMENT0000000241937859"
+   ],
+   "nom": "Église Saint-Sulpice",
+   "fichier": "ol/saint-sulpice.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -896.53,
+    615.42
+   ],
+   "sol_alt": 36.34,
+   "cap_deg": 0,
+   "longueur_m": 126.4,
+   "largeur_m": 67.0,
+   "hauteur_m": 70.3,
+   "rayon_m": 63.2,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-sulpice/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245196698",
+   "ids": [
+    "BATIMENT0000000245196698",
+    "BATIMENT0000000245196699",
+    "BATIMENT0000000245196700"
+   ],
+   "nom": "Église Saint-Vincent-de-Paul",
+   "fichier": "ol/saint-vincent-de-paul.glb",
+   "placement": "ancre",
+   "centre_local": [
+    381.96,
+    -2483.83
+   ],
+   "sol_alt": 52.84,
+   "cap_deg": 0,
+   "longueur_m": 46.6,
+   "largeur_m": 94.5,
+   "hauteur_m": 45,
+   "rayon_m": 47.3,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/saint-vincent-de-paul/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245190033",
+   "ids": [
+    "BATIMENT0000000245190033"
+   ],
+   "nom": "Sainte-Chapelle",
+   "fichier": "ol/sainte-chapelle.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -145.65,
+    133.2
+   ],
+   "sol_alt": 32.74,
+   "cap_deg": 0,
+   "longueur_m": 40.4,
+   "largeur_m": 31.9,
+   "hauteur_m": 75,
+   "rayon_m": 20.2,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/sainte-chapelle/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245157315",
+   "ids": [
+    "BATIMENT0000000245157315",
+    "BATIMENT0000000245157307",
+    "BATIMENT0000000245157299"
+   ],
+   "nom": "Théâtre de la Ville",
+   "fichier": "ol/theatre-de-la-ville.glb",
+   "placement": "ancre",
+   "centre_local": [
+    78.62,
+    -76.18
+   ],
+   "sol_alt": 36.51,
+   "cap_deg": 0,
+   "longueur_m": 59.4,
+   "largeur_m": 59.2,
+   "hauteur_m": 29,
+   "rayon_m": 29.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/theatre-de-la-ville/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245157300",
+   "ids": [
+    "BATIMENT0000000245157300",
+    "BATIMENT0000000314624332",
+    "BATIMENT0000000245157317",
+    "BATIMENT0000000314624333",
+    "BATIMENT0000000245157301"
+   ],
+   "nom": "Théâtre du Châtelet",
+   "fichier": "ol/theatre-du-chatelet.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -53.83,
+    -133.35
+   ],
+   "sol_alt": 36.04,
+   "cap_deg": 0,
+   "longueur_m": 101.0,
+   "largeur_m": 72.9,
+   "hauteur_m": 29,
+   "rayon_m": 50.5,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/theatre-du-chatelet/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245171635",
+   "ids": [
+    "BATIMENT0000000245171635"
+   ],
+   "nom": "Théâtre du Rond-Point",
+   "fichier": "ol/theatre-du-rond-point.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2638.84,
+    -1261.74
+   ],
+   "sol_alt": 32.84,
+   "cap_deg": 0,
+   "longueur_m": 61.1,
+   "largeur_m": 50.0,
+   "hauteur_m": 26,
+   "rayon_m": 30.6,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/theatre-du-rond-point/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245171643",
+   "ids": [
+    "BATIMENT0000000245171643"
+   ],
+   "nom": "Théâtre Marigny",
+   "fichier": "ol/theatre-marigny.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -2428.52,
+    -1367.78
+   ],
+   "sol_alt": 32.8,
+   "cap_deg": 0,
+   "longueur_m": 51.4,
+   "largeur_m": 44.7,
+   "hauteur_m": 15,
+   "rayon_m": 25.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/theatre-marigny/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000240741689",
+   "ids": [
+    "BATIMENT0000000240741689"
+   ],
+   "nom": "Tour de l'Horloge",
+   "fichier": "ol/tour-de-l-horloge.glb",
+   "placement": "ancre",
+   "centre_local": [
+    1890.86,
+    1339.42
+   ],
+   "sol_alt": 38.87,
+   "cap_deg": 0,
+   "longueur_m": 13.7,
+   "largeur_m": 13.7,
+   "hauteur_m": 67,
+   "rayon_m": 6.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/tour-de-l-horloge/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241918654",
+   "ids": [
+    "BATIMENT0000000241918654"
+   ],
+   "nom": "Tour Mirabeau",
+   "fichier": "ol/tour-mirabeau.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -4979.46,
+    1052.58
+   ],
+   "sol_alt": 31.75,
+   "cap_deg": 0,
+   "longueur_m": 73.2,
+   "largeur_m": 74.7,
+   "hauteur_m": 58.2,
+   "rayon_m": 37.4,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/tour-mirabeau/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241929410",
+   "ids": [
+    "BATIMENT0000000241929410"
+   ],
+   "nom": "Tour Montparnasse",
+   "fichier": "ol/tour-montparnasse.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -1849.2,
+    1594.97
+   ],
+   "sol_alt": 52.11,
+   "cap_deg": 0,
+   "longueur_m": 58.6,
+   "largeur_m": 64.1,
+   "hauteur_m": 210,
+   "rayon_m": 32.0,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/tour-montparnasse/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000245157308",
+   "ids": [
+    "BATIMENT0000000245157308"
+   ],
+   "nom": "Tour Saint-Jacques",
+   "fichier": "ol/tour-saint-jacques.glb",
+   "placement": "ancre",
+   "centre_local": [
+    142.43,
+    -154.68
+   ],
+   "sol_alt": 36.53,
+   "cap_deg": 0,
+   "longueur_m": 15.3,
+   "largeur_m": 15.5,
+   "hauteur_m": 52,
+   "rayon_m": 7.8,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/tour-saint-jacques/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "BATIMENT0000000241909792",
+   "ids": [
+    "BATIMENT0000000241909792"
+   ],
+   "nom": "Tour Super-Italie",
+   "fichier": "ol/tour-super-italie.glb",
+   "placement": "ancre",
+   "centre_local": [
+    875.76,
+    3868.77
+   ],
+   "sol_alt": 55.41,
+   "cap_deg": 0,
+   "longueur_m": 29.1,
+   "largeur_m": 33.4,
+   "hauteur_m": 112,
+   "rayon_m": 16.7,
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/tour-super-italie/",
+   "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
   }
  ]
 }

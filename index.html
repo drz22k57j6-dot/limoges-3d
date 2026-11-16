@@ -99,7 +99,7 @@
 </div>
 <div id="dsticks"><div class="dst" id="dsL"><div class="dkn"></div><span>GAZ · LACET</span></div><div class="dst" id="dsR"><div class="dkn"></div><span>TANGAGE · ROULIS</span></div></div>
 <div id="pipBox"><canvas id="pip" width="320" height="180"></canvas><b id="pipLbl">CAMÉRA</b></div>
-<div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL)</div>
+<div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)</div>
 <script>
 // ---------- choice of city (?ville=paris), remembered on the phone ----------
 window.CITIES = {
@@ -270,7 +270,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=35';
+const V = '?v=36';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1601,8 +1601,8 @@ function setCity(m) {
   chunks.forEach(c => c.hiddenByCity = g);
   carBlob.visible = g;
   $('bVille').textContent = g ? 'VILLE PHOTO' : 'VILLE IGN';
-  $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL)'
-    : 'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL)';
+  $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)'
+    : 'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)';
 }
 // keep the photo city at the right height: compare it with the LiDAR ground on roads around the player
 function calibrateTiles(F) {
@@ -1706,6 +1706,36 @@ async function streamUpdate(x, z, force) {
   finally { STREAM.busy = false; }
 }
 
+// ---------------- modèles de bâtiments : chargement par distance ----------------
+const MODELS = { list: [], live: new Map(), busy: 0, t: 0 };
+function placeModel(m, g) {
+  const o = g.scene, root = new THREE.Group(), H0v = (H0 ?? (STREAM.idx && STREAM.idx.H0) ?? 0);
+  if (m.placement === 'ancre') { root.add(o); root.rotation.y = -THREE.MathUtils.degToRad(m.cap_deg || 0); }
+  else {
+    const bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+    const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z);
+    inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
+    root.add(inner); root.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg);
+  }
+  root.position.set(m.centre_local[0], m.sol_alt - H0v, m.centre_local[1]); root.name = 'modele_' + m.id;
+  o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; if (n.material && n.material.map) n.material.map.anisotropy = 8; } });
+  return root;
+}
+function updateModels(dt) {
+  if (!MODELS.list.length || (MODELS.t -= dt) > 0) return; MODELS.t = 1;
+  const p = mode === 'plane' ? PL : S;
+  for (const m of MODELS.list) {
+    const d = Math.hypot(m.centre_local[0] - p.x, m.centre_local[1] - p.z), L = MODELS.live.get(m.id);
+    if (d < 1500 && !L && MODELS.busy < 3) {
+      MODELS.busy++; MODELS.live.set(m.id, { loading: true });
+      loader.loadAsync(CITY.data + 'modeles/' + m.fichier + V).then(g => { const e = MODELS.live.get(m.id); if (!e) return; e.root = placeModel(m, g); e.loading = false; scene.add(e.root); })
+        .catch(e => { console.warn('modele', m.id, e); MODELS.live.delete(m.id); }).finally(() => MODELS.busy--);
+    } else if (d > 2500 && L && L.root) {
+      scene.remove(L.root); L.root.traverse(n => { if (n.isMesh) { n.geometry.dispose(); for (const mt of [].concat(n.material)) { for (const k in mt) if (mt[k] && mt[k].isTexture) mt[k].dispose(); mt.dispose(); } } }); MODELS.live.delete(m.id);
+    }
+  }
+}
+
 // ---------------- main ----------------
 let lastStreet = '', streetT = 0;
 async function main() {
@@ -1729,15 +1759,11 @@ async function main() {
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
     window.__grass = grass;
     // real buildings modelled one by one (data/modeles/index.json): placed on their IGN footprint, at their LiDAR height
-    fetch(CITY.data + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) for (const m of idx.modeles) loader.loadAsync(CITY.data + 'modeles/' + m.fichier + V).then(g => {
-      const o = g.scene, bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
-      const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z);
-      inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
-      const root = new THREE.Group(); root.add(inner); root.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg);
-      root.position.set(m.centre_local[0], m.sol_alt - (H0 ?? (STREAM.idx && STREAM.idx.H0) ?? 0), m.centre_local[1]); root.name = 'modele_' + m.id;
-      o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; } });
-      scene.add(root);
-    }).catch(e => console.warn('modele', m.id, e)); }).catch(() => {});
+    // vrais modèles de bâtiments (data/<ville>/modeles/index.json), chargés seulement près du drone (< 1,5 km), libérés au-delà de 2,5 km
+    //  - « ancre » (Open Landmarks) : modèle géoréférencé à l'échelle réelle (X est, Y haut, Z sud), posé tel quel au sol LiDAR
+    //  - sinon (modèles de Sid) : calé sur l'emprise IGN (longueur, largeur, hauteur LiDAR, rotation)
+    fetch(CITY.data + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) MODELS.list = idx.modeles; }).catch(() => {});
+
     applyTime(); applyQuality();
     if (SX) { // démarrage rapide : seulement le km² du départ (murs, sol, routes, terrain) ; le reste se charge en vol
       $('ltxt').textContent = 'Chargement du quartier…';
@@ -1770,6 +1796,7 @@ function loop(now) {
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
+  updateModels(dt);
   if (STREAM.idx && (STREAM.tick = (STREAM.tick || 0) - dt) < 0) { STREAM.tick = 0.25; const p = mode === 'plane' ? PL : S; streamUpdate(p.x, p.z); }
   if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même

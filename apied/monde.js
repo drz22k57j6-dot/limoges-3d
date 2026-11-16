@@ -98,15 +98,20 @@ window.__LIMOGES_LEVEL = async function (G) {
     tiles.setCamera(G.camera); tiles.setResolutionFromRenderer(G.camera, G.renderer); root.add(tiles.group);
   } catch (e) { console.warn('tuiles', e); }
   // bâtiments modélisés un par un (tour Émile Kahn…)
-  fetch(D + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) for (const m of idx.modeles) loader.loadAsync(D + 'modeles/' + m.fichier + V).then(g => {
-    const o = g.scene, bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
-    const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z); inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
-    const r = new THREE.Group(); r.add(inner); r.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg); r.position.set(m.centre_local[0], m.sol_alt - phys.H0(), m.centre_local[1]);
+  // (chargés plus bas, seulement ceux à moins de 1,2 km du départ ; « ancre » = modèle géoréférencé Open Landmarks)
+  const loadModels = (px, pz) => fetch(D + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(idx => { if (idx) for (const m of idx.modeles) { if (Math.hypot(m.centre_local[0] - px, m.centre_local[1] - pz) > 1200) continue; loader.loadAsync(D + 'modeles/' + m.fichier + V).then(g => {
+    const o = g.scene, r = new THREE.Group();
+    if (m.placement === 'ancre') { r.add(o); r.rotation.y = -THREE.MathUtils.degToRad(m.cap_deg || 0); }
+    else { const bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+      const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z); inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
+      r.add(inner); r.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg); }
+    r.position.set(m.centre_local[0], m.sol_alt - phys.H0(), m.centre_local[1]);
     o.traverse(n => { if (n.isMesh) n.castShadow = n.receiveShadow = true; }); root.add(r);
-  }).catch(() => {}); }).catch(() => {});
+  }).catch(() => {}); } }).catch(() => {});
 
   // départ : là où la voiture s'est arrêtée (?x=&z=&h=), sinon allée Le Gréco
   const x = +(Q.x ?? 3), z = +(Q.z ?? 1.6), h = +(Q.h ?? 0);
+  loadModels(x, z);
   // ville entière : secteurs de 1 km (murs, routes, arbres) et tuiles de terrain de 2 km autour du joueur
   const stream = STREAM ? (() => {
     const live = new Map(), terr = new Map(), RX = IDX.RX, RY = IDX.RY;
