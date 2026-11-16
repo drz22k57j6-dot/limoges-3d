@@ -1581,6 +1581,44 @@
    "rayon_m": 16.7,
    "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/tour-super-italie/",
    "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
+  },
+  {
+   "id": "props_montmartre_tertre",
+   "ids": [],
+   "nom": "Mobilier de rue — Place du Tertre",
+   "fichier": "props/montmartre.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -433.98,
+    -3330.02
+   ],
+   "sol_alt": 125.5,
+   "cap_deg": 0,
+   "longueur_m": 2.4,
+   "largeur_m": 3.2,
+   "hauteur_m": 4.2,
+   "rayon_m": 2,
+   "source": "« Streets of Montmartre prop preview » par bryanvanderlinden (Sketchfab), licence CC BY 4.0 — sketchfab.com/3d-models/6e56011fecee4017b6df531e21869af7. Lampadaire, chevalet de peintre, vélo, poubelle, panneau ; plaque de sol de démo retirée ; allégé (0,4 Mo).",
+   "verifie": "échelle : celle du modèle (mètres, lampadaire 4,2 m) ; position choisie à la main sur un espace piéton libre (aucun bâtiment IGN à moins de 6 m) ; sol : RGE ALTI IGN"
+  },
+  {
+   "id": "props_montmartre_parvis",
+   "ids": [],
+   "nom": "Mobilier de rue — Parvis du Sacré-Cœur",
+   "fichier": "props/montmartre.glb",
+   "placement": "ancre",
+   "centre_local": [
+    -264.19,
+    -3288.57
+   ],
+   "sol_alt": 122.86,
+   "cap_deg": 0,
+   "longueur_m": 2.4,
+   "largeur_m": 3.2,
+   "hauteur_m": 4.2,
+   "rayon_m": 2,
+   "source": "« Streets of Montmartre prop preview » par bryanvanderlinden (Sketchfab), licence CC BY 4.0 — sketchfab.com/3d-models/6e56011fecee4017b6df531e21869af7. Lampadaire, chevalet de peintre, vélo, poubelle, panneau ; plaque de sol de démo retirée ; allégé (0,4 Mo).",
+   "verifie": "échelle : celle du modèle (mètres, lampadaire 4,2 m) ; position choisie à la main sur un espace piéton libre (aucun bâtiment IGN à moins de 6 m) ; sol : RGE ALTI IGN"
   }
  ]
 }
