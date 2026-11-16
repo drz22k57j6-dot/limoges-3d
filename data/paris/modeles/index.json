@@ -21,7 +21,8 @@
    "ids": [
     "BATIMENT0000000000162158",
     "BATIMENT0000000000162159",
-    "BATIMENT0000000000162160"
+    "BATIMENT0000000000162160",
+    "BATIMENT0000000000162699"
    ],
    "nom": "Tour Eiffel",
    "fichier": "tour_eiffel.glb",
@@ -35,7 +36,7 @@
    "largeur_m": 124.2,
    "rotation_deg": 45,
    "collision_ign": false,
-   "rayon_m": 20,
+   "rayon_m": 30,
    "source": "Modèle 3D fourni par Sid, allégé (300 000 triangles, textures 2048 px, 4,2 Mo). Centre et orientation calés sur les volumes IGN BD TOPO de la tour (3 étages). Échelle uniforme : base de 124,9 m entre piliers (valeur officielle) ; les étages du modèle tombent alors aux bonnes hauteurs (1er ≈ 58 m, 2e ≈ 116 m).",
    "verifie": "base, orientation et position : IGN ; hauteur résultante ≈ 291 m (le modèle n'a pas les antennes qui portent la tour à 330 m)"
   },
