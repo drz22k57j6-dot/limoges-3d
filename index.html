@@ -252,7 +252,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=50';
+const V = '?v=51';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1323,7 +1323,7 @@ window.__drone = {
     if (window.__rueTest) { scene.remove(window.__rueTest); window.__rueTest = null; }
     const [cx, cz] = window.__drone.ll(2.2995, 48.8551);
     await window.__drone.teleport(cx, cz, { nom: 'Rue test ' + ctx, dist: 0, alt: 30 });
-    const g = buildTestStreet(THREE, ctx, 'data/tex/voirie/'), th = -0.80, zm = g.userData.zMid, L = g.userData.L;
+    const g = await buildTestStreet(THREE, ctx, 'data/tex/voirie/'), th = -0.80, zm = g.userData.zMid, L = g.userData.L;
     const dir = [Math.cos(th), -Math.sin(th)];
     let gy = -1e9; for (let t = -L / 2; t <= L / 2; t += L / 6) for (const o of [-20, 0, 20]) gy = Math.max(gy, planeGround(cx + dir[0] * t + Math.sin(th) * o, cz + dir[1] * t + Math.cos(th) * o));
     g.rotation.y = th; g.position.set(cx - zm * Math.sin(th), gy + .05, cz - zm * Math.cos(th));

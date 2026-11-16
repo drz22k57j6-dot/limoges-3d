@@ -1,15 +1,25 @@
 // Rue d'essai du moteur de façades, posée dans le jeu (pelouse du Champ de Mars, dans l'axe Tour Eiffel → École militaire).
 // Mêmes paramètres de quartier que moteur_facades/apercu.html. Une seule rue d'essai à la fois.
-import { createKit, buildBuilding } from './facades.js';
+// v3 : teintes générées par quartier (16e homogène crème, 7e pierre variée, 19e enduits colorés), commerces fermés tagués.
+let createKit, buildBuilding;
 
 const QUARTIERS = {
-  '7e': { road: 11, side: 3.8, styles: [['classique', 1]], pShop: .45, wear: [.15, .4], tones: [0xfdf6ea, 0xf3ebdc, 0xffffff, 0xece4d6], wid: [12, 20], seed: 100 },
-  '16e': { road: 14, side: 5.5, styles: [['riche', .85], ['classique', .15]], pShop: .18, wear: [.03, .18], tones: [0xfffaf0, 0xf7f0e2, 0xffffff], wid: [16, 24], seed: 300 },
-  '19e': { road: 10, side: 3.0, styles: [['modeste', .6], ['classique', .15], ['moderne', .25]], pShop: .65, wear: [.45, .9], tones: [0xefe6d4, 0xe6ddcc, 0xf2e9da, 0xd9cfbd, 0xece2cf], wid: [9, 16], seed: 500 },
+  '7e': { road: 11, side: 3.8, styles: [['classique', 1]], pShop: .45, pClosed: .22, tagP: .45, wear: [.15, .4], wid: [12, 20], seed: 100, verdure: .5,
+    teintes: [[0xf6ead2, 5, .04], [0xfbf3e4, 3, .03], [0xe9e2d6, 2, .04], [0xf0dcb8, 1.5, .04], [0xdcd8d0, 1, .03]] },
+  '16e': { road: 14, side: 5.5, styles: [['riche', .85], ['classique', .15]], pShop: .18, pClosed: .12, tagP: .15, wear: [.03, .18], wid: [16, 24], seed: 300, verdure: .65,
+    teintes: [[0xfaf2e3, 4, .02], [0xf6eddb, 3, .02], [0xfdf8ef, 2, .015]] },
+  '19e': { road: 10, side: 3.0, styles: [['modeste', .6], ['classique', .15], ['moderne', .25]], pShop: .65, pClosed: .45, tagP: .85, wear: [.45, .9], wid: [9, 16], seed: 500, verdure: .4,
+    teintes: [[0xeee6d6, 3, .05], [0xd9c39e, 2, .06], [0xe2c08e, 1.5, .06], [0xe6c2b6, 1.5, .05], [0xe8da9e, 1.2, .05], [0xbdb9b0, 1.5, .05], [0xe8bfa8, 1, .05], [0xbcc4ae, .8, .05], [0xb9c2c9, .8, .05], [0xf4f1ea, 1.5, .03]] },
 };
+// teinte d'un immeuble : base pondérée + variation teinte / saturation / clarté
+function teinte(T, C, R) {
+  let x = R() * C.teintes.reduce((t, e) => t + e[1], 0), e = C.teintes[0]; for (const t of C.teintes) { if ((x -= t[1]) <= 0) { e = t; break; } }
+  const c = new T.Color(e[0]); c.offsetHSL((R() - .5) * e[2] * .5, (R() - .5) * e[2] * 2, (R() - .5) * e[2]); return c.getHex();
+}
 
 let KIT = null;
-export function buildTestStreet(T, ctx, voirieTex) {
+export async function buildTestStreet(T, ctx, voirieTex) {
+  if (!buildBuilding) ({ createKit, buildBuilding } = await import('./facades.js' + new URL(import.meta.url).search));
   const C = QUARTIERS[ctx] || QUARTIERS['7e'];
   if (!KIT) KIT = createKit(T, new URL('./tex/', import.meta.url).href);
   let seed = C.seed; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -37,7 +47,7 @@ export function buildTestStreet(T, ctx, voirieTex) {
     let x = -L / 2;
     while (x < L / 2 - 6) {
       const w = Math.min(L / 2 - x, C.wid[0] + R() * (C.wid[1] - C.wid[0]));
-      const b = buildBuilding(T, KIT, { width: w, seed: 1 + Math.floor(R() * 1e6), style: pick(C.styles), wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: C.tones[Math.floor(R() * C.tones.length)], pShop: C.pShop, depth: 14 });
+      const b = buildBuilding(T, KIT, { width: w, seed: 1 + Math.floor(R() * 1e6), style: pick(C.styles), wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: teinte(T, C, R), pShop: C.pShop, pClosed: C.pClosed, tagP: C.tagP, verdure: C.verdure, depth: 14 });
       if (side === 0) b.position.set(x, 0, 0); else { b.rotation.y = Math.PI; b.position.set(x + w, 0, zOpp); }
       G.add(b); x += w;
     }
