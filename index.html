@@ -269,7 +269,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=32';
+const V = '?v=33';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -320,7 +320,9 @@ const didColMat = new THREE.ShaderMaterial({ uniforms: { sd: { value: new THREE.
   vertexShader: 'attribute vec3 hc; varying vec3 v; varying vec3 n; void main(){ v = hc; n = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: 'uniform vec3 sd; varying vec3 v; varying vec3 n; void main(){ float l = 0.55 + 0.45 * max(dot(normalize(n), normalize(sd)), 0.0); gl_FragColor = vec4(v * l, 1.0); }' });
 // bâtiments remplacés par un vrai modèle (data/<ville>/modeles/index.json) : leur volume IGN est retiré des tuiles
-const MODELLED = new Set(); const modelledReady = fetch(CITY.data + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(j => { if (j) for (const m of j.modeles) MODELLED.add(m.id); }).catch(() => {});
+const MODELLED = new Set(), MODEL_HOLES = []; const modelledReady = fetch(CITY.data + 'modeles/index.json' + V).then(r => r.ok ? r.json() : null).then(j => { if (j) for (const m of j.modeles) { for (const id of (m.ids || [m.id])) MODELLED.add(id); if (m.collision_ign === false) MODEL_HOLES.push({ x: m.centre_local[0], z: m.centre_local[1], r: m.rayon_m || Math.max(m.longueur_m, m.largeur_m) / 2 }); } }).catch(() => {});
+// volumes IGN remplacés par un modèle ajouré (Tour Eiffel…) : pas de mur invisible, on vole entre les piliers
+const inModelHole = (x, z) => MODEL_HOLES.some(h => Math.hypot(x - h.x, z - h.z) < h.r);
 function hideModelled(o) {
   if (!MODELLED.size) return; const g = o.geometry, ba = g.getAttribute('_batchid'), ids = o.userData.ids; if (!ba || !ids) return;
   const pos = g.getAttribute('position'); let n = 0, px = 0, py = 0, pz = 0;
@@ -434,6 +436,7 @@ function appendBuildings(buf) {
     const r = new Float32Array(buf.slice(o, o + m * 8)); o += m * 8; const i = allRings.length; allRings.push(r); ringTop.push(top);
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
     for (let k = 0; k < m; k++) { x0 = Math.min(x0, r[2 * k]); x1 = Math.max(x1, r[2 * k]); z0 = Math.min(z0, r[2 * k + 1]); z1 = Math.max(z1, r[2 * k + 1]); }
+    if (inModelHole((x0 + x1) / 2, (z0 + z1) / 2)) continue;
     for (let a = Math.floor(x0 / CELL); a <= Math.floor(x1 / CELL); a++) for (let b = Math.floor(z0 / CELL); b <= Math.floor(z1 / CELL); b++) { const kk = key(a, b); let l = ringGrid.get(kk); if (!l) ringGrid.set(kk, l = []); l.push(i); }
     for (let k = 0; k < m - 1; k++) {
       if (segN >= segRing.length) { const s2 = new Float32Array(segs.length * 2); s2.set(segs); segs = s2; const r2 = new Int32Array(segRing.length * 2); r2.set(segRing); segRing = r2; }
@@ -451,6 +454,7 @@ function parseBuildings(buf) {
     const r = new Float32Array(buf.slice(o, o + m * 8)); o += m * 8; rings.push(r); ringTop.push(top);
     let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
     for (let k = 0; k < m; k++) { x0 = Math.min(x0, r[2 * k]); x1 = Math.max(x1, r[2 * k]); z0 = Math.min(z0, r[2 * k + 1]); z1 = Math.max(z1, r[2 * k + 1]); }
+    if (inModelHole((x0 + x1) / 2, (z0 + z1) / 2)) continue;
     for (let a = Math.floor(x0 / CELL); a <= Math.floor(x1 / CELL); a++) for (let b = Math.floor(z0 / CELL); b <= Math.floor(z1 / CELL); b++) { const kk = key(a, b); let l = ringGrid.get(kk); if (!l) ringGrid.set(kk, l = []); l.push(i); }
     for (let k = 0; k < m - 1; k++) { arr.push(r[2 * k], r[2 * k + 1], r[2 * k + 2], r[2 * k + 3]); sr.push(i); }
   }
@@ -1596,7 +1600,7 @@ function sectorPhys(k) {   // une fois chargée, la physique d'un secteur reste 
   const inf = STREAM.idx.secteurs[k]; if (!inf) return Promise.resolve();
   const has = f => inf.fichiers.includes(f), [si, sj] = k.split('_').map(Number), tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2);
   const rel = (STREAM.idx.relief || []).includes(tk) && !STREAM.relief.has(tk) ? (STREAM.relief.add(tk), sGet('secteurs/relief/r_' + tk + '.wasm').then(b => { relief.push(...parseRelief(b)); }).catch(() => STREAM.relief.delete(tk))) : null;
-  const p = Promise.all([has('batiments_collision.wasm') ? sGet('secteurs/' + k + '/batiments_collision.wasm') : null, has('routes_axes.wasm') ? sGet('secteurs/' + k + '/routes_axes.wasm') : null, has('arbres.wasm') ? sGet('secteurs/' + k + '/arbres.wasm') : null, rel])
+  const p = Promise.all([modelledReady.then(() => has('batiments_collision.wasm') ? sGet('secteurs/' + k + '/batiments_collision.wasm') : null), has('routes_axes.wasm') ? sGet('secteurs/' + k + '/routes_axes.wasm') : null, has('arbres.wasm') ? sGet('secteurs/' + k + '/arbres.wasm') : null, rel])
     .then(([bat, ax, arb]) => { appendBuildings(bat); if (ax) parseRoads(ax); if (arb) STREAM.treeBufs.set(k, arb); STREAM.phys.add(k); STREAM.physP.delete(k); })
     .catch(e => { STREAM.physP.delete(k); console.warn('secteur', k, e); });
   STREAM.physP.set(k, p); return p;
@@ -1686,7 +1690,7 @@ async function main() {
       const inner = new THREE.Group(); inner.add(o); o.position.set(-c.x, -bb.min.y, -c.z);
       inner.scale.set(m.longueur_m / sz.x, (m.toit_alt - m.sol_alt) / sz.y, m.largeur_m / sz.z);
       const root = new THREE.Group(); root.add(inner); root.rotation.y = THREE.MathUtils.degToRad(m.rotation_deg);
-      root.position.set(m.centre_local[0], m.sol_alt - H0, m.centre_local[1]); root.name = 'modele_' + m.id;
+      root.position.set(m.centre_local[0], m.sol_alt - (H0 ?? (STREAM.idx && STREAM.idx.H0) ?? 0), m.centre_local[1]); root.name = 'modele_' + m.id;
       o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; } });
       scene.add(root);
     }).catch(e => console.warn('modele', m.id, e)); }).catch(() => {});

@@ -1,6 +1,43 @@
-{"modeles": [
- {"id": "BATIMENT0000000245157267", "nom": "Hôtel de Ville de Paris", "fichier": "hotel_de_ville.glb",
-  "centre_local": [406.12, 22.23], "sol_alt": 33.0, "toit_alt": 84.4, "longueur_m": 144.2, "largeur_m": 89.4, "rotation_deg": -110.4,
-  "source": "Modèle 3D fourni par Sid (Blender), allégé (230 000 triangles, textures 2048 px). Position, longueur, largeur et orientation calées sur l'emprise IGN BD TOPO ; hauteur jusqu'au campanile mesurée au LiDAR HD (51,4 m au-dessus du sol).",
-  "verifie": "dimensions, orientation et hauteur : mesurées (IGN) ; façade principale (horloge, porte centrale) tournée vers la place de l'Hôtel de Ville, à l'ouest"}
-]}
+{
+ "modeles": [
+  {
+   "id": "BATIMENT0000000245157267",
+   "nom": "Hôtel de Ville de Paris",
+   "fichier": "hotel_de_ville.glb",
+   "centre_local": [
+    406.12,
+    22.23
+   ],
+   "sol_alt": 33.0,
+   "toit_alt": 84.4,
+   "longueur_m": 144.2,
+   "largeur_m": 89.4,
+   "rotation_deg": -110.4,
+   "source": "Modèle 3D fourni par Sid (Blender), allégé (230 000 triangles, textures 2048 px). Position, longueur, largeur et orientation calées sur l'emprise IGN BD TOPO ; hauteur jusqu'au campanile mesurée au LiDAR HD (51,4 m au-dessus du sol).",
+   "verifie": "dimensions, orientation et hauteur : mesurées (IGN) ; façade principale (horloge, porte centrale) tournée vers la place de l'Hôtel de Ville, à l'ouest"
+  },
+  {
+   "id": "BATIMENT0000000000162160",
+   "ids": [
+    "BATIMENT0000000000162158",
+    "BATIMENT0000000000162159",
+    "BATIMENT0000000000162160"
+   ],
+   "nom": "Tour Eiffel",
+   "fichier": "tour_eiffel.glb",
+   "centre_local": [
+    -3849.0,
+    -217.3
+   ],
+   "sol_alt": 32.6,
+   "toit_alt": 324.1,
+   "longueur_m": 124.9,
+   "largeur_m": 124.2,
+   "rotation_deg": 45,
+   "collision_ign": false,
+   "rayon_m": 20,
+   "source": "Modèle 3D fourni par Sid, allégé (300 000 triangles, textures 2048 px, 4,2 Mo). Centre et orientation calés sur les volumes IGN BD TOPO de la tour (3 étages). Échelle uniforme : base de 124,9 m entre piliers (valeur officielle) ; les étages du modèle tombent alors aux bonnes hauteurs (1er ≈ 58 m, 2e ≈ 116 m).",
+   "verifie": "base, orientation et position : IGN ; hauteur résultante ≈ 291 m (le modèle n'a pas les antennes qui portent la tour à 330 m)"
+  }
+ ]
+}
