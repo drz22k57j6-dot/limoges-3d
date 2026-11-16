@@ -20,19 +20,50 @@ export function createMoteurSol(T) {
   const etat = { abandon: 0.25, dist: 160 };
   const herbes = [];
 
-  // ---------------------------------------------------------------- atlas des touffes d'herbe (2 × 2, alpha)
+  // ---------------------------------------------------------------- atlas des herbes sauvages (2 × 2 cases de 512 px, alpha)
+  // flore spontanée des trottoirs parisiens : 0 pâturin annuel (touffe, vue de côté), 1 pissenlit (rosette vue de dessus),
+  // 2 plantain (rosette vue de dessus), 3 touffe sèche mêlée de sagine (coussinets de mousse)
   const atlas = (() => {
-    const S = 256, c = document.createElement('canvas'); c.width = c.height = S * 2; const g = c.getContext('2d');
-    let s = 7; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-    const blade = (ox, oy, x, h, w, lean, col) => { g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(ox + x, oy + S); g.quadraticCurveTo(ox + x + lean * 0.4, oy + S - h * 0.6, ox + x + lean, oy + S - h); g.stroke(); };
-    const greens = ['#4d6b2a', '#5d7d31', '#6f8f3a', '#3f5a24', '#7c9a45'];
-    for (let i = 0; i < 90; i++) blade(0, 0, 60 + r() * 136, 50 + r() * 170, 2 + r() * 3, (r() - 0.5) * 90, greens[i % 5]);
-    for (let i = 0; i < 18; i++) { const a = (i / 18) * Math.PI - Math.PI, L = 70 + r() * 50; g.fillStyle = greens[i % 5]; g.beginPath(); g.ellipse(S + S / 2 + Math.cos(a) * L * 0.5, S - 18 + Math.sin(a) * 18, L * 0.5, 9, a, 0, 7); g.fill(); }
-    for (let i = 0; i < 3; i++) { const x = S + 90 + r() * 80, h = 90 + r() * 70; blade(S, 0, x - S, h, 3, (r() - 0.5) * 20, '#6d8a3a'); g.fillStyle = '#e8c21a'; g.beginPath(); g.arc(x + 4, S - h, 13, 0, 7); g.fill(); }
-    for (let i = 0; i < 11; i++) { const a = -Math.PI * (0.12 + 0.76 * r()), L = 60 + r() * 70; g.fillStyle = greens[(i + 2) % 5]; g.save(); g.translate(S / 2, S * 2 - 10); g.rotate(a + Math.PI / 2); g.beginPath(); g.ellipse(0, -L / 2, 14, L / 2, 0, 0, 7); g.fill(); g.restore(); }
-    for (let i = 0; i < 70; i++) blade(S, S, 50 + r() * 156, 40 + r() * 130, 1.5 + r() * 2.5, (r() - 0.5) * 110, ['#9b8a52', '#8a7a45', '#a89a62', '#6f6a3a'][i % 4]);
-    g.fillStyle = '#4b5a2a'; for (let i = 0; i < 40; i++) { g.beginPath(); g.arc(S + 40 + r() * 176, S * 2 - 6 - r() * 10, 6 + r() * 8, 0, 7); g.fill(); }
-    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t;
+    const S = 512, c = document.createElement('canvas'); c.width = c.height = S * 2; const g = c.getContext('2d');
+    let sd = 11; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
+    // brin effilé : base large, pointe fine, dégradé sombre en bas → clair en haut
+    function brin(ox, oy, x, h, w, lean, hue, sat, l0, l1) {
+      const x2 = ox + x + lean, y2 = oy + S - h, xm = ox + x + lean * 0.35, ym = oy + S - h * 0.55;
+      const gr = g.createLinearGradient(0, oy + S, 0, y2); gr.addColorStop(0, hsl(hue, sat, l0)); gr.addColorStop(1, hsl(hue + 6, sat - 5, l1));
+      g.fillStyle = gr; g.beginPath(); g.moveTo(ox + x - w, oy + S); g.quadraticCurveTo(xm - w * 0.6, ym, x2, y2); g.quadraticCurveTo(xm + w * 0.6, ym, ox + x + w, oy + S); g.closePath(); g.fill();
+    }
+    // 0 : pâturin annuel — touffe dense, brins fins et souples, quelques panicules claires
+    for (let i = 0; i < 160; i++) { const x = S * 0.5 + (r() - 0.5) * S * 0.35, h = S * (0.25 + r() * 0.55); brin(0, 0, x, h, 2 + r() * 3.5, (x - S * 0.5) * (0.8 + r()) + (r() - 0.5) * 60, 78 + r() * 18, 45 + r() * 15, 18 + r() * 8, 36 + r() * 14); }
+    for (let i = 0; i < 9; i++) { const x = S * 0.5 + (r() - 0.5) * S * 0.4, h = S * (0.6 + r() * 0.3), lean = (r() - 0.5) * 90; brin(0, 0, x, h, 1.6, lean, 70, 25, 40, 55);
+      for (let k = 0; k < 14; k++) { g.fillStyle = hsl(60, 20, 62 + r() * 15); g.beginPath(); g.ellipse(x + lean + (r() - 0.5) * 22, S - h + k * 4 + r() * 8, 3, 6, r(), 0, 7); g.fill(); } }
+    // rosette vue de dessus : feuilles rayonnantes depuis le centre
+    function rosette(ox, oy, n, Lmin, Lmax, Wf, dent, hue) {
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + r() * 0.5, L = S * (Lmin + r() * (Lmax - Lmin)), W = L * Wf * (0.8 + r() * 0.4);
+        g.save(); g.translate(ox + S / 2, oy + S / 2); g.rotate(a);
+        const gr = g.createLinearGradient(0, 0, L, 0); gr.addColorStop(0, hsl(hue - 4, 40, 18)); gr.addColorStop(0.35, hsl(hue, 45, 30 + r() * 6)); gr.addColorStop(1, hsl(hue + 6, 42, 36 + r() * 8));
+        g.fillStyle = gr; g.beginPath(); g.moveTo(0, 0);
+        const steps = dent ? 7 : 1;
+        for (let k = 1; k <= steps; k++) { const t = k / steps, w = W * Math.sin(Math.PI * Math.min(1, t * 1.05)) * (dent && k % 2 ? 1.35 : 1); g.lineTo(L * t - (dent ? L * 0.04 : 0), -w); }
+        g.lineTo(L, 0);
+        for (let k = steps; k >= 1; k--) { const t = k / steps, w = W * Math.sin(Math.PI * Math.min(1, t * 1.05)) * (dent && k % 2 ? 1.35 : 1); g.lineTo(L * t - (dent ? L * 0.04 : 0), w); }
+        g.closePath(); g.fill();
+        g.strokeStyle = hsl(hue + 10, 35, 52, 0.55); g.lineWidth = dent ? 2 : 1.4; g.beginPath(); g.moveTo(4, 0); g.lineTo(L * 0.92, 0); g.stroke();   // nervure centrale
+        if (!dent) { g.strokeStyle = hsl(hue + 8, 30, 46, 0.35); g.lineWidth = 1; for (const f of [-0.45, 0.45]) { g.beginPath(); g.moveTo(6, 0); g.quadraticCurveTo(L * 0.5, f * W * 1.1, L * 0.9, f * W * 0.2); g.stroke(); } }
+        g.restore();
+      }
+    }
+    // 1 : pissenlit — feuilles dentées, deux capitules jaunes et un bouton
+    rosette(S, 0, 13, 0.24, 0.44, 0.12, true, 92);
+    for (const [dx, dy, rad, col] of [[30, -40, 15, 48], [-50, 20, 13, 46], [10, 55, 7, 90]]) { g.fillStyle = col > 80 ? hsl(95, 40, 30) : hsl(col, 92, 52); g.beginPath(); g.arc(S + S / 2 + dx, S / 2 + dy, rad, 0, 7); g.fill();
+      if (col < 80) { g.fillStyle = hsl(44, 95, 62); for (let k = 0; k < 18; k++) { const a = k / 18 * 6.28; g.beginPath(); g.ellipse(S + S / 2 + dx + Math.cos(a) * rad * 0.6, S / 2 + dy + Math.sin(a) * rad * 0.6, rad * 0.45, 2.2, a, 0, 7); g.fill(); } } }
+    // 2 : plantain lancéolé et grand plantain — feuilles larges à nervures parallèles
+    rosette(0, S, 9, 0.2, 0.36, 0.3, false, 88);
+    // 3 : touffe sèche + sagine (petits coussinets vert sombre au pied)
+    for (let i = 0; i < 110; i++) { const x = S * 0.5 + (r() - 0.5) * S * 0.45, h = S * (0.15 + r() * 0.5); brin(S, S, x, h, 1.5 + r() * 3, (x - S * 0.5) * (0.6 + r()) + (r() - 0.5) * 80, 45 + r() * 15, 30 + r() * 15, 28 + r() * 8, 52 + r() * 12); }
+    for (let i = 0; i < 26; i++) { g.fillStyle = hsl(95 + r() * 15, 45, 16 + r() * 10); g.beginPath(); g.ellipse(S + S * 0.5 + (r() - 0.5) * S * 0.6, S * 2 - 8 - r() * 16, 10 + r() * 18, 7 + r() * 8, 0, 0, 7); g.fill(); }
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t;
   })();
 
   // ---------------------------------------------------------------- matériaux
@@ -106,15 +137,30 @@ export function createMoteurSol(T) {
     fente: new T.MeshBasicMaterial({ color: 0x030303, name: 'sol_fente', side: T.DoubleSide }),
   };
   MAT.grille.side = T.DoubleSide;
-  const herbeMat = new T.MeshStandardMaterial({ map: atlas, alphaTest: 0.45, side: T.DoubleSide, roughness: 0.9, name: 'sol_herbe' });
-  herbeMat.onBeforeCompile = sh => {
-    sh.uniforms.uT = { value: 0 }; herbeMat.userData.sh = sh;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aVar; uniform float uT;')
-      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvMapUv = vMapUv*.5 + aVar*.5;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-        { vec4 w = instanceMatrix * vec4(0.,0.,0.,1.); float k = max(position.y,0.); transformed.x += sin(uT*2.1 + w.x*.7 + w.z*.5)*.04*k; }`);
-  };
-  herbeMat.customProgramCacheKey = () => 'sol_herbe';
+  const uT = { value: 0 };
+  // herbes : alpha testé avec dithering léger (bords moins durs), base assombrie (occlusion au pied), translucidité des pointes
+  function matHerbe(rosette) {
+    const m = new T.MeshStandardMaterial({ map: atlas, alphaTest: 0.5, side: T.DoubleSide, roughness: 0.85, name: rosette ? 'sol_herbe_rosette' : 'sol_herbe' });
+    m.onBeforeCompile = sh => {
+      sh.uniforms.uT = uT;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aVar; uniform float uT; varying vec2 vLocUv;')
+        .replace('#include <uv_vertex>', '#include <uv_vertex>\nvLocUv = uv; vMapUv = vMapUv*.5 + aVar*.5;')
+        .replace('#include <begin_vertex>', rosette ? '#include <begin_vertex>'
+          : `#include <begin_vertex>
+          { vec4 w = instanceMatrix * vec4(0.,0.,0.,1.); float k = uv.y*uv.y; float ph = w.x*.7 + w.z*.5;
+            transformed.x += (sin(uT*1.7 + ph)*.035 + sin(uT*4.3 + ph*2.)*.01)*k; transformed.z += cos(uT*1.3 + ph)*.02*k; }`);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vLocUv;')
+        .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n normal = normalize(mat3(viewMatrix) * vec3(0., 1., 0.));   // même normale (vers le ciel) des deux côtés : pas de faces noires')
+        .replace('#include <color_fragment>', rosette
+          ? `#include <color_fragment>\n diffuseColor.rgb *= mix(.55, 1.05, smoothstep(.0, .35, length(vLocUv-.5)));`
+          : `#include <color_fragment>\n diffuseColor.rgb *= mix(.45, 1.1, smoothstep(.0, .7, vLocUv.y));`)
+        .replace('#include <emissivemap_fragment>', rosette ? '#include <emissivemap_fragment>'
+          : '#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * .12 * smoothstep(.4, 1., vLocUv.y);');
+    };
+    m.customProgramCacheKey = () => rosette ? 'sol_herbe_r3' : 'sol_herbe_t3';
+    return m;
+  }
+  const herbeMat = matHerbe(false), rosetteMat = matHerbe(true);
 
   // ---------------------------------------------------------------- géométries (mètres ; x local vers la bordure / la façade, z le long)
   const box = (sx, sy, sz, dx = 0, dy = 0) => { const g = new T.BoxGeometry(sx, sy, sz); g.translate(dx, dy + sy / 2, 0); return g; };
@@ -129,14 +175,18 @@ export function createMoteurSol(T) {
     terre: (() => { const g = new T.CircleGeometry(1.0, 40); g.rotateX(-Math.PI / 2); g.translate(0, 0.004, 0); return g; })(),
     quad: (() => { const g = new T.PlaneGeometry(2.2, 3.0); g.rotateX(-Math.PI / 2); g.translate(-1.1, 0.004, 0); return g; })(),   // x local vers la façade : la zone part de la façade vers la rue
     podo: box(0.40, 0.006, 0.40),
-    herbe: (() => {
-      const a = new T.PlaneGeometry(0.5, 0.45); a.translate(0, 0.225, 0); const b = a.clone(); b.rotateY(Math.PI / 2);
-      const p = new Float32Array([...a.attributes.position.array, ...b.attributes.position.array]);
-      const n = new Float32Array(p.length).map((_, i) => (i % 3 === 1 ? 1 : 0));
-      const uv = new Float32Array([...a.attributes.uv.array, ...b.attributes.uv.array]);
-      const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3)); g.setAttribute('normal', new T.BufferAttribute(n, 3));
-      g.setAttribute('uv', new T.BufferAttribute(uv, 2)); g.setIndex([...a.index.array, ...b.index.array.map(i => i + 4)]); return g;
+    // touffe : 3 plans verticaux à 60°, normales vers le haut (éclairage doux, pas de faces noires)
+    touffe: (() => {
+      const P = [], N = [], U = [], I = [];
+      for (let k = 0; k < 3; k++) { const a = new T.PlaneGeometry(0.5, 0.45); a.translate(0, 0.225, 0); a.rotateY(k * Math.PI / 3); const o = P.length / 3;
+        P.push(...a.attributes.position.array); U.push(...a.attributes.uv.array); for (let i = 0; i < 4; i++) N.push(0, 1, 0); I.push(...a.index.array.map(i => i + o)); }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(P, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(N, 3));
+      g.setAttribute('uv', new T.Float32BufferAttribute(U, 2)); g.setIndex(I); return g;
     })(),
+    // rosette : disque plat légèrement relevé au centre (feuilles posées au sol)
+    rosette: (() => { const g = new T.PlaneGeometry(0.42, 0.42, 4, 4); g.rotateX(-Math.PI / 2); const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) { const d = Math.hypot(p.getX(i), p.getZ(i)); p.setY(i, 0.012 + 0.02 * Math.max(0, 1 - d / 0.15)); }
+      g.computeVertexNormals(); return g; })(),
   };
 
   // ---------------------------------------------------------------- lecture d'un secteur
@@ -162,21 +212,38 @@ export function createMoteurSol(T) {
       else if (kind === 3) { place(G.terre, MAT.terre, items, (e, m) => mat(e, m)); place(G.grille, MAT.grille, items, (e, m) => mat(e, m), usure); }
       else if (kind === 6) place(G.quad, quadMat, items, (e, m) => { mat(e, m, 1, 0.002); return m; });
       else if (kind === 7) place(G.podo, podoMat, items, (e, m) => mat(e, m, 1, 0.001));
-      else {   // herbes : triées par seuil, on n'affiche que le début de la liste
-        const im = new T.InstancedMesh(G.herbe.clone(), herbeMat, n), aVar = new Float32Array(n * 2);
-        let cx = 0, cz = 0;
+      else {   // herbes : triées par seuil ; chaque point donne une petite colonie (1 à 3 plantes), touffes et rosettes séparées
+        const h = x => { const v = Math.sin(x * 12.9898) * 43758.5453; return v - Math.floor(v); };
+        const lots = { t: [], r: [] };
         items.forEach((e, i) => {
-          const s = (kind === 4 ? 1 : 0.7) * e.s * (0.8 + 0.4 * ((e.x * 7.3) % 1));
-          M.compose(P.set(e.x, e.y + 0.01, e.z), Q.setFromAxisAngle(Y, e.a + (e.x * 13.7 % 1.5)), S.set(s, s * (0.8 + 0.5 * ((e.z * 3.1) % 1)), s)); im.setMatrixAt(i, M);
-          const v = e.v & 3; aVar[2 * i] = v & 1; aVar[2 * i + 1] = v >> 1;
-          im.setColorAt(i, C.setHSL(0.2 + ((e.x * 1.7) % 0.08), 0.35, 0.55 + ((e.z * 2.3) % 0.25)));
-          cx += e.x; cz += e.z;
+          // espèce : pied de mur → surtout pâturin et pissenlit ; caniveau → pâturin, sagine, plantain
+          const u = h(e.x * 3.1 + e.z), sp = kind === 4 ? (u < .45 ? 0 : u < .7 ? 1 : u < .85 ? 2 : 3) : (u < .5 ? 0 : u < .7 ? 3 : u < .85 ? 2 : 1);
+          const n = 1 + Math.floor(h(e.z * 5.7 + i) * (kind === 4 ? 3 : 2));
+          for (let k = 0; k < n; k++) {
+            const a = h(e.x + k * 1.7) * 6.283, d = k ? 0.06 + h(e.z + k) * 0.14 : 0;
+            const sp2 = k && h(e.x * 9 + k) < .35 ? (sp === 0 ? 3 : 0) : sp;
+            lots[sp2 === 1 || sp2 === 2 ? 'r' : 't'].push({ x: e.x + Math.cos(a) * d, z: e.z + Math.sin(a) * d, y: e.y, t: e.t, s: e.s * (k ? 0.55 + h(e.x + k * 3) * 0.4 : 1), sp: sp2, a: e.a + h(e.z * 7 + k) * 6.283 });
+          }
         });
-        im.geometry.setAttribute('aVar', new T.InstancedBufferAttribute(aVar, 2));
-        im.receiveShadow = true; im.computeBoundingSphere();
-        im.name = kind === 4 ? 'sol_herbe_mur' : 'sol_herbe_caniveau';
-        herbes.push({ mesh: im, seuils: Uint8Array.from(items.map(e => e.t)), x: cx / n, z: cz / n });
-        majCompte(herbes[herbes.length - 1]); out.push(im);
+        for (const [cle, liste] of Object.entries(lots)) {
+          if (!liste.length) continue;
+          liste.sort((p, q) => p.t - q.t);
+          const ros = cle === 'r', im = new T.InstancedMesh((ros ? G.rosette : G.touffe).clone(), ros ? rosetteMat : herbeMat, liste.length), aVar = new Float32Array(liste.length * 2);
+          let cx = 0, cz = 0;
+          liste.forEach((e, i) => {
+            const s = (kind === 4 ? 1 : 0.45) * e.s * (0.8 + 0.4 * h(e.x * 7.3)), sy = ros ? s : s * (0.75 + 0.6 * h(e.z * 3.1));
+            M.compose(P.set(e.x, e.y + 0.004, e.z), Q.setFromAxisAngle(Y, e.a), S.set(s, sy, s)); im.setMatrixAt(i, M);
+            aVar[2 * i] = e.sp & 1; aVar[2 * i + 1] = 1 - (e.sp >> 1);   // la case 0 du canevas est en haut à gauche (UV retournées)
+            // teinte : vert plus ou moins jaune, plus terne si le quartier est négligé
+            im.setColorAt(i, C.setHSL(0.21 + (h(e.x * 1.7) - 0.5) * 0.05, 0.25 + 0.2 * h(e.z * 2.9), 0.62 + 0.3 * h(e.z * 2.3)));
+            cx += e.x; cz += e.z;
+          });
+          im.geometry.setAttribute('aVar', new T.InstancedBufferAttribute(aVar, 2));
+          im.receiveShadow = true; im.computeBoundingSphere();
+          im.name = (kind === 4 ? 'sol_herbe_mur' : 'sol_herbe_caniveau') + (ros ? '_rosettes' : '');
+          herbes.push({ mesh: im, seuils: Uint8Array.from(liste.map(e => e.t)), x: cx / liste.length, z: cz / liste.length });
+          majCompte(herbes[herbes.length - 1]); out.push(im);
+        }
       }
     }
     for (const m of out) if (!m.name) m.name = 'sol_details';
@@ -188,7 +255,7 @@ export function createMoteurSol(T) {
     for (let i = herbes.length - 1; i >= 0; i--) if (!herbes[i].mesh.parent) herbes.splice(i, 1);
     for (const h of herbes) { const bs = h.mesh.boundingSphere, r = bs ? bs.radius : 700; if (bs) { h.c = h.c || new T.Vector3(); h.c.copy(bs.center); h.mesh.localToWorld(h.c); } const cx = bs ? h.c.x : h.x, cz = bs ? h.c.z : h.z;
       h.mesh.visible = p.y < 120 + (bs ? h.c.y : 0) && Math.hypot(p.x - cx, p.z - cz) < r + etat.dist; }
-    if (herbeMat.userData.sh) herbeMat.userData.sh.uniforms.uT.value = (performance.now() - t0) / 1000;
+    uT.value = (performance.now() - t0) / 1000;
   }
 
   // ---------------------------------------------------------------- matières du sol (GLSL ajouté aux matériaux de voirie)
