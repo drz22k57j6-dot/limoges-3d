@@ -189,6 +189,10 @@ export function createMoteurSol(T) {
       g.computeVertexNormals(); return g; })(),
   };
 
+  // ressources partagées par tous les secteurs : à ne pas libérer quand un secteur s'en va
+  for (const g of Object.values(G)) g.userData.partage = true;
+  for (const m of [...Object.values(MAT), quadMat, podoMat, herbeMat, rosetteMat]) m.userData.partage = true;
+
   // ---------------------------------------------------------------- lecture d'un secteur
   function construire(buf) {
     const dv = new DataView(buf); if (dv.getUint32(0, true) !== 0x444C4F53) return [];
@@ -239,6 +243,7 @@ export function createMoteurSol(T) {
             cx += e.x; cz += e.z;
           });
           im.geometry.setAttribute('aVar', new T.InstancedBufferAttribute(aVar, 2));
+          im.geometry.userData = {};   // copie propre à ce secteur (avec ses variantes) : libérée avec lui
           im.receiveShadow = true; im.computeBoundingSphere();
           im.name = (kind === 4 ? 'sol_herbe_mur' : 'sol_herbe_caniveau') + (ros ? '_rosettes' : '');
           herbes.push({ mesh: im, seuils: Uint8Array.from(liste.map(e => e.t)), x: cx / liste.length, z: cz / liste.length });

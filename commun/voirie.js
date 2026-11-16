@@ -58,7 +58,7 @@ export function createVoirie(T, { base, v = '', sol = null }) {   // sol : moteu
         .replace('#include <roughnessmap_fragment>', T.ShaderChunk.roughnessmap_fragment.replace('texture2D( roughnessMap, vRoughnessMapUv )', 'ntex( roughnessMap, vRoughnessMapUv )')
           + '\nroughnessFactor*=mix(.85,1.1,fbm(vWP.xz*.08+3.)); roughnessFactor=mix(roughnessFactor,.55,vPaint);');
     };
-    m.customProgramCacheKey = () => 'voirie' + id + (sol ? 's' : '');
+    m.customProgramCacheKey = () => 'voirie' + id + (sol ? 's' : ''); m.userData.partage = true;
     m.name = 'voirie_' + id;
     return (MATS[id] = m);
   }

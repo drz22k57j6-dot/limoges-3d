@@ -127,8 +127,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { initDronePhoto } from './drone/photo.js?v=34';
-import { createVoirie } from './commun/voirie.js?v=40';
-import { createMoteurSol } from './moteur_sol/moteur.js?v=3';
+import { createVoirie } from './commun/voirie.js?v=41';
+import { createMoteurSol } from './moteur_sol/moteur.js?v=5';
 import { createMoteurTextures } from './moteur_textures/moteur.js?v=1';
 import { initAgent } from './drone/agent.js';
 import { createSky } from './commun/ciel.js?v=2';
@@ -187,13 +187,14 @@ function buildComposer() {
   const q = QUALITIES[qi];
   if (composer) { composer.dispose(); composer = null; }
   if (!q.post) return;
-  const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+  const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: isTouch ? 2 : 4 });   // MSAA 2× sur téléphone : mémoire divisée par 2
   composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
   composer.addPass(new RenderPass(scene, camera));
   if (q.ao) { aoPass = new GTAOPass(scene, camera, innerWidth, innerHeight); aoPass.blendIntensity = 0.75; aoPass.updateGtaoMaterial({ radius: 0.5, distanceExponent: 1.5, thickness: 1.5, scale: 1.0, samples: 12 }); composer.addPass(aoPass); }
   composer.addPass(new OutputPass());
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), window.__dev ? window.__dev.bloom.s : 0.18, 0.45, 0.93); composer.addPass(bloomPass); // after tone mapping: only real highlights glow
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2),   // halo calculé en demi-résolution (invisible à l'œil, 4× moins de pixels)
+    window.__dev ? window.__dev.bloom.s : 0.18, 0.45, 0.93); composer.addPass(bloomPass); // after tone mapping: only real highlights glow
   gradePass = new ShaderPass(GradeShader); composer.addPass(gradePass);
 }
 function resize() {
@@ -364,10 +365,10 @@ function didToggleColors(on) {
   toast(on ? 'Code couleur unique par bâtiment (identifiant IGN)' : 'Rendu normal');
 }
 const _dv = new THREE.Vector3();
-function updateBuildingLabels(dt) {
+function updateBuildingLabels(dt, sync) {
   if (mode !== 'plane' || !DID.on || !cityTiles) { for (const L of DID.labels.values()) L.sp.visible = false; return; }
   for (const L of DID.labels.values()) if (L.ok) L.sp.position.lerp(L.pos, Math.min(1, dt * 8));
-  if ((DID.tick -= dt) > 0) return; DID.tick = 0.25;
+  if ((DID.tick -= dt) > 0 || (DID.reading && !sync)) return; DID.tick = isTouch ? 0.5 : 0.3;
   // passe d'identifiants : seuls les bâtiments, avec leur code exact
   for (const o of DID.meshes) { if (!o.parent) { DID.meshes.delete(o); continue; } o.material = didMat; }
   const vis = []; scene.traverseVisible(o => { if (o.isMesh || o.isPoints || o.isLine || o.isSprite) { if (!DID.meshes.has(o) && o !== sky && o.visible) { vis.push(o); } } });
@@ -375,10 +376,16 @@ function updateBuildingLabels(dt) {
   const ctv = cityTiles.group.visible, trv = tilesRoot ? tilesRoot.visible : false; cityTiles.group.visible = true; if (tilesRoot) tilesRoot.visible = false;
   const bg = scene.background, fog = scene.fog; scene.background = null; scene.fog = null;
   renderer.setRenderTarget(didRT); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, camera);
-  renderer.readRenderTargetPixels(didRT, 0, 0, DID.W, DID.H, didPix); renderer.setRenderTarget(null);
+  // lecture des pixels : asynchrone (sinon le processeur attend la carte graphique 3 à 4 fois par seconde : saccades)
+  const asyncRead = !sync && renderer.readRenderTargetPixelsAsync;
+  if (!asyncRead) renderer.readRenderTargetPixels(didRT, 0, 0, DID.W, DID.H, didPix); renderer.setRenderTarget(null);
   scene.background = bg; scene.fog = fog; for (const o of vis) o.visible = true;
   cityTiles.group.visible = ctv; if (tilesRoot) tilesRoot.visible = trv;
   for (const o of DID.meshes) o.material = DID.colors ? didColMat : o.userData.matReal;
+  if (asyncRead) { DID.reading = true; renderer.readRenderTargetPixelsAsync(didRT, 0, 0, DID.W, DID.H, didPix).then(didProcess, () => {}).finally(() => { DID.reading = false; }); }
+  else didProcess();
+}
+function didProcess() {
   // pixels par bâtiment et centre à l'écran
   const acc = new Map();
   for (let p = 0; p < DID.W * DID.H; p++) { const k = didPix[4 * p] | (didPix[4 * p + 1] << 8) | (didPix[4 * p + 2] << 16); if (!k) continue; let a = acc.get(k); if (!a) acc.set(k, a = [0, 0, 0, -1]); a[0]++; a[1] += p % DID.W; const py = (p / DID.W) | 0; a[2] += py; if (py > a[3]) a[3] = py; }   // lignes comptées depuis le bas
@@ -632,7 +639,7 @@ function prepTerrain(root) {
   const detail = _detail || (_detail = makeDetail());
   root.traverse(o => {
     if (!o.isMesh) return;
-    const old = o.material;
+    const old = o.material; old.dispose();
     o.geometry.computeVertexNormals();
     o.material = new THREE.MeshLambertMaterial({ map: old.map, reflectivity: 0, combine: THREE.MixOperation }); o.material.color.setScalar(1.22);
     o.material.onBeforeCompile = sh => {
@@ -1278,7 +1285,7 @@ function updatePip(dt) {
 // ---------- appareil photo du drone, pilote automatique et pellicule (drone/photo.js) ----------
 const onFrameHooks = [];
 function centreBuilding() { // identifiant IGN du bâtiment au centre de l'image (passe d'identifiants)
-  DID.tick = 0; const on = DID.on; DID.on = true; updateBuildingLabels(0.016); DID.on = on;
+  DID.tick = 0; const on = DID.on; DID.on = true; updateBuildingLabels(0.016, true); DID.on = on;
   const cnt = new Map(); for (let y = DID.H / 2 - 6; y < DID.H / 2 + 6; y++) for (let x = DID.W / 2 - 8; x < DID.W / 2 + 8; x++) { const p = (y * DID.W + x) * 4, k = didPix[p] | (didPix[p + 1] << 8) | (didPix[p + 2] << 16); if (k) cnt.set(k, (cnt.get(k) || 0) + 1); }
   let bk = 0, bn = 0; for (const [k, n] of cnt) if (n > bn) { bn = n; bk = k; } return bk ? DID.list[bk] : null;
 }
@@ -1549,6 +1556,8 @@ async function startCityTiles() {
     const t = new TilesRenderer(CITY.data + 'tuiles/tileset.json' + V);
     t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
     t.errorTarget = [3, 6, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
+    // téléphone : cache des tuiles d'immeubles plafonné en mémoire (le navigateur iOS ferme l'onglet vers 1,5 Go)
+    if (isTouch) { t.lruCache.minSize = 150; t.lruCache.maxSize = 450; t.lruCache.minBytesSize = 120 * 2 ** 20; t.lruCache.maxBytesSize = 200 * 2 ** 20; }
     const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 }); MT.appliquer(far, MT.PROFILS.facade);
     t.addEventListener('load-model', ({ scene: sc }) => {
       sc.traverse(o => {
@@ -1645,16 +1654,16 @@ let grass = null; const grassP = new THREE.Vector3();
 // data/paris/secteurs/index.json : secteurs de 1 km (routes, bordures, trottoirs, arbres, murs, axes), tuiles de terrain
 // et de relief de 2 km. La physique (murs, routes, relief) s'ajoute au fil du vol ; l'affichage (routes, arbres, terrain
 // détaillé) suit le drone dans un rayon de ~1,5 km. Au-delà : un terrain d'ensemble de tout Paris (terrain_loin).
-const STREAM = { idx: null, phys: new Set(), physP: new Map(), vis: new Map(), terr: new Map(), relief: new Set(), busy: false, last: '', treeBufs: new Map(), treeDirty: false, SR: null };
+const STREAM = { gen: 0, idx: null, phys: new Set(), physP: new Map(), vis: new Map(), terr: new Map(), relief: new Set(), busy: false, last: '', treeBufs: new Map(), treeDirty: false, SR: null };
 window.__STREAM = STREAM;
 const sGet = u => fetch(CITY.data + u + V).then(r => { if (!r.ok) throw new Error(u); return r.arrayBuffer(); });
 function sectorPhys(k) {   // une fois chargée, la physique d'un secteur reste (pas de doublons)
   if (STREAM.phys.has(k)) return Promise.resolve(); if (STREAM.physP.has(k)) return STREAM.physP.get(k);
   const inf = STREAM.idx.secteurs[k]; if (!inf) return Promise.resolve();
-  const has = f => inf.fichiers.includes(f), [si, sj] = k.split('_').map(Number), tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2);
-  const rel = (STREAM.idx.relief || []).includes(tk) && !STREAM.relief.has(tk) ? (STREAM.relief.add(tk), sGet('secteurs/relief/r_' + tk + '.wasm').then(b => { relief.push(...parseRelief(b)); }).catch(() => STREAM.relief.delete(tk))) : null;
+  const has = f => inf.fichiers.includes(f), [si, sj] = k.split('_').map(Number), tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2), gen = STREAM.gen;
+  const rel = (STREAM.idx.relief || []).includes(tk) && !STREAM.relief.has(tk) ? (STREAM.relief.add(tk), sGet('secteurs/relief/r_' + tk + '.wasm').then(b => { if (gen === STREAM.gen) relief.push(...parseRelief(b)); }).catch(() => STREAM.relief.delete(tk))) : null;
   const p = Promise.all([modelledReady.then(() => has('batiments_collision.wasm') ? sGet('secteurs/' + k + '/batiments_collision.wasm') : null), has('routes_axes.wasm') ? sGet('secteurs/' + k + '/routes_axes.wasm') : null, has('arbres.wasm') ? sGet('secteurs/' + k + '/arbres.wasm') : null, rel, has('poubelles.wasm') ? sGet('secteurs/' + k + '/poubelles.wasm').catch(() => null) : null])
-    .then(([bat, ax, arb, , pb]) => { if (pb) { const n = new DataView(pb).getUint32(0, true); POUB.bufs.set(k, { n, f: new Float32Array(pb, 4, n * 4), v: new Uint8Array(pb, 4 + n * 16, n) }); } appendBuildings(bat); if (ax) parseRoads(ax); if (arb) STREAM.treeBufs.set(k, arb); STREAM.phys.add(k); STREAM.physP.delete(k); })
+    .then(([bat, ax, arb, , pb]) => { if (gen !== STREAM.gen) return; if (pb) { const n = new DataView(pb).getUint32(0, true); POUB.bufs.set(k, { n, f: new Float32Array(pb, 4, n * 4), v: new Uint8Array(pb, 4 + n * 16, n) }); } appendBuildings(bat); if (ax) parseRoads(ax); if (arb) STREAM.treeBufs.set(k, arb); STREAM.phys.add(k); STREAM.physP.delete(k); })
     .catch(e => { STREAM.physP.delete(k); console.warn('secteur', k, e); });
   STREAM.physP.set(k, p); return p;
 }
@@ -1673,7 +1682,17 @@ async function sectorVis(k) {
   if (STREAM.vis.get(k) !== ent) { freeMeshes(ent.ms); return; }
   for (const m of ent.ms) { scene.add(m); chunks.push({ obj: m, c: new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()) }); }
 }
-function freeMeshes(ms) { for (const m of ms) { scene.remove(m); const i = chunks.findIndex(c => c.obj === m); if (i >= 0) chunks.splice(i, 1); m.traverse(n => { if (n.isMesh) { n.geometry.dispose(); for (const mt of [].concat(n.material)) if (mt !== STREAM.SR.material) mt.dispose(); } }); } }
+// libère l'affichage d'un secteur ; les géométries et matériaux partagés entre secteurs (userData.partage) sont gardés,
+// sinon les autres secteurs doivent les renvoyer à la carte graphique et recompiler leurs shaders (à-coups)
+function freeMeshes(ms) { for (const m of ms) { scene.remove(m); const i = chunks.findIndex(c => c.obj === m); if (i >= 0) chunks.splice(i, 1); m.traverse(n => { if (n.isMesh) { if (n.isInstancedMesh) n.dispose(); if (!n.geometry.userData.partage) n.geometry.dispose(); for (const mt of [].concat(n.material)) if (mt !== (STREAM.SR && STREAM.SR.material) && !mt.userData.partage) mt.dispose(); } }); } }
+// mémoire : la physique (murs, routes, relief, poubelles) s'accumulait sur tout le vol. Au-delà de 34 secteurs chargés,
+// on repart de zéro et on ne recharge que ceux autour du drone (les fichiers sont déjà dans le cache du navigateur).
+function resetPhysics() {
+  STREAM.gen++; segs = null; segRing = null; allRings = []; segN = 0; ringTop.length = 0; ringGrid.clear(); segGrid.clear();
+  roads.length = 0; roadGrid.clear(); if (Array.isArray(relief)) relief.length = 0; STREAM.relief.clear();
+  STREAM.phys.clear(); STREAM.physP.clear(); POUB.bufs.clear(); STREAM.treeBufs.clear(); STREAM.treeSig = '';
+  appendBuildings(null);
+}
 async function terrainTile(k) {
   if (STREAM.terr.has(k)) return; STREAM.terr.set(k, null);
   try { const g = await loadGLB(CITY.data + 'terrain/t_' + k + '.wasm', 'tt'); prepTerrain(g.scene); if (!STREAM.terr.has(k)) return; STREAM.terr.set(k, g.scene); scene.add(g.scene); }
@@ -1694,6 +1713,7 @@ async function streamUpdate(x, z, force) {
     const dist = k => { const [i, j] = k.split('_').map(Number); return Math.hypot(i - si, j - sj); };
     const near = (ci, cj, R) => { const o = []; for (let a = -R; a <= R; a++) for (let b = -R; b <= R; b++) { const k = (ci + a) + '_' + (cj + b); if (I.secteurs[k]) o.push(k); } return o; };
     const physWant = [...new Set([...near(si, sj, 2), ...near(ai, aj, 1)])].sort((p, q) => dist(p) - dist(q));
+    if (STREAM.phys.size > 34 && [...STREAM.phys].filter(k => !physWant.includes(k)).length > 8) resetPhysics();
     const visWant = near(si, sj, 1).sort((p, q) => dist(p) - dist(q));
     // 1) physique du secteur du drone en premier, puis le reste en parallèle
     if (physWant.length) await sectorPhys(physWant[0]);

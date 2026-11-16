@@ -67,7 +67,7 @@ float rdDash(float s, float period, float len){ float aa = fwidth(s) + 1e-4; flo
 }
 `;
   const material = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-  material.name = 'chaussee';
+  material.name = 'chaussee'; material.userData.partage = true;
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = 'attribute vec4 aRoad; attribute vec3 aLine;\nvarying vec3 vRW; varying vec4 vRoad; varying vec3 vLine;\n' +
