@@ -60,9 +60,8 @@
   #worldPick button { border:0; background:none; color:#fff; font:600 14px/1 -apple-system,'SF Pro Text',Arial,sans-serif; padding:10px 16px; border-radius:18px; cursor:pointer; opacity:.75; }
   #worldPick button.on { background:#fff; color:#000; opacity:1; }
   #goRow { display:none; gap:12px; margin-top:22px; flex-wrap:wrap; }
-  #go, #goFps { pointer-events:auto; border-radius:28px; padding:15px 28px; font:600 16px/1 -apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif; cursor:pointer; letter-spacing:.01em; }
+  #go { pointer-events:auto; border-radius:28px; padding:15px 28px; font:600 16px/1 -apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif; cursor:pointer; letter-spacing:.01em; }
   #go { background:#fff; color:#000; border:0; }
-  #goFps { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.25); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); text-decoration:none; }
   #help { display:none; }
   #credits { position:fixed; left:50%; bottom:4px; transform:translateX(-50%); font-size:10px; opacity:.55; z-index:5; pointer-events:none; white-space:nowrap; }
   #flash { position:fixed; inset:0; pointer-events:none; z-index:3; box-shadow:inset 0 0 0 rgba(255,40,20,0); transition:box-shadow .15s; }
@@ -82,7 +81,6 @@
   <button class="b" id="bTime">JOUR</button>
   <button class="b" id="bQ">HAUTE</button>
   <button class="b" id="bVille">VILLE…</button>
-  <button class="b" id="bFoot">À PIED</button>
   <button class="b" id="bPlane">DRONE ✦</button>
   <button class="b" id="bPip">RETOUR CAM</button>
   <button class="b" id="bRec">● REC</button>
@@ -114,7 +112,7 @@ window.CITIES = {
   <div id="bar"><i></i></div>
   <div id="ltxt">Chargement de Paris…</div>
   <div id="worldPick"><button data-world="3d">Monde 3D</button><button data-world="photo">Photo réaliste</button></div>
-  <div id="goRow"><button id="go">Piloter le drone</button><a id="goFps" href="apied/">FPS à pied</a></div>
+  <div id="goRow"><button id="go">Piloter le drone</button></div>
   <div id="help"></div>
 </div>
 
@@ -1058,7 +1056,6 @@ $('bReset').onclick = () => { PL.y = Math.max(PL.y, planeGround(PL.x, PL.z) + 18
 $('bPlane').onclick = () => {};   // voiture supprimée
 $('bId').onclick = () => { DID.on = !DID.on; $('bId').textContent = DID.on ? 'ID ✓' : 'ID ✗'; };
 $('bIdCol').onclick = () => { didToggleColors(!DID.colors); $('bIdCol').classList.toggle('on', DID.colors); };
-$('bFoot').onclick = () => { const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : S; location.href = 'apied/?x=' + F.x.toFixed(1) + '&z=' + F.z.toFixed(1) + '&h=' + F.h.toFixed(3) + '&ville=' + CITY.id; };
 
 // High-quality in-game drone recording: captures the actual game renderer, not a separate preview.
 let gameRecorder=null,gameChunks=[],recordStarted=0;
@@ -1366,7 +1363,7 @@ window.__AGENT = AGENT;
   addEventListener('pointermove', e => { if (y0 !== null) GIMBAL.man = THREE.MathUtils.clamp(m0 + (y0 - e.clientY) / innerHeight * 1.6, -1.4, 0.5); });
   addEventListener('pointerup', () => { y0 = null; }); }
 function setMode(m){
- m='plane';   // plus de voiture : le jeu est un drone (le FPS est dans apied/)
+ m='plane';   // le jeu est uniquement un drone
  const prev=mode;
  if(prev==='foot'&&m!=='foot'){
   if(!footNear()){S.x=FT.x;S.z=FT.z;S.h=FT.yaw;respawn()}else toast('En voiture !');
@@ -1377,10 +1374,10 @@ function setMode(m){
   if(prev==='plane'){S.x=PL.x;S.z=PL.z;respawn();drone.visible=false}
   mode='foot';document.documentElement.classList.remove('flying');document.documentElement.classList.add('walking');
   const lx=Math.cos(S.h),lz=-Math.sin(S.h);FT.x=S.x+lx*1.9;FT.z=S.z+lz*1.9;FT.yaw=S.h+.35;FT.pitch=-.05;FT.vx=FT.vz=FT.vy=0;FT.ground=true;FT.run=0;
-  footCollide();FT.y=surfaceH(FT.x,FT.z);FT.fov=camera.fov;S.vx=S.vz=S.yawRate=0;S.vf=0;$('bFoot').textContent='VOITURE';footAmbience(true);
+  footCollide();FT.y=surfaceH(FT.x,FT.z);FT.fov=camera.fov;S.vx=S.vz=S.yawRate=0;S.vf=0;footAmbience(true);
   toast(isTouch?'À pied : joystick pour marcher, glisse à droite pour regarder':'À pied : ZQSD, Maj = courir, Espace = sauter');return;
  }
- document.documentElement.classList.remove('walking');$('bFoot').textContent='À PIED';mode=m;
+ document.documentElement.classList.remove('walking');mode=m;
  document.documentElement.classList.toggle('flying',m==='plane');
  if(m==='plane'){
   const rx=Math.cos(S.h),rz=-Math.sin(S.h);
@@ -1874,7 +1871,6 @@ function loop(now) {
 main();
 </script>
 <script src="commun/batiment.js"></script>
-<script src="commun/equipes.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
 <script type="module" src="drone/reglages.js?v=38"></script>

@@ -150,7 +150,6 @@ export function initDronePhoto(A) {
     ['Orientation de la nacelle', A.GIMBAL.dirs[A.GIMBAL.i][0].toLowerCase(), () => A.click('bCam')],
     ['Heure du jour', '', () => A.click('bTime')],
     ['Grille de cadrage', $('dpGrid').style.display === 'none' ? 'Non' : 'Oui', () => { const g = $('dpGrid'); g.style.display = g.style.display === 'none' ? '' : 'none'; }],
-    ['Mode FPS à pied', '›', () => { location.href = 'apied/'; }],
   ];
   function openSheet() { $('dpCard').innerHTML = ''; for (const [t, v, f] of items()) { const d = document.createElement('div'); d.className = 'it'; d.innerHTML = `${t}<span>${v}</span>`; d.onclick = () => { f(); setTimeout(openSheet, 60); }; $('dpCard').appendChild(d); } sheet.style.display = 'block'; }
   $('dpMenuB').onclick = openSheet; sheet.onclick = e => { if (e.target === sheet) sheet.style.display = 'none'; };

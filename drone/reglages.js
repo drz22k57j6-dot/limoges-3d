@@ -300,7 +300,6 @@ function init(D, X) {
       tog('ui.fps', 'Compteur FPS à l\'écran', () => root.classList.contains('rg-fps'), v => root.classList.toggle('rg-fps', v)),
       act('Copier la position', () => { const p = X.pos(); if (navigator.clipboard) navigator.clipboard.writeText(`x=${p.x.toFixed(1)} z=${p.z.toFixed(1)} alt=${(p.y - p.sol).toFixed(1)} L93=${p.X.toFixed(1)},${p.Y.toFixed(1)}`).then(() => D.toast('Position copiée'), () => {}); }),
       act('Agent et tableau des bâtiments', () => { closeP(); click('dpMenuB'); }),
-      act('Mode à pied (FPS)', () => { closeP(); click('bFoot'); }),
       act('Enregistrer une vidéo du jeu', () => { closeP(); click('bRec'); }),
       sec('Réinitialiser'),
       act('Remettre tous les réglages par défaut', () => { try { localStorage.removeItem(SK); } catch (e) {} location.reload(); }, 'Recharge le jeu'),
