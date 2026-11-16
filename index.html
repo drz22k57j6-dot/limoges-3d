@@ -158,7 +158,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(62, 1, 0.3, 5000);
 
 const QUALITIES = [
-  { name: 'ULTRA', dpr: (('ontouchstart' in window) ? 1.75 : 2), shadow: 2048, shadowAll: true, far: 2600, trees: 2600, post: true, ao: true },
+  { name: 'ULTRA', dpr: (('ontouchstart' in window) ? 1.75 : 2), shadow: (('ontouchstart' in window) ? 2048 : 4096), shadowAll: true, far: 2600, trees: 2600, post: true, ao: true },
   { name: 'HAUTE', dpr: 1.5, shadow: 2048, shadowAll: false, far: 2000, trees: 1500, post: true, ao: false },
   { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
@@ -210,7 +210,7 @@ const su = sky.material.uniforms;
 su.turbidity.value = 4; su.rayleigh.value = 1.4; su.mieCoefficient.value = 0.004; su.mieDirectionalG.value = 0.82;
 const sun = new THREE.DirectionalLight(0xffffff, 2.2);
 sun.castShadow = true; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
-const sc = sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 1; sc.far = 600;
+const sc = sun.shadow.camera; sc.left = -150; sc.right = 150; sc.top = 150; sc.bottom = -150; sc.near = 1; sc.far = 900;   // ombres nettes sur le périmètre de 150 m
 scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x6b6250, 1.15); scene.add(hemi);
 scene.fog = new THREE.Fog(0xbcd2e6, 300, 2000);
@@ -268,7 +268,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=29';
+const V = '?v=30';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -587,7 +587,7 @@ function buildTrees(buf) {
   }
   // near and middle levels: pools refilled around the camera
   for (let k = 0; k < 4; k++) for (const lv of [0, 1]) for (const [pi, part] of P.models[KINDS[k]].lods[lv].parts.entries()) {
-    const cap = lv === 0 ? 260 : 1600;
+    const cap = lv === 0 ? 700 : 2400;
     const im = new THREE.InstancedMesh(part.geometry, part.material, cap); im.count = 0; im.frustumCulled = false;
     im.castShadow = !!part.cast; im.receiveShadow = true; im.userData.tint = part.tint;
     if (part.tint) im.setColorAt(0, new THREE.Color(1, 1, 1));
@@ -607,11 +607,11 @@ function updateTrees(dt, cx, cz, hidden) {
   for (const k in TREE.pools) for (const im of TREE.pools[k]) im.visible = !hidden;
   if (hidden || (TREE.t -= dt) > 0) return;
   TREE.t = 0.3;
-  const f = TREE.data, M4 = new THREE.Matrix4(), want = new Map(), R = 170, cr = Math.ceil(R / 50);
+  const f = TREE.data, M4 = new THREE.Matrix4(), want = new Map(), R = 150, cr = Math.ceil(R / 50);   // périmètre de 150 m
   const ci = Math.floor(cx / 50), cj = Math.floor(cz / 50);
   for (let i = ci - cr; i <= ci + cr; i++) for (let j = cj - cr; j <= cj + cr; j++) {
     const g = TREE.grid.get(key(i, j)); if (!g) continue;
-    for (const t of g) { const d = Math.hypot(f[6 * t] - cx, f[6 * t + 2] - cz); if (d < R) want.set(t, d < (TREE.kind[t] === 3 ? 35 : 45) ? 0 : 1); }
+    for (const t of g) { const d = Math.hypot(f[6 * t] - cx, f[6 * t + 2] - cz); if (d < R) want.set(t, d < 60 ? 0 : 1); }
   }
   const dirty = new Set();
   // trees that went back to the far level
@@ -798,7 +798,7 @@ function setupCar(g) {
 const S = { vf: 0, thr: 0, pvf: 0, slip: 0, x: 0, z: 0, y: 0, vy: 0, h: 0, vx: 0, vz: 0, yawRate: 0, steer: 0, pitch: 0, roll: 0, onGround: true, rpm: 900, gear: 1, wheelRot: 0, lastG: 0, shake: 0 };
 const inp = { thr: 0, brk: 0, steer: 0, hb: 0, climb: 0 };
 const keys = {};
-addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'KeyC') nextCam(); if (e.code === 'KeyR') respawn(); if (e.code === 'KeyT') $('bTime').click(); if (e.code === 'KeyF') $('bPlane').click(); if (mode === 'plane' && /Space|Arrow/.test(e.code)) e.preventDefault(); startAudio(); });
+addEventListener('keydown', e => { if (e.target && (e.target.closest && e.target.closest('input,textarea,[contenteditable]'))) return; keys[e.code] = true; if (e.code === 'KeyC') nextCam(); if (e.code === 'KeyR') $('bReset').click(); if (e.code === 'KeyT') $('bTime').click(); if (mode === 'plane' && /Space|Arrow/.test(e.code)) e.preventDefault(); startAudio(); });
 addEventListener('keyup', e => { keys[e.code] = false; });
 
 const GEARS = [0, 16, 28, 41, 53, 64, 75]; // top speed m/s per gear
@@ -1038,8 +1038,8 @@ $('pipBox').onclick = () => { if (gameRecorder && gameRecorder.state === 'record
 $('bTime').onclick = () => { ti = (ti + 1) % TIMES.length; applyTime(); };
 $('bQ').onclick = () => { if (gameRecorder && gameRecorder.state === 'recording') { toast('Qualité verrouillée pendant l\'enregistrement'); return; } qi = (qi + 1) % QUALITIES.length; applyQuality(); };
 $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
-$('bReset').onclick = () => { if (mode === 'plane') { PL.y = planeGround(PL.x, PL.z) + 18; PL.spd = 0; PL.vy = 0; } else respawn(); };
-$('bPlane').onclick = () => { startAudio(); setMode(mode === 'car' ? 'plane' : 'car'); };
+$('bReset').onclick = () => { PL.y = Math.max(PL.y, planeGround(PL.x, PL.z) + 18); PL.vx = PL.vz = PL.vy = 0; PL.spd = 0; toast('Drone stabilisé en vol'); };
+$('bPlane').onclick = () => {};   // voiture supprimée
 $('bId').onclick = () => { DID.on = !DID.on; $('bId').textContent = DID.on ? 'ID ✓' : 'ID ✗'; };
 $('bIdCol').onclick = () => { didToggleColors(!DID.colors); $('bIdCol').classList.toggle('on', DID.colors); };
 $('bFoot').onclick = () => { const F = mode === 'plane' ? { x: PL.x, z: PL.z, h: PL.yaw } : S; location.href = 'apied/?x=' + F.x.toFixed(1) + '&z=' + F.z.toFixed(1) + '&h=' + F.h.toFixed(3) + '&ville=' + CITY.id; };
@@ -1159,6 +1159,23 @@ function droneWalls(x, y, z, r) { // pousse hors des murs plus hauts que le dron
   }
   return [x, z, hit];
 }
+function physReady(x,z){ // murs et relief du secteur chargés ?
+ const I=STREAM.idx;if(!I)return true;
+ const si=Math.floor((x+I.RX)/1000),sj=Math.floor((-z+I.RY)/1000),k=si+'_'+sj;
+ if(!I.secteurs[k])return true;               // hors de Paris : rien à heurter
+ if(!STREAM.phys.has(k)){sectorPhys(k);return false}
+ const tk=Math.floor(si/2)+'_'+Math.floor(sj/2);return !(I.relief||[]).includes(tk)||STREAM.relief.has(tk);
+}
+function insideBuilding(x,y,z){ // bâtiment qui contient le centre du drone à cette hauteur
+ const a=ringGrid.get(key(Math.floor(x/CELL),Math.floor(z/CELL)));if(!a)return null;
+ for(const i of a){const top=ringTop[i];if(top<=y-DR.LEG+0.02)continue;const r=allRings[i];let ins=false;
+  for(let k=0,j=r.length/2-1;k<r.length/2;j=k++){const xi=r[2*k],zi=r[2*k+1],xj=r[2*j],zj=r[2*j+1];if(((zi>z)!==(zj>z))&&(x<(xj-xi)*(z-zi)/(zj-zi)+xi))ins=!ins}
+  if(!ins)continue;
+  let bd=1e9,ex=x,ez=z;for(let k=0;k<r.length/2-1;k++){const ax=r[2*k],az=r[2*k+1],dx=r[2*k+2]-ax,dz=r[2*k+3]-az,L2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-ax)*dx+(z-az)*dz)/L2)),px=ax+t*dx,pz=az+t*dz,d=Math.hypot(x-px,z-pz);if(d<bd){bd=d;const L=Math.sqrt(L2),nx=-dz/L,nz=dx/L,s2=((x-px)*nx+(z-pz)*nz)>0?-1:1;ex=px+nx*s2*(DR.R+0.05);ez=pz+nz*s2*(DR.R+0.05)}}
+  return {top,up:top+DR.LEG-y,side:bd+DR.R,ex,ez};
+ }
+ return null;
+}
 function planeStep(dt){
  const kb=a=>a.some(c=>keys[c]);
  const pitch=THREE.MathUtils.clamp(DS.ry+(kb(['KeyW','KeyZ'])?1:0)-(kb(['KeyS'])?1:0),-1,1);
@@ -1173,16 +1190,28 @@ function planeStep(dt){
  const k=Math.min(1,dt*(pitch||roll?1.8:2.6));        // inertie, puis freinage actif quand on lâche
  PL.vx=(PL.vx||0)+(wantX-(PL.vx||0))*k; PL.vz=(PL.vz||0)+(wantZ-(PL.vz||0))*k;
  PL.vy+=(ex(thr)*DR.VZ-PL.vy)*Math.min(1,dt*3);}
- let nx=PL.x+PL.vx*dt,nz=PL.z+PL.vz*dt,ny=PL.y+PL.vy*dt;
- // murs : contact exact avec la coque
- const [wx,wz,hit]=droneWalls(nx,ny,nz,DR.R); nx=wx;nz=wz;
- if(hit){const vn=PL.vx*hit.nx+PL.vz*hit.nz;if(vn<0){PL.vx-=vn*hit.nx;PL.vz-=vn*hit.nz;if(vn<-3)thud(Math.min(1,-vn/10))}}
- // sol, toits : les patins se posent au contact
- const floor=planeGround(nx,nz)+DR.LEG;
- if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}PL.landed=!auto&&thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6}else PL.landed=false;
+ // déplacement en petits pas (jamais plus de 0,2 m) : impossible de traverser un mur fin ou un coin
+ const LX=STREAM.idx?STREAM.idx.RX-10:2990,LZ=STREAM.idx?STREAM.idx.RY-10:2990;
+ const tot=Math.hypot(PL.vx*dt,PL.vz*dt,PL.vy*dt),nsub=Math.max(1,Math.ceil(tot/0.2));
+ let landedNow=false;
+ for(let q=0;q<nsub;q++){
+  let nx=PL.x+PL.vx*dt/nsub,nz=PL.z+PL.vz*dt/nsub,ny=PL.y+PL.vy*dt/nsub;
+  // quartier pas encore chargé (murs, sol) : le drone attend au bord, il n'y entre pas à l'aveugle
+  if(!physReady(nx,nz)){PL.vx*=0.5;PL.vz*=0.5;nx=PL.x;nz=PL.z;if(!PL.waitT||performance.now()-PL.waitT>2500){PL.waitT=performance.now();toast('Chargement du quartier…')}}
+  // murs : contact exact avec la coque
+  const [wx,wz,hit]=droneWalls(nx,ny,nz,DR.R); nx=wx;nz=wz;
+  if(hit){const vn=PL.vx*hit.nx+PL.vz*hit.nz;if(vn<0){PL.vx-=vn*hit.nx;PL.vz-=vn*hit.nz;if(vn<-3)thud(Math.min(1,-vn/10))}}
+  // jamais à l'intérieur d'un bâtiment : sortie la plus courte (au-dessus du toit ou hors de l'emprise)
+  const inB=insideBuilding(nx,ny,nz);
+  if(inB){if(inB.up<=inB.side){ny=inB.top+DR.LEG;if(PL.vy<0)PL.vy=0}else{nx=inB.ex;nz=inB.ez;PL.vx*=0.2;PL.vz*=0.2}}
+  // sol et toits : les patins se posent au contact
+  const floor=planeGround(nx,nz)+DR.LEG;
+  if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}landedNow=true}
+  ny=Math.min(500,ny);
+  PL.x=THREE.MathUtils.clamp(nx,-LX,LX);PL.z=THREE.MathUtils.clamp(nz,-LZ,LZ);PL.y=ny;
+ }
+ PL.landed=landedNow&&!auto&&thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6;
  if(PL.landed){PL.vx*=.8;PL.vz*=.8}
- ny=Math.min(500,ny);
- const LX=STREAM.idx?STREAM.idx.RX-10:2990,LZ=STREAM.idx?STREAM.idx.RY-10:2990;PL.x=THREE.MathUtils.clamp(nx,-LX,LX);PL.z=THREE.MathUtils.clamp(nz,-LZ,LZ);PL.y=ny;
  PL.spd=Math.hypot(PL.vx,PL.vz);
  // attitude réelle d'un quadri : penche dans le sens de l'accélération
  const lf=(PL.vx*fx+PL.vz*fz)/DR.VMAX,ls=(PL.vx*rx+PL.vz*rz)/DR.VMAX;
@@ -1258,6 +1287,7 @@ const DPHOTO = initDronePhoto({ THREE, PL, DS, GIMBAL, DID, scene, camera, rende
   inCity: (x, z) => STREAM.idx ? !!STREAM.idx.secteurs[Math.floor((x + STREAM.idx.RX) / 1000) + '_' + Math.floor((-z + STREAM.idx.RY) / 1000)] : Math.abs(x) < 2950 && Math.abs(z) < 2950,
   ensureArea: async (x, z) => { const I = STREAM.idx; if (!I) return; const si = Math.floor((x + I.RX) / 1000), sj = Math.floor((-z + I.RY) / 1000), ks = []; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) ks.push((si + a) + '_' + (sj + b)); await Promise.all(ks.map(sectorPhys)); } });
 window.__DPHOTO = DPHOTO;
+window.__TEST = { rings: () => allRings, top: i => ringTop[i], ground: (x, z) => planeGround(x, z), inside: (x, y, z) => insideBuilding(x, y, z), mode: () => mode };
 const AGENT = initAgent({ photo: DPHOTO, mode: () => mode, inCityLL: (lon, lat) => { const [X, Y] = DPHOTO.lambert93(lon, lat), x = X - CITY.X0, z = -(Y - CITY.Y0); return STREAM.idx ? !!STREAM.idx.secteurs[Math.floor((x + STREAM.idx.RX) / 1000) + '_' + Math.floor((-z + STREAM.idx.RY) / 1000)] : Math.abs(x) < 2950 && Math.abs(z) < 2950; } });
 window.__AGENT = AGENT;
 // inclinaison manuelle de la nacelle : glisser verticalement sur l'image
@@ -1266,6 +1296,7 @@ window.__AGENT = AGENT;
   addEventListener('pointermove', e => { if (y0 !== null) GIMBAL.man = THREE.MathUtils.clamp(m0 + (y0 - e.clientY) / innerHeight * 1.6, -1.4, 0.5); });
   addEventListener('pointerup', () => { y0 = null; }); }
 function setMode(m){
+ m='plane';   // plus de voiture : le jeu est un drone (le FPS est dans apied/)
  const prev=mode;
  if(prev==='foot'&&m!=='foot'){
   if(!footNear()){S.x=FT.x;S.z=FT.z;S.h=FT.yaw;respawn()}else toast('En voiture !');
@@ -1424,9 +1455,9 @@ document.body.insertAdjacentHTML('beforeend', `<div id="foot"><div id="fStickBas
   const tap = (id, fn) => { const b = $(id); b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); fn(b); }, { passive: false }); b.addEventListener('click', () => fn(b)); };
   tap('fRun', b => { FT.runLock = !FT.runLock; b.classList.toggle('on', FT.runLock); });
   tap('fJump', () => { FT.jump = true; });
-  tap('fCar', () => setMode('car'));
+
 }
-addEventListener('keydown', e => { if (e.code === 'KeyE' || e.code === 'KeyV') { if (mode === 'foot') setMode('car'); else if (mode === 'car') setMode('foot'); } if (mode === 'foot' && e.code === 'Space') e.preventDefault(); });
+
 function footNear() { return Math.hypot(FT.x - S.x, FT.z - S.z) < 4.5; }
 setInterval(() => { const b = $('fCar'); if (b) b.classList.toggle('near', mode === 'foot' && footNear()); }, 250);
 
@@ -1558,6 +1589,7 @@ async function sectorVis(k) {
   if (STREAM.vis.has(k)) return; const ent = { ms: [] }; STREAM.vis.set(k, ent);
   const inf = STREAM.idx.secteurs[k]; if (!inf) return; const has = f => inf.fichiers.includes(f), g = f => has(f) ? sGet('secteurs/' + k + '/' + f).catch(() => null) : null;
   const [v3, pt, dc, kb, sg] = await Promise.all([g('routes_v3.wasm'), g('routes_ponts.wasm'), g('routes_deco.wasm'), g('routes_bordures.wasm'), has('signalisation.json') ? fetch(CITY.data + 'secteurs/' + k + '/signalisation.json' + V).then(r => r.json()).catch(() => null) : null]);
+  if ((has('routes_v3.wasm') && !v3) || (has('routes_bordures.wasm') && !kb)) { if (STREAM.vis.get(k) === ent) STREAM.vis.delete(k); STREAM.complete = false; return; }   // échec réseau : redemandé au tour suivant
   const SR = STREAM.SR;
   ent.ms = [].concat(v3 ? SR.buildV3(v3) : [], pt ? SR.buildV3(pt) : [], dc ? SR.buildDeco(dc) : [], sg && sg.length ? SR.buildSignals(sg) : [], kb ? SR.buildKerbs(kb) : []);
   if (STREAM.vis.get(k) !== ent) { freeMeshes(ent.ms); return; }
@@ -1569,30 +1601,45 @@ async function terrainTile(k) {
   try { const g = await loadGLB(CITY.data + 'terrain/t_' + k + '.wasm', 'tt'); prepTerrain(g.scene); if (!STREAM.terr.has(k)) return; STREAM.terr.set(k, g.scene); scene.add(g.scene); }
   catch (e) { STREAM.terr.delete(k); }
 }
+// Chargement : vérifié 4 fois par seconde. Ordre de priorité : la physique (murs, sol) du secteur du drone,
+// puis celle des 24 secteurs autour (5 × 5 km) et de la zone où le drone sera dans 6 s ; l'affichage (routes,
+// arbres, terrain) des 9 secteurs autour. Un fichier qui échoue est redemandé au tour suivant.
 async function streamUpdate(x, z, force) {
   const I = STREAM.idx; if (!I || STREAM.busy) return;
-  const si = Math.floor((x + I.RX) / 1000), sj = Math.floor((-z + I.RY) / 1000), id = si + '_' + sj;
-  if (id === STREAM.last && !force) return; STREAM.busy = true; STREAM.last = id;
+  const vx = mode === 'plane' ? PL.vx || 0 : 0, vz = mode === 'plane' ? PL.vz || 0 : 0;
+  const sec = (px, pz) => [Math.floor((px + I.RX) / 1000), Math.floor((-pz + I.RY) / 1000)];
+  const [si, sj] = sec(x, z), [ai, aj] = sec(x + vx * 6, z + vz * 6);
+  const id = si + '_' + sj + '|' + ai + '_' + aj;
+  if (id === STREAM.last && !force && STREAM.complete) return;
+  STREAM.busy = true; STREAM.last = id;
   try {
-    const R = 1, want = [];
-    for (let a = -R; a <= R; a++) for (let b = -R; b <= R; b++) { const k = (si + a) + '_' + (sj + b); if (I.secteurs[k]) want.push(k); }
-    want.sort((p, q) => { const d = k => { const [i, j] = k.split('_').map(Number); return Math.hypot(i - si, j - sj); }; return d(p) - d(q); });
-    // affichage : libérer ce qui est loin
-    for (const [k, ent] of STREAM.vis) { const [i, j] = k.split('_').map(Number); if (Math.max(Math.abs(i - si), Math.abs(j - sj)) > R + 1) { freeMeshes(ent.ms); STREAM.vis.delete(k); } }
+    const dist = k => { const [i, j] = k.split('_').map(Number); return Math.hypot(i - si, j - sj); };
+    const near = (ci, cj, R) => { const o = []; for (let a = -R; a <= R; a++) for (let b = -R; b <= R; b++) { const k = (ci + a) + '_' + (cj + b); if (I.secteurs[k]) o.push(k); } return o; };
+    const physWant = [...new Set([...near(si, sj, 2), ...near(ai, aj, 1)])].sort((p, q) => dist(p) - dist(q));
+    const visWant = near(si, sj, 1).sort((p, q) => dist(p) - dist(q));
+    // 1) physique du secteur du drone en premier, puis le reste en parallèle
+    if (physWant.length) await sectorPhys(physWant[0]);
+    await Promise.all(physWant.slice(1).map(sectorPhys));
+    // 2) libérer l'affichage lointain
+    for (const [k, ent] of STREAM.vis) { const [i, j] = k.split('_').map(Number); if (Math.max(Math.abs(i - si), Math.abs(j - sj)) > 2) { freeMeshes(ent.ms); STREAM.vis.delete(k); } }
     const wantT = new Set(); for (const a of [-1200, 0, 1200]) for (const b of [-1200, 0, 1200]) wantT.add(Math.floor((x + I.RX + a) / 2000) + '_' + Math.floor((-z + I.RY + b) / 2000));
     for (const [k, sc] of STREAM.terr) if (!wantT.has(k)) { if (sc) { scene.remove(sc); sc.traverse(n => { if (n.isMesh) { n.geometry.dispose(); if (n.material.map) n.material.map.dispose(); n.material.dispose(); } }); } STREAM.terr.delete(k); }
-    await Promise.all(want.map(sectorPhys));
-    // arbres des secteurs autour : un seul ensemble, reconstruit quand on change de secteur
-    const tb = want.map(k => STREAM.treeBufs.get(k)).filter(Boolean);
-    if (tb.length) { let n = 0; for (const b of tb) n += new DataView(b).getUint32(0, true); const out = new ArrayBuffer(4 + n * 28), dv = new DataView(out); dv.setUint32(0, n, true); let of = 4, oc = 4 + n * 24;
+    // 3) arbres des secteurs autour (un seul ensemble, reconstruit seulement si la liste change)
+    const tKeys = visWant.filter(k => STREAM.treeBufs.has(k)), tSig = tKeys.join(',');
+    if (tKeys.length && tSig !== STREAM.treeSig) { STREAM.treeSig = tSig; const tb = tKeys.map(k => STREAM.treeBufs.get(k)); let n = 0; for (const b of tb) n += new DataView(b).getUint32(0, true);
+      const out = new ArrayBuffer(4 + n * 28), dv = new DataView(out); dv.setUint32(0, n, true); let of = 4, oc = 4 + n * 24;
       for (const b of tb) { const m = new DataView(b).getUint32(0, true); new Uint8Array(out, of, m * 24).set(new Uint8Array(b, 4, m * 24)); new Uint8Array(out, oc, m * 4).set(new Uint8Array(b, 4 + m * 24, m * 4)); of += m * 24; oc += m * 4; }
       buildTrees(out); }
-    // masque d'herbe de la tuile de 2 km sous le drone
     if (grass && grass.setMask) { const ti = Math.floor((x + I.RX) / 2000), tj = Math.floor((-z + I.RY) / 2000); grass.setMask(CITY.data + 'tex/herbe/h_' + ti + '_' + tj + '.jpg' + V, [ti * 2000 - I.RX, -((tj + 1) * 2000 - I.RY), 2000, 2000]); }
-    await Promise.all([...wantT].map(terrainTile));
-    for (const k of want) await sectorVis(k);
-    buildMap(allRings, Math.round(x / 500) * 500, Math.round(z / 500) * 500);
-  } finally { STREAM.busy = false; }
+    // 4) terrain détaillé et routes : le plus proche d'abord
+    const tOrder = [...wantT].sort((p, q) => { const c = k => { const [i, j] = k.split('_').map(Number); return Math.hypot((i + 0.5) * 2000 - I.RX - x, -((j + 0.5) * 2000 - I.RY) - z); }; return c(p) - c(q); });
+    await terrainTile(tOrder[0]); await Promise.all(tOrder.slice(1).map(terrainTile));
+    for (const k of visWant) await sectorVis(k);
+    if (Math.abs(x - mapCX) > 1200 || Math.abs(z - mapCZ) > 1200 || force) buildMap(allRings, Math.round(x / 500) * 500, Math.round(z / 500) * 500);
+    // tout est là ? sinon on recommence au prochain tour (fichier en échec, réseau lent)
+    STREAM.complete = physWant.every(k => STREAM.phys.has(k)) && visWant.every(k => STREAM.vis.has(k) && STREAM.vis.get(k).ms) && [...wantT].every(k => !STREAM.terr.has(k) || STREAM.terr.get(k));
+  } catch (e) { console.warn('chargement', e); STREAM.complete = false; }
+  finally { STREAM.busy = false; }
 }
 
 // ---------------- main ----------------
@@ -1654,12 +1701,12 @@ function loop(now) {
   // road surface offset (roads drawn 0.22 m above the terrain)
   updateCarVisual(dt);
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
-  if (STREAM.idx && (STREAM.tick = (STREAM.tick || 0) - dt) < 0) { STREAM.tick = 0.5; const p = mode === 'plane' ? PL : S; streamUpdate(p.x, p.z); }
+  if (STREAM.idx && (STREAM.tick = (STREAM.tick || 0) - dt) < 0) { STREAM.tick = 0.25; const p = mode === 'plane' ? PL : S; streamUpdate(p.x, p.z); }
   if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
   // sun follows car for shadows
-  sun.position.set(F.x + sunDir.x * 300, F.y + sunDir.y * 300, F.z + sunDir.z * 300); sun.target.position.set(F.x, F.y, F.z);
+  sun.position.set(F.x + sunDir.x * 450, F.y + sunDir.y * 450, F.z + sunDir.z * 450); sun.target.position.set(F.x, F.y, F.z);
   sky.position.copy(camera.position); lark.dome.position.copy(camera.position);
   waterNormal.offset.x = (t * 0.012) % 1; waterNormal.offset.y = (t * 0.007) % 1;
   // distance culling
@@ -1676,6 +1723,10 @@ function loop(now) {
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
   updateTrees(dt, camera.position.x, camera.position.z, PHOTO_W); for (const im of TREE.far || []) im.visible = im.visible && !PHOTO_W;
   if (grass) { grassP.set(F.x, F.y, F.z); grass.update(dt, grassP); }
+  if (cityTiles) { // périmètre de qualité maximale : bâtiments détaillés jusqu'à 160 m de la caméra, version simple au-delà
+    const H = renderer.domElement.height, k = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * 160;
+    cityTiles.errorTarget = Math.max(0.5, 3.5 * H / k);
+  }
   if (cityTiles) { cityTiles.group.visible = cityMode !== 'google'; if (cityTiles.group.visible) { camera.updateMatrixWorld(); cityTiles.setResolutionFromRenderer(camera, renderer); cityTiles.update(); } }
   if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD

@@ -208,7 +208,7 @@ export function initDronePhoto(A) {
   function setRoll(b) { if (rollURL) URL.revokeObjectURL(rollURL); rollURL = b ? URL.createObjectURL(b) : null; $('dpRoll').style.backgroundImage = rollURL ? `url(${rollURL})` : ''; }
   dbAll().then(L => L[0] && setRoll(L[0].thumb)).catch(() => {});
   $('dpShut').onclick = () => { if (!AUTO.active) takePhoto(); };
-  addEventListener('keydown', e => { if (e.code === 'KeyP' && A.mode() === 'plane' && document.activeElement !== $('dpQ')) takePhoto(); });
+  addEventListener('keydown', e => { if (e.target && e.target.closest && e.target.closest('input,textarea')) return; if (e.code === 'KeyP' && A.mode() === 'plane') takePhoto(); });
 
   // =========================================================== pellicule
   const urls = [];
