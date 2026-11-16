@@ -1,0 +1,55 @@
+# Télécharge la base des commerces parisiens (APUR BDCOM 2023) + les commerces OpenStreetMap de Paris,
+# puis les dépose compressés dans outils/commerces/ (le bac à sable de Claude n'a pas accès à ces sites).
+name: Commerces
+on:
+  workflow_dispatch:
+  push:
+    paths: ['outils/commerces/demande.txt']
+permissions:
+  contents: write
+concurrency:
+  group: commerces
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger
+        run: |
+          set -x
+          pip install openpyxl pandas >/dev/null
+          cd outils/commerces
+          curl -sSL -A "Mozilla/5.0" -o bdcom.xlsx https://www.apur.org/open_data/BDCOM_2023_OD.xlsx || true
+          ls -la
+          python3 - <<'PY'
+          import pandas as pd, os
+          if os.path.getsize('bdcom.xlsx') > 10000:
+              x = pd.read_excel('bdcom.xlsx', sheet_name=None)
+              with open('bdcom_info.txt', 'w') as f:
+                  for k, d in x.items():
+                      f.write(f'== {k} {d.shape}\n{list(d.columns)}\n{d.head(8).to_string()}\n\n')
+                      d.to_csv(f'bdcom_{k[:20].replace(" ","_")}.csv.gz', index=False, compression='gzip')
+          PY
+          rm -f bdcom.xlsx
+          Q='[out:json][timeout:300];area["ref:INSEE"="75056"][admin_level=8]->.p;(nwr(area.p)["shop"];nwr(area.p)["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|fuel|car_rental|cinema|theatre|nightclub|clinic|dentist|doctors)$"];nwr(area.p)["craft"];nwr(area.p)["office"~"estate_agent|insurance"];);out center tags;'
+          curl -sS -m 600 --data-urlencode "data=$Q" https://overpass-api.de/api/interpreter -o osm.json || curl -sS -m 600 --data-urlencode "data=$Q" https://overpass.kumi.systems/api/interpreter -o osm.json
+          python3 - <<'PY'
+          import json, gzip
+          d = json.load(open('osm.json'))
+          out = []
+          K = ['shop','amenity','craft','office','name','brand','brand:wikidata','addr:housenumber','addr:street','opening_hours','cuisine','outdoor_seating','website']
+          for e in d['elements']:
+              t = e.get('tags', {}); c = e.get('center', e)
+              if 'lat' not in c: continue
+              out.append([round(c['lat'],6), round(c['lon'],6)] + [t.get(k,'') for k in K])
+          json.dump({'cols': ['lat','lon']+K, 'rows': out}, gzip.open('osm_commerces.json.gz','wt'), ensure_ascii=False, separators=(',',':'))
+          print(len(out), 'commerces OSM')
+          PY
+          rm -f osm.json
+          ls -la
+      - name: Commit
+        run: |
+          git config user.name "commerces-bot"; git config user.email "actions@github.com"
+          git add outils/commerces; git commit -m "Données commerces (BDCOM + OSM)" || exit 0
+          for i in 1 2 3; do git pull --rebase && git push && break; sleep 5; done
