@@ -266,9 +266,11 @@ function init(D, X) {
   const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const ALL = Object.entries(PLACES).flatMap(([c, l]) => l.map(p => [...p, c]));
   function showPlaces(C) {
-    C.innerHTML = `<input class="rgIn" id="rgQ" placeholder="Adresse ou lieu à Paris…" autocomplete="off" enterkeyhint="go"><div class="rgSug" id="rgSug"></div>
+    C.innerHTML = `<details class="rgCat" open><summary>Rues test — moteur de façades</summary><div class="rgGrid"><button data-rt="7e">Rue haussmannienne 7e</button><button data-rt="16e">Avenue riche 16e</button><button data-rt="19e">Rue faubourienne 19e</button></div></details>
+      <input class="rgIn" id="rgQ" placeholder="Adresse ou lieu à Paris…" autocomplete="off" enterkeyhint="go"><div class="rgSug" id="rgSug"></div>
       ${Object.entries(PLACES).map(([c, l], i) => `<details class="rgCat"${i === 0 ? ' open' : ''}><summary>${esc(c)}<span style="opacity:.45;font-weight:500;margin-left:8px">${l.length}</span></summary><div class="rgGrid">${l.map((p, j) => `<button data-c="${esc(c)}" data-j="${j}">${esc(p[0])}</button>`).join('')}</div></details>`).join('')}`;
-    C.querySelectorAll('.rgGrid button').forEach(b => b.onclick = () => goPlace(PLACES[b.dataset.c][+b.dataset.j]));
+    C.querySelectorAll('.rgGrid button[data-c]').forEach(b => b.onclick = () => goPlace(PLACES[b.dataset.c][+b.dataset.j]));
+    C.querySelectorAll('button[data-rt]').forEach(b => b.onclick = () => { closeP(); D.rueTest && D.rueTest(b.dataset.rt); });
     let T = 0, AB = null; const q = $('rgQ'), box = $('rgSug');
     q.addEventListener('input', () => { clearTimeout(T); T = setTimeout(suggest, 220); });
     q.addEventListener('keydown', e => { if (e.key === 'Enter') { const f = box.querySelector('button'); if (f) f.click(); } });
