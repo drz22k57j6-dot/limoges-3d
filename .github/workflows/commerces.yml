@@ -17,10 +17,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Télécharger
         run: |
+          set +e
+          exec > >(tee outils/commerces/log.txt) 2>&1
           set -x
           pip install openpyxl pandas >/dev/null
           cd outils/commerces
-          curl -sSL -A "Mozilla/5.0" -o bdcom.xlsx https://www.apur.org/open_data/BDCOM_2023_OD.xlsx || true
+          curl -sSL -w '%{http_code}\n' -A "Mozilla/5.0" -o bdcom.xlsx https://www.apur.org/open_data/BDCOM_2023_OD.xlsx || true
           ls -la
           python3 - <<'PY'
           import pandas as pd, os
