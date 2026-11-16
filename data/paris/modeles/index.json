@@ -58,7 +58,7 @@
    "largeur_m": 57.7,
    "hauteur_m": 50,
    "rayon_m": 28.8,
-   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/arc-de-triomphe/ Textures (test) : pierre, enduit et ardoise photographiés (Poly Haven, CC0) teintés avec la couleur mesurée sur la BD ORTHO IGN ; or, cuivre vert-de-gris, zinc, fer et verre générés.",
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/arc-de-triomphe/ Textures v2 : pierre/enduit/ardoise Poly Haven (CC0) teintés à la couleur mesurée sur la BD ORTHO IGN, à l'échelle des assises réelles ; nuances, coulures et salissures générées (non mesurées) ; or PBR (dorures redorées 2023-24), vert-de-gris, zinc, fer, verre générés.",
    "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
   },
   {
@@ -838,7 +838,7 @@
    "largeur_m": 158.1,
    "hauteur_m": 58,
    "rayon_m": 79.0,
-   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/opera-garnier/ Textures (test) : pierre, enduit et ardoise photographiés (Poly Haven, CC0) teintés avec la couleur mesurée sur la BD ORTHO IGN ; or, cuivre vert-de-gris, zinc, fer et verre générés.",
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/opera-garnier/ Textures v2 : pierre/enduit/ardoise Poly Haven (CC0) teintés à la couleur mesurée sur la BD ORTHO IGN, à l'échelle des assises réelles ; nuances, coulures et salissures générées (non mesurées) ; or PBR (dorures redorées 2023-24), vert-de-gris, zinc, fer, verre générés.",
    "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
   },
   {
@@ -1162,7 +1162,7 @@
    "largeur_m": 98.0,
    "hauteur_m": 84,
    "rayon_m": 49.0,
-   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/sacre-coeur/ Textures (test) : pierre, enduit et ardoise photographiés (Poly Haven, CC0) teintés avec la couleur mesurée sur la BD ORTHO IGN ; or, cuivre vert-de-gris, zinc, fer et verre générés.",
+   "source": "Open Landmarks (modèle CC BY ; données © contributeurs OpenStreetMap, ODbL) — open-landmarks.benmaps.fr/landmarks/sacre-coeur/ Textures v2 : pierre/enduit/ardoise Poly Haven (CC0) teintés à la couleur mesurée sur la BD ORTHO IGN, à l'échelle des assises réelles ; nuances, coulures et salissures générées (non mesurées) ; or PBR (dorures redorées 2023-24), vert-de-gris, zinc, fer, verre générés.",
    "verifie": "position et dimensions : modèle géoréférencé à l'échelle réelle (ancre, mètres) ; sol : LiDAR IGN ; version « preview » du catalogue (peut contenir des brouillons non relus)"
   },
   {
