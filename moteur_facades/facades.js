@@ -42,14 +42,14 @@ export function createKit(T, base) {
   }
   const std = o => new T.MeshStandardMaterial(o);
   // verre teinté brillant : reflet fort en incidence rasante, on voit l'intérieur de face (Fresnel sur l'opacité)
-  const glass = (c, rough, a0) => {
+  const glass = (c, rough, a0, aMax = .85) => {
     const m = std({ color: c, metalness: .25, roughness: rough, envMapIntensity: 1.25, transparent: true, opacity: 1, depthWrite: false });
     m.onBeforeCompile = sh => {
       sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `{ float fr=pow(1.-clamp(abs(dot(normalize(-vViewPosition), normal)),0.,1.),3.5);
-        diffuseColor.a=mix(${a0.toFixed(2)},.85,fr); outgoingLight+=vec3(.012,.016,.02); }
+        diffuseColor.a=mix(${a0.toFixed(2)},${aMax.toFixed(2)},fr); outgoingLight+=vec3(.012,.016,.02); }
         #include <opaque_fragment>`);
     };
-    m.customProgramCacheKey = () => 'verre' + a0.toFixed(2);
+    m.customProgramCacheKey = () => 'verre' + a0.toFixed(2) + aMax;
     return m;
   };
   const paints = new Map();
@@ -60,7 +60,7 @@ export function createKit(T, base) {
     fonte: std({ color: 0x141619, metalness: .65, roughness: .42 }),
     zincTube: std({ color: 0x80878b, metalness: .35, roughness: .55 }),
     verres: [glass(0x33444c, .03, .22), glass(0x34453c, .05, .28), glass(0x48463f, .08, .34)],
-    vitre: glass(0x55656b, .03, .14),
+    vitre: glass(0x2f3a3e, .02, .06, .55),
     menuiserie: std({ color: 0xefebe2, roughness: .5 }),
     menuiserieGris: std({ color: 0xbfc3c3, roughness: .5 }),
     rideau: std({ color: 0xe6dfd2, roughness: .95, side: T.DoubleSide }),
@@ -356,13 +356,16 @@ function descente(T, extra, M, R, x, Htop, cd, mat) {
   extra.push([new T.CylinderGeometry(r * 1.6, r * 1.6, .1, 10).translate(x, yb, z), cast]);
 }
 
+// outils partagés avec le moteur de commerces
+export const H = { box: (...a) => box(...a), vc: (...a) => vc(...a), room: (...a) => room(...a), drawTags: (...a) => drawTags(...a), tagTexture: (...a) => tagTexture(...a), chaise: (...a) => chaise(...a), pot: (...a) => pot(...a), plante: (...a) => plante(...a), shopFront: (...a) => shopFront(...a), DEEP };
+
 // ------------------------------------------------------------------ immeuble
 export function buildBuilding(T, M, o) {
   const R = rng(o.seed || 7), style = o.style || 'classique';
   if (style === 'moderne') return buildModern(T, M, o, R);
   const W = o.width, D = o.depth || 12, wear = o.wear ?? .3, reno = o.reno ?? Math.max(0, 1 - wear * 1.2 + (R() - .5) * .3);
   const B = o.bays || Math.max(3, Math.round(W / (style === 'modeste' ? 2.4 : 2.6))), bw = W / B;
-  const commerce = o.rdc ? o.rdc === 'commerce' : R() < (o.pShop ?? .5);
+  const commerce = o.shops ? o.shops.length > 0 : (o.rdc ? o.rdc === 'commerce' : R() < (o.pShop ?? .5));
   const jit = () => (R() - .5) * .3;
   let F;
   if (style === 'riche') F = commerce ? [4.3 + jit(), 2.6, 3.5 + jit(), 3.2, 3.1, 3.0, 2.8] : [4.6 + jit(), 3.5 + jit(), 3.2, 3.1, 3.0, 2.8];
@@ -389,6 +392,14 @@ export function buildBuilding(T, M, o) {
   const palApp = R() < .5 ? MURS_INT[Math.floor(R() * MURS_INT.length)] : undefined;   // parfois un même ton d'appartement par immeuble
   const pOpen = o.pOpen ?? .12;
   let tagsRdc = 0;
+  // commerces réels : chaque commerce occupe une suite de travées (hors porte d'immeuble)
+  const bayShop = [];
+  if (commerce && o.shops && o.shopBuilder) {
+    const bays = []; for (let b = 0; b < B; b++) if (b !== doorBay) bays.push(b);
+    const n = Math.min(o.shops.length, bays.length);
+    bays.forEach((b, i) => { const k = Math.min(n - 1, Math.floor(i * n / bays.length)); bayShop[b] = { shop: o.shops[k], k }; });
+    for (const b of bays) { const k = bayShop[b].k, grp = bays.filter(x => bayShop[x].k === k); Object.assign(bayShop[b], { first: b === grp[0], last: b === grp[grp.length - 1], gx0: grp[0] * bw, gx1: (grp[grp.length - 1] + 1) * bw }); }
+  }
 
   for (let f = 0; f < F.length; f++) {
     const y0 = yF[f], h = F[f];
@@ -397,9 +408,10 @@ export function buildBuilding(T, M, o) {
     const hh = (ent && f === 0) ? F[0] + F[1] : h, gArr = base ? G.rdc : G.mur;
     const palF = palApp ?? (R() < .6 ? MURS_INT[Math.floor(R() * MURS_INT.length)] : undefined);
     for (let b = 0; b < B; b++) {
-      const cx = (b + .5) * bw, isDoor = base && !commerce && b === doorBay;
+      const cx = (b + .5) * bw, isDoor = base && b === doorBay && (!commerce || !!o.shopBuilder);
       let ww, wh, sill;
-      if (base && commerce) { ww = bw * .8; wh = F[0] - .3; sill = .25; }
+      if (base && commerce && !isDoor) { ww = bw * .8; wh = F[0] - .3; sill = .25; }
+      else if (isDoor && commerce) { ww = Math.min(1.5, bw * .58); wh = Math.min(F[0] - .3, 3.3); sill = .1; }
       else if (isDoor) { ww = cochere ? Math.min(3.0, bw * .88) : Math.min(1.5, bw * .6); wh = cochere ? Math.min(F[0] - .3, 3.9) : F[0] * .78; sill = .1; }
       else if (base) { ww = winW; wh = F[0] * .6; sill = F[0] * .25; }
       else { ww = winW; wh = h * (f === nobleF ? .7 : .66); sill = h * .12; if (f === lastF && style !== 'modeste') wh = h * .62; }
@@ -417,10 +429,12 @@ export function buildBuilding(T, M, o) {
       } else gArr.push(box(T, ww, y0 + hh - top, REC, cx, (top + y0 + hh) / 2, -REC / 2));
       if (base) {
         if (style !== 'modeste') for (let yy = .42; yy < hh - .15; yy += .42) { G.rdc.push(box(T, pierW + .002, .05, .03, cx - ww / 2 - pierW / 2, yy, .005)); G.rdc.push(box(T, pierW + .002, .05, .03, cx + ww / 2 + pierW / 2, yy, .005)); }
-        if (commerce) {
+        if (commerce && !isDoor && o.shopBuilder) {
+          const sh = bayShop[b]; o.shopBuilder({ T, G, extra, M, R, H, cx, y0: y0 + sill, ww, wh, REC, bw, shop: sh.shop, first: sh.first, last: sh.last, gx0: sh.gx0, gx1: sh.gx1, style, wear, reno, tagP: o.tagP ?? .5, trottoir: o.trottoir ?? 3.5, hh, ent });
+        } else if (commerce && !isDoor) {
           const closed = R() < (o.pClosed ?? .3);
           shopFront(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, shopName[Math.floor(R() * shopName.length)], !closed && b === doorBay && R() < .5, closed, o.tagP ?? .6);
-        } else if (isDoor) entryDoor(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, o.numero ?? (2 + Math.floor(R() * 60)), { cochere, style, reno, pal: o.doorPal, tagP: (o.tagP ?? .3) * .5 });
+        } else if (isDoor) entryDoor(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, o.numero ?? (2 + Math.floor(R() * 60)), { cochere: cochere && !commerce, style, reno, pal: o.doorPal, tagP: (o.tagP ?? .3) * .5 });
         else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
         // tag sur un trumeau du rez-de-chaussée (quartiers usés)
         if (wear > .45 && tagsRdc < 2 && R() < (o.tagP ?? .3) * .35) { tagsRdc++; const tw = Math.max(1.2, pierW * 2 + .4); extra.push([new T.PlaneGeometry(tw, tw * .5).translate(cx + ww / 2 + pierW, .9 + R() * .5, .012), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1 + Math.floor(R() * 2)), transparent: true, roughness: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })]); }

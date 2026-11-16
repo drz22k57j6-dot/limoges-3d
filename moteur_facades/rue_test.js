@@ -22,7 +22,11 @@ let KIT = null;
 // sol : { MS, VO } (moteur_sol) facultatif — s'il est fourni, le sol de la rue vient du moteur de sol
 const ABANDON = { '7e': 0.18, '16e': 0.04, '19e': 0.75 };
 export async function buildTestStreet(T, ctx, voirieTex, sol) {
-  if (!buildBuilding) ({ createKit, buildBuilding } = await import('./facades.js' + new URL(import.meta.url).search));
+  const qv = new URL(import.meta.url).search;
+  if (!buildBuilding) ({ createKit, buildBuilding } = await import('./facades.js' + qv));
+  // commerces réels (APUR BDCOM 2023) de la rue modèle du quartier : chaque immeuble reprend une adresse réelle, dans l'ordre
+  const [{ buildShop }, { H }, REEL] = await Promise.all([import('./commerces.js' + qv), import('./facades.js' + qv), fetch(new URL('./data/commerces_rues_test.json' + qv, import.meta.url)).then(r => r.json()).catch(() => null)]);
+  const rue = REEL?.[ctx];
   const C = QUARTIERS[ctx] || QUARTIERS['7e'];
   if (!KIT) KIT = createKit(T, new URL('./tex/', import.meta.url).href);
   let seed = C.seed; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -50,10 +54,11 @@ export async function buildTestStreet(T, ctx, voirieTex, sol) {
   for (const zz of [S - .3, S + RD + .3]) for (let x = -L / 2; x < L / 2; x += 1.7) { if (Math.abs(x - 18) < 3) continue; add(new T.CylinderGeometry(.05, .06, .9, 10), pot, x, .55, zz); }
   // immeubles mitoyens des deux côtés
   for (const side of [0, 1]) {
-    let x = -L / 2;
+    let x = -L / 2; const file = rue ? rue.cotes[side].slice() : null;
     while (x < L / 2 - 6) {
       const w = Math.min(L / 2 - x, C.wid[0] + R() * (C.wid[1] - C.wid[0]));
-      const b = buildBuilding(T, KIT, { width: w, seed: 1 + Math.floor(R() * 1e6), style: pick(C.styles), wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: teinte(T, C, R), pShop: C.pShop, pClosed: C.pClosed, tagP: C.tagP, verdure: C.verdure, depth: 14 });
+      const adr = file?.shift(), st0 = pick(C.styles), shops = adr ? adr.shops.map((s, k) => ({ type: s.t, nom: s.nom, id: adr.num + '-' + k })) : undefined;
+      const b = buildBuilding(T, KIT, { width: w, seed: 1 + Math.floor(R() * 1e6), style: st0 === 'moderne' && shops?.length ? 'modeste' : st0, shops, shopBuilder: rue ? buildShop : undefined, numero: adr?.num, trottoir: S, wear: C.wear[0] + R() * (C.wear[1] - C.wear[0]), tone: teinte(T, C, R), pShop: C.pShop, pClosed: C.pClosed, tagP: C.tagP, verdure: C.verdure, depth: 14 });
       if (side === 0) b.position.set(x, 0, 0); else { b.rotation.y = Math.PI; b.position.set(x + w, 0, zOpp); }
       G.add(b); x += w;
     }
