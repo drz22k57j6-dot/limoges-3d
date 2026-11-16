@@ -271,7 +271,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=39';
+const V = '?v=40';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1651,8 +1651,8 @@ function sectorPhys(k) {   // une fois chargée, la physique d'un secteur reste 
   const inf = STREAM.idx.secteurs[k]; if (!inf) return Promise.resolve();
   const has = f => inf.fichiers.includes(f), [si, sj] = k.split('_').map(Number), tk = Math.floor(si / 2) + '_' + Math.floor(sj / 2);
   const rel = (STREAM.idx.relief || []).includes(tk) && !STREAM.relief.has(tk) ? (STREAM.relief.add(tk), sGet('secteurs/relief/r_' + tk + '.wasm').then(b => { relief.push(...parseRelief(b)); }).catch(() => STREAM.relief.delete(tk))) : null;
-  const p = Promise.all([modelledReady.then(() => has('batiments_collision.wasm') ? sGet('secteurs/' + k + '/batiments_collision.wasm') : null), has('routes_axes.wasm') ? sGet('secteurs/' + k + '/routes_axes.wasm') : null, has('arbres.wasm') ? sGet('secteurs/' + k + '/arbres.wasm') : null, rel])
-    .then(([bat, ax, arb]) => { appendBuildings(bat); if (ax) parseRoads(ax); if (arb) STREAM.treeBufs.set(k, arb); STREAM.phys.add(k); STREAM.physP.delete(k); })
+  const p = Promise.all([modelledReady.then(() => has('batiments_collision.wasm') ? sGet('secteurs/' + k + '/batiments_collision.wasm') : null), has('routes_axes.wasm') ? sGet('secteurs/' + k + '/routes_axes.wasm') : null, has('arbres.wasm') ? sGet('secteurs/' + k + '/arbres.wasm') : null, rel, has('poubelles.wasm') ? sGet('secteurs/' + k + '/poubelles.wasm').catch(() => null) : null])
+    .then(([bat, ax, arb, , pb]) => { if (pb) { const n = new DataView(pb).getUint32(0, true); POUB.bufs.set(k, { n, f: new Float32Array(pb, 4, n * 4), v: new Uint8Array(pb, 4 + n * 16, n) }); } appendBuildings(bat); if (ax) parseRoads(ax); if (arb) STREAM.treeBufs.set(k, arb); STREAM.phys.add(k); STREAM.physP.delete(k); })
     .catch(e => { STREAM.physP.delete(k); console.warn('secteur', k, e); });
   STREAM.physP.set(k, p); return p;
 }
@@ -1730,6 +1730,28 @@ function placeModel(m, g) {
   root.position.set(m.centre_local[0], m.sol_alt - H0v, m.centre_local[1]); root.name = 'modele_' + m.id;
   o.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; if (n.material && n.material.map) n.material.map.anisotropy = 8; } });
   return root;
+}
+// ---------------- poubelles (bacs roulants, 10 variantes) : placement GÉNÉRÉ devant des immeubles (pas une donnée mesurée) ----------------
+// secteurs/<k>/poubelles.wasm : u32 n, n×(x, y, z, angle) f32, n×u8 variante. Affichées à moins de 220 m de la caméra.
+const POUB = { bufs: new Map(), ims: null, loading: false, t: 0 }; window.__POUB = POUB;
+function updatePoubelles(dt, cx, cz, hidden) {
+  if (!POUB.ims) {
+    if (!POUB.loading && POUB.bufs.size) { POUB.loading = true;
+      Promise.all([...Array(10).keys()].map(i => loader.loadAsync(CITY.data + 'modeles/props/poubelle_' + i + '.glb' + V))).then(gs => {
+        POUB.ims = gs.map(g => { let m = null; g.scene.updateMatrixWorld(true); g.scene.traverse(o => { if (o.isMesh && !m) m = o; });
+          const im = new THREE.InstancedMesh(m.geometry.clone().applyMatrix4(m.matrixWorld), m.material, 500); im.count = 0; im.frustumCulled = false;
+          im.castShadow = true; im.receiveShadow = true; im.name = 'poubelles'; scene.add(im); return im; });
+      }).catch(e => { console.warn('poubelles', e); POUB.loading = false; }); }
+    return;
+  }
+  for (const im of POUB.ims) im.visible = !hidden;
+  if (hidden || (POUB.t -= dt) > 0) return; POUB.t = 0.5;
+  const R = 220, M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), P = new THREE.Vector3(), S1 = new THREE.Vector3(1, 1, 1), cnt = new Array(10).fill(0);
+  for (const b of POUB.bufs.values()) { const f = b.f, v = b.v;
+    for (let i = 0; i < b.n; i++) { const x = f[4 * i], z = f[4 * i + 2]; if (Math.abs(x - cx) > R || Math.abs(z - cz) > R) continue;
+      const k = v[i], im = POUB.ims[k]; if (!im || cnt[k] >= 500) continue;
+      Q.setFromAxisAngle(Y, f[4 * i + 3]); im.setMatrixAt(cnt[k]++, M4.compose(P.set(x, f[4 * i + 1] + 0.02, z), Q, S1)); } }
+  POUB.ims.forEach((im, k) => { im.count = cnt[k]; im.instanceMatrix.needsUpdate = true; });
 }
 function updateModels(dt) {
   if (!MODELS.list.length || (MODELS.t -= dt) > 0) return; MODELS.t = 1;
@@ -1827,7 +1849,7 @@ function loop(now) {
   scene.traverse(o => { if (o.name && o.name.startsWith('modele_')) o.visible = !PHOTO_W; });
   for (const c of chunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < far + 700;
   for (const c of treeChunks) c.obj.visible = !c.hiddenByCity && Math.hypot(c.c.x - camera.position.x, c.c.z - camera.position.z) < tf + 710;
-  updateTrees(dt, camera.position.x, camera.position.z, PHOTO_W); for (const im of TREE.far || []) im.visible = im.visible && !PHOTO_W;
+  updateTrees(dt, camera.position.x, camera.position.z, PHOTO_W); updatePoubelles(dt, camera.position.x, camera.position.z, PHOTO_W); for (const im of TREE.far || []) im.visible = im.visible && !PHOTO_W;
   if (grass) { grassP.set(F.x, F.y, F.z); grass.update(dt, grassP); }
   if (cityTiles) { // périmètre de qualité maximale : bâtiments détaillés jusqu'à 160 m de la caméra, version simple au-delà
     const H = renderer.domElement.height, k = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * 160;
