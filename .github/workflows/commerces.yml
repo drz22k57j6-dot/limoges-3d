@@ -22,6 +22,9 @@ jobs:
           set -x
           pip install openpyxl pandas >/dev/null
           cd outils/commerces
+          python3 geo_rues.py
+          ls -la rues
+          exit 0
           curl -sS -A "Mozilla/5.0" "https://opendata.apur.org/api/search/v1/collections/all/items?q=bdcom&limit=50" -o hub.json; head -c 3000 hub.json; echo
           python3 - <<'PY'
           import json, subprocess, os
