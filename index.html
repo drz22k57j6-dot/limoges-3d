@@ -99,7 +99,7 @@
 </div>
 <div id="dsticks"><div class="dst" id="dsL"><div class="dkn"></div><span>GAZ · LACET</span></div><div class="dst" id="dsR"><div class="dkn"></div><span>TANGAGE · ROULIS</span></div></div>
 <div id="pipBox"><canvas id="pip" width="320" height="180"></canvas><b id="pipLbl">CAMÉRA</b></div>
-<div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0</div>
+<div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL)</div>
 <script>
 // ---------- choice of city (?ville=paris), remembered on the phone ----------
 window.CITIES = {
@@ -1553,8 +1553,8 @@ function setCity(m) {
   chunks.forEach(c => c.hiddenByCity = g);
   carBlob.visible = g;
   $('bVille').textContent = g ? 'VILLE PHOTO' : 'VILLE IGN';
-  $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0'
-    : 'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voiture « Car Concept » © Khronos, CC‑BY 4.0';
+  $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL)'
+    : 'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL)';
 }
 // keep the photo city at the right height: compare it with the LiDAR ground on roads around the player
 function calibrateTiles(F) {
@@ -1665,7 +1665,7 @@ async function main() {
     STREAM.idx = await fetch(CITY.data + 'secteurs/index.json' + V).then(r => r.ok ? r.json() : null).catch(() => null);
     const SX = !!STREAM.idx, none = Promise.resolve(null);
     const [gT, gO, gC, rel, bat, rds, treesBuf, v3Buf, decoBuf, signs, names, pontsBuf, kerbBuf] = SX ? await Promise.all([
-      loadGLB(CITY.data + 'terrain_loin.wasm', 't'), loadGLB(CITY.data + 'objets_ville.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'), none, none, none, none, none, none, none,
+      loadGLB(CITY.data + 'terrain_loin.wasm', 't'), loadGLB(CITY.data + 'objets_ville.wasm', 'o'), none,   // plus de voiture none, none, none, none, none, none, none,
       fetch(CITY.data + 'routes_noms.json' + V).then(r => r.ok ? r.json() : {}).catch(() => ({})), none, none]) : await Promise.all([
       loadGLB(CITY.data + 'terrain.wasm', 't'), loadGLB(CITY.data + 'objets.wasm', 'o'), loadGLB('data/voiture.wasm', 'c'),
       loadBin(CITY.data + 'relief.wasm', 'r'), loadBin(CITY.data + 'batiments_collision.wasm', 'b'), loadBin(CITY.data + 'routes_axes.wasm', 'a'), loadBin(CITY.data + 'arbres.wasm', 'r2'), loadBin(CITY.data + 'routes_v3.wasm', 'v3').catch(() => null), loadBin(CITY.data + 'routes_deco.wasm', 'dc').catch(() => null), fetch(CITY.data + 'signalisation.json' + V).then(r => r.ok ? r.json() : null).catch(() => null),
@@ -1675,7 +1675,7 @@ async function main() {
     if (SX) { relief = []; roadNames = names || {}; appendBuildings(null); setupCity(gT, gO); gT.scene.position.y = -0.6; gT.scene.updateMatrixWorld(true); gT.scene.traverse(o => { if (o.isMesh) { o.matrixAutoUpdate = true; o.renderOrder = -1; } }); }
     else { relief = parseRelief(rel); roadNames = names; parseRoads(rds); parseBuildings(bat); setupCity(gT, gO); buildTrees(treesBuf); }
     if (SX) { STREAM.SR = createSaltlineRoads(THREE); window.__SR = STREAM.SR; window.__groundH = groundH; }
-    else { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; setupCar(gC); if (!SX) buildMap(allRings);
+    else { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; if (gC) setupCar(gC); if (!SX) buildMap(allRings);
     // 3D grass ported from Larkhollow, on the real green areas (orthophoto + LiDAR mask)
     grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, isVisible: () => cityMode !== 'google', maskUrl: SX ? null : CITY.data + 'tex/herbe_masque.jpg' + V,
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
@@ -1691,7 +1691,12 @@ async function main() {
       scene.add(root);
     }).catch(e => console.warn('modele', m.id, e)); }).catch(() => {});
     applyTime(); applyQuality();
-    if (SX) { $('ltxt').textContent = 'Chargement du quartier…'; await streamUpdate(0, 0, true); }
+    if (SX) { // démarrage rapide : seulement le km² du départ (murs, sol, routes, terrain) ; le reste se charge en vol
+      $('ltxt').textContent = 'Chargement du quartier…';
+      const I = STREAM.idx, si = Math.floor(I.RX / 1000), sj = Math.floor(I.RY / 1000), k0 = si + '_' + sj;
+      await sectorPhys(k0); await Promise.all([sectorVis(k0), terrainTile(Math.floor(si / 2) + '_' + Math.floor(sj / 2))]);
+      buildMap(allRings, 0, 0); STREAM.complete = false; STREAM.last = '';
+    }
     respawn(true);
     { const m = /x=(-?[\d.]+)&z=(-?[\d.]+)&h=(-?[\d.]+)/.exec(location.hash); if (m) { S.x = +m[1]; S.z = +m[2]; const r = nearestRoad(S.x, S.z, 60); if (r) { S.x = r.x; S.z = r.z; S.h = r.dir; } else S.h = +m[3]; S.y = S.lastG = surfaceH(S.x, S.z); S.yv = S.y; } }
     camYaw = S.h; camPos.set(S.x - Math.sin(S.h) * 8, S.y + 3, S.z - Math.cos(S.h) * 8); camLook.set(S.x, S.y + 1, S.z);

@@ -12,7 +12,7 @@ const $ = id => document.getElementById(id);
 
 // ---------------------------------------------------------------- données
 const [axBuf, graph, NAMES] = await Promise.all([
-  fetch((window.CITY ? CITY.data : 'data/') + 'routes_axes.wasm' + V).then(r => r.arrayBuffer()),
+  fetch((window.CITY ? CITY.data : 'data/') + 'routes_axes.wasm' + V).then(r => r.ok ? r.arrayBuffer() : new ArrayBuffer(8)),   // Paris entier : axes par secteurs, éditeur inactif
   fetch((window.CITY ? CITY.data : 'data/') + 'graphe_routier.json' + V).then(r => r.json()).catch(() => ({ nodes: [], edges: [] })),
   fetch((window.CITY ? CITY.data : 'data/') + 'routes_noms.json' + V).then(r => r.json()).catch(() => [])]);
 const ROADS = [];
