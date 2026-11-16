@@ -164,6 +164,7 @@ const QUALITIES = [
   { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
 let qi = isTouch ? 1 : 0;
+const GFX = { grass: true, trees: true };
 // ---------------- cinematic post-processing ----------------
 const GradeShader = {
   uniforms: { tDiffuse: { value: null }, time: { value: 0 }, sat: { value: 1.08 }, contrast: { value: 1.04 }, vig: { value: 0.25 }, grain: { value: 0.015 }, warm: { value: new THREE.Vector3(1.01, 1.0, 0.98) } },
@@ -193,7 +194,7 @@ function buildComposer() {
   composer.addPass(new RenderPass(scene, camera));
   if (q.ao) { aoPass = new GTAOPass(scene, camera, innerWidth, innerHeight); aoPass.blendIntensity = 0.75; aoPass.updateGtaoMaterial({ radius: 0.5, distanceExponent: 1.5, thickness: 1.5, scale: 1.0, samples: 12 }); composer.addPass(aoPass); }
   composer.addPass(new OutputPass());
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.18, 0.45, 0.93); composer.addPass(bloomPass); // after tone mapping: only real highlights glow
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), window.__dev ? window.__dev.bloom.s : 0.18, 0.45, 0.93); composer.addPass(bloomPass); // after tone mapping: only real highlights glow
   gradePass = new ShaderPass(GradeShader); composer.addPass(gradePass);
 }
 function resize() {
@@ -269,7 +270,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=34';
+const V = '?v=35';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1161,7 +1162,7 @@ function planeGround(x,z){
 // Contact strict : le drone ne touche un mur, un toit ou le sol que lorsque sa coque y est réellement
 // (rayon de la coque et des hélices 0,78 m, patins à 0,21 m sous le centre) ; aucune marge invisible.
 const DS = { lx: 0, ly: 0, rx: 0, ry: 0 }; let AUTOP = null;
-const DR = { R: 0.78, LEG: 0.21, VMAX: 16, VZ: 5, YAW: 1.6 };
+const DR = { R: 0.78, LEG: 0.21, VMAX: 16, VZ: 5, YAW: 1.6, ACC: 1.8, BRAKE: 2.6, VACC: 3, EXPO: 0.55, COLL: true, ALTMAX: 500 };
 // deux régimes : PRÉCIS (tournage, 58 km/h) et SPORT (300 km/h, montée rapide)
 const DR_MODES = [{ VMAX: 16, VZ: 5, YAW: 1.6, lbl: '60 KM/H' }, { VMAX: 300 / 3.6, VZ: 20, YAW: 2.2, lbl: '300 KM/H' }, { VMAX: 1500 / 3.6, VZ: 45, YAW: 2.6, lbl: '1500 KM/H' }];
 let drMode = 2; Object.assign(DR, { VMAX: DR_MODES[2].VMAX, VZ: DR_MODES[2].VZ, YAW: DR_MODES[2].YAW });
@@ -1202,14 +1203,14 @@ function planeStep(dt){
  const roll=THREE.MathUtils.clamp(DS.rx+(kb(['KeyD'])?1:0)-(kb(['KeyA','KeyQ'])?1:0),-1,1);
  const yaw=THREE.MathUtils.clamp(-DS.lx+(kb(['ArrowLeft'])?1:0)-(kb(['ArrowRight'])?1:0),-1,1);
  const thr=THREE.MathUtils.clamp(DS.ly+(kb(['Space','ArrowUp'])?1:0)-(kb(['ShiftLeft','ShiftRight','ArrowDown'])?1:0),-1,1);
- const ex=x=>Math.sign(x)*x*x*.55+x*.45;               // courbe « expo » : précision autour du centre
+const ex=x=>Math.sign(x)*x*x*DR.EXPO+x*(1-DR.EXPO);               // courbe « expo » : précision autour du centre
  const auto=AUTOP&&AUTOP.active&&AUTOP.step(dt);
  if(!auto)PL.yaw+=ex(yaw)*DR.YAW*dt;
  const fx=Math.sin(PL.yaw),fz=Math.cos(PL.yaw),rx=-Math.cos(PL.yaw),rz=Math.sin(PL.yaw);
  if(!auto){const wantX=(fx*ex(pitch)+rx*ex(roll))*DR.VMAX,wantZ=(fz*ex(pitch)+rz*ex(roll))*DR.VMAX;
- const k=Math.min(1,dt*(pitch||roll?1.8:2.6));        // inertie, puis freinage actif quand on lâche
+ const k=Math.min(1,dt*(pitch||roll?DR.ACC:DR.BRAKE));        // inertie, puis freinage actif quand on lâche
  PL.vx=(PL.vx||0)+(wantX-(PL.vx||0))*k; PL.vz=(PL.vz||0)+(wantZ-(PL.vz||0))*k;
- PL.vy+=(ex(thr)*DR.VZ-PL.vy)*Math.min(1,dt*3);}
+ PL.vy+=(ex(thr)*DR.VZ-PL.vy)*Math.min(1,dt*DR.VACC);}
  // déplacement en petits pas (jamais plus de 0,2 m) : impossible de traverser un mur fin ou un coin
  const LX=STREAM.idx?STREAM.idx.RX-10:2990,LZ=STREAM.idx?STREAM.idx.RY-10:2990;
  const tot=Math.hypot(PL.vx*dt,PL.vz*dt,PL.vy*dt),nsub=Math.max(1,Math.ceil(tot/0.2));
@@ -1219,15 +1220,15 @@ function planeStep(dt){
   // quartier pas encore chargé (murs, sol) : le drone attend au bord, il n'y entre pas à l'aveugle
   if(!physReady(nx,nz)){PL.vx*=0.5;PL.vz*=0.5;nx=PL.x;nz=PL.z;if(!PL.waitT||performance.now()-PL.waitT>2500){PL.waitT=performance.now();toast('Chargement du quartier…')}}
   // murs : contact exact avec la coque
-  const [wx,wz,hit]=droneWalls(nx,ny,nz,DR.R); nx=wx;nz=wz;
+  const [wx,wz,hit]=DR.COLL?droneWalls(nx,ny,nz,DR.R):[nx,nz,null]; nx=wx;nz=wz;
   if(hit){const vn=PL.vx*hit.nx+PL.vz*hit.nz;if(vn<0){PL.vx-=vn*hit.nx;PL.vz-=vn*hit.nz;if(vn<-3)thud(Math.min(1,-vn/10))}}
   // jamais à l'intérieur d'un bâtiment : sortie la plus courte (au-dessus du toit ou hors de l'emprise)
-  const inB=insideBuilding(nx,ny,nz);
+  const inB=DR.COLL?insideBuilding(nx,ny,nz):null;
   if(inB){if(inB.up<=inB.side){ny=inB.top+DR.LEG;if(PL.vy<0)PL.vy=0}else{nx=inB.ex;nz=inB.ez;PL.vx*=0.2;PL.vz*=0.2}}
   // sol et toits : les patins se posent au contact
   const floor=planeGround(nx,nz)+DR.LEG;
   if(ny<=floor){ny=floor;if(PL.vy<0){if(PL.vy<-3)thud(Math.min(1,-PL.vy/8));PL.vy=0}landedNow=true}
-  ny=Math.min(500,ny);
+  ny=Math.min(DR.ALTMAX,ny);
   PL.x=THREE.MathUtils.clamp(nx,-LX,LX);PL.z=THREE.MathUtils.clamp(nz,-LZ,LZ);PL.y=ny;
  }
  PL.landed=landedNow&&!auto&&thr<=0.05&&Math.hypot(PL.vx,PL.vz)<0.6;
@@ -1256,7 +1257,7 @@ function updatePlaneVisual(dt){
  camGimbal.rotation.set(-PL.pitch-GIMBAL.tilt,GIMBAL.yaw,-PL.bank,'YXZ');drone.updateMatrixWorld(true);
 }
 // Caméra du drone : nacelle stabilisée 3 axes (horizon toujours droit), orientable : avant, droite, gauche, plongée.
-const GIMBAL = { dirs: [['AVANT', 0, -0.12], ['DROITE', -Math.PI / 2, -0.08], ['GAUCHE', Math.PI / 2, -0.08], ['PLONGÉE', 0, -1.45]], i: 1, yaw: -Math.PI / 2, tilt: -0.08, fov: 50 };
+const GIMBAL = { dirs: [['AVANT', 0, -0.12], ['DROITE', -Math.PI / 2, -0.08], ['GAUCHE', Math.PI / 2, -0.08], ['PLONGÉE', 0, -1.45]], i: 0, yaw: 0, tilt: -0.12, fov: 50 };
 let droneView = 'cam';   // 'cam' : plein écran = caméra du drone ; 'pilot' : vue pilote, la caméra en petit
 function gimbalPose(pos, look) {
   const g = GIMBAL.dirs[GIMBAL.i]; const y = PL.yaw + GIMBAL.yaw, cp = Math.cos(GIMBAL.tilt);
@@ -1307,6 +1308,29 @@ const DPHOTO = initDronePhoto({ THREE, PL, DS, GIMBAL, DID, scene, camera, rende
   inCity: (x, z) => STREAM.idx ? !!STREAM.idx.secteurs[Math.floor((x + STREAM.idx.RX) / 1000) + '_' + Math.floor((-z + STREAM.idx.RY) / 1000)] : Math.abs(x) < 2950 && Math.abs(z) < 2950,
   ensureArea: async (x, z) => { const I = STREAM.idx; if (!I) return; const si = Math.floor((x + I.RX) / 1000), sj = Math.floor((-z + I.RY) / 1000), ks = []; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) ks.push((si + a) + '_' + (sj + b)); await Promise.all(ks.map(sectorPhys)); } });
 window.__DPHOTO = DPHOTO;
+// API développeur pour le panneau Réglages : tout est réglable en direct
+window.__dev = {
+  DR, GIMBAL, GFX,
+  qualities: QUALITIES.map(q => q.name), quality: () => qi, setQuality: i => { qi = i; applyQuality(); },
+  q: () => QUALITIES[qi],
+  setDpr: v => { QUALITIES[qi].dpr = v; resize(); },
+  setFar: v => { QUALITIES[qi].far = v; scene.fog.far = v; scene.fog.near = v * 0.18; camera.far = v + 400; camera.updateProjectionMatrix(); },
+  shadows: () => renderer.shadowMap.enabled, setShadows: b => { renderer.shadowMap.enabled = b; sun.castShadow = b; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); },
+  setShadowSize: v => { QUALITIES[qi].shadow = v; sun.shadow.mapSize.set(v, v); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } },
+  setPost: b => { QUALITIES[qi].post = b; buildComposer(); }, setAo: b => { QUALITIES[qi].ao = b; buildComposer(); },
+  grade: k => GradeShader.uniforms[k].value, setGrade: (k, v) => { GradeShader.uniforms[k].value = v; if (gradePass) gradePass.uniforms[k].value = v; },
+  bloom: { s: 0.18 }, setBloom: v => { window.__dev.bloom.s = v; if (bloomPass) bloomPass.strength = v; },
+  exposure: () => renderer.toneMappingExposure, setExposure: v => { renderer.toneMappingExposure = v; },
+  setTrees: b => { GFX.trees = b; treeChunks.forEach(c => c.obj.visible = b); },
+  world: () => WORLD.mode, setWorld: m => setWorld(m),
+  times: TIMES.map(t => t.name), time: () => ti, setTime: i => { ti = i; applyTime(); },
+  sun: () => TIMES[ti], setSun: (elev, az) => { TIMES[ti].elev = elev; TIMES[ti].az = az; applyTime(); },
+  gimbalDirs: GIMBAL.dirs.map(d => d[0]), setGimbal: i => { GIMBAL.i = i; GIMBAL.man = 0; }, setTilt: deg => { GIMBAL.dirs[GIMBAL.i][2] = deg * Math.PI / 180; GIMBAL.man = 0; },
+  view: () => droneView, setView: v => { if (droneView !== v) $('pipBox').click(); },
+  info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures }),
+  wire: b => { scene.overrideMaterial = b ? new THREE.MeshBasicMaterial({ wireframe: true, color: 0x22ffcc }) : null; },
+  pos: () => ({ x: PL.x, y: PL.y, z: PL.z, sol: planeGround(PL.x, PL.z), X: PL.x + CITY.X0, Y: CITY.Y0 - PL.z }),
+};
 // API pour le panneau Réglages (drone/reglages.js) : vitesse, téléportation instantanée (sans IA)
 window.__drone = {
   PL, modes: [60, 300, 1500], speed: () => drMode, setSpeed: m => setDrMode(m), toast,
@@ -1701,7 +1725,7 @@ async function main() {
     if (SX) { STREAM.SR = createSaltlineRoads(THREE); window.__SR = STREAM.SR; window.__groundH = groundH; }
     else { const SR = createSaltlineRoads(THREE); window.__SR = SR; window.__groundH = groundH; const ms = v3Buf ? SR.buildV3(v3Buf).concat(pontsBuf ? SR.buildV3(pontsBuf) : [], SR.buildDeco(decoBuf), signs ? SR.buildSignals(signs) : [], SR.buildKerbs(kerbBuf)) : SR.build(roads); for (const m of ms) { scene.add(m); chunks.push({ obj: m, c: m.geometry.boundingSphere.center.clone(), roads: true }); } } window.__roadsReady = true; if (gC) setupCar(gC); if (!SX) buildMap(allRings);
     // 3D grass ported from Larkhollow, on the real green areas (orthophoto + LiDAR mask)
-    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, isVisible: () => cityMode !== 'google', maskUrl: SX ? null : CITY.data + 'tex/herbe_masque.jpg' + V,
+    grass = createLarkGrass(THREE, { renderer, scene, camera, sun, hemi, groundH, isVisible: () => cityMode !== 'google' && GFX.grass, maskUrl: SX ? null : CITY.data + 'tex/herbe_masque.jpg' + V,
       quality: [{ density: 1, distance: 85 }, { density: 0.6, distance: 70 }, { density: 0.35, distance: 55 }][qi] });
     window.__grass = grass;
     // real buildings modelled one by one (data/modeles/index.json): placed on their IGN footprint, at their LiDAR height
@@ -1794,7 +1818,7 @@ main();
 <script src="commun/equipes.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=34"></script>
+<script type="module" src="drone/reglages.js?v=35"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>
