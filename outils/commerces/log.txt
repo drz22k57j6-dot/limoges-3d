@@ -1,21 +1,29 @@
 + pip install openpyxl pandas
 + cd outils/commerces
-+ curl -sSL -w '%{http_code}\n' -A Mozilla/5.0 -o bdcom.xlsx https://www.apur.org/open_data/BDCOM_2023_OD.xlsx
-200
-+ ls -la
-total 44
-drwxr-xr-x 2 runner runner  4096 Nov 16 22:51 .
-drwxr-xr-x 3 runner runner  4096 Nov 16 22:50 ..
--rw-r--r-- 1 runner runner 28672 Nov 16 22:51 bdcom.xlsx
--rw-r--r-- 1 runner runner    30 Nov 16 22:50 demande.txt
--rw-r--r-- 1 runner runner   176 Nov 16 22:51 log.txt
++ curl -sS -A Mozilla/5.0 'https://opendata.apur.org/api/search/v1/collections/all/items?q=bdcom&limit=50' -o hub.json
++ head -c 3000 hub.json
+{"type":"FeatureCollection","features":[{"id":"0984a17f57b148db95491085f2cc1533","type":"Feature","geometry":null,"properties":{"snippet":"BDCOM 2023","extent":null,"commentsEnabled":true,"groupDesignations":null,"access":"public","apiToken2ExpirationDate":-1,"typeKeywords":["ArcGIS Server","Data","Feature Access","Feature Service","Service"],"description":"<div style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'>Fiche descriptive dans le géocatalogue de l'Apur : <a href='https://geocatalogue.apur.org/catalogue/srv/fre/catalog.search#/metadata/96df6162-0683-4ac2-9471-074c5bdd76fe' style='color:rgb(0, 97, 155); text-decoration-line:none; font-family:inherit;' target='_blank' rel='nofollow ugc noopener noreferrer'>BDCOM 2023</a></div><div style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'><br /></div><div style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'>La BDCOM 2023 recense 60 845 commerces et services commerciaux.</div><div style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'>Pour plus de précision, merci de suivre le lien vers la fiche descriptive.</div>","licenseInfo":"<span style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'>Licence ODbL (</span><a href='https://www.apur.org/open_data/resume_licence_ODbl.pdf' style='color:rgb(0, 97, 155); text-decoration-line:none; font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;' target='_blank' rel='nofollow ugc noopener noreferrer'>https://www.apur.org/open_data/resume_licence_ODbl.pdf</a><span style='font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif; font-size:16px;'>)</span>","title":"BDCOM 2023","type":"Feature Service","orgId":"6auAgZ2CrWexOeBJ","screenshots":[],"subInfo":0,"advancedSettings":null,"appCategories":[],"modified":1753446977000,"avgRating":0,"id":"0984a17f57b148db95491085f2cc1533","categories":[],"spatialReference":null,"numRatings":0,"owner":"publication_apur","accessInformation":"nan","largeThumbnail":null,"lastViewed":1771945200000,"thumbnail":"thumbnail/ago_downloaded.png","languages":[],"created":1752057394000,"documentation":null,"banner":null,"classification":null,"url":"https://carto2.apur.org/apur/rest/services/BDCOM/bdcom2023/MapServer/0","tags":["apur_bd_com","apur_bd_economie"],"numViews":9020,"numComments":0,"+ echo
+
 + python3 -
-+ rm -f bdcom.xlsx
-+ Q='[out:json][timeout:300];area["ref:INSEE"="75056"][admin_level=8]->.p;(nwr(area.p)["shop"];nwr(area.p)["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|fuel|car_rental|cinema|theatre|nightclub|clinic|dentist|doctors)$"];nwr(area.p)["craft"];nwr(area.p)["office"~"estate_agent|insurance"];);out center tags;'
-+ curl -sS -m 600 --data-urlencode 'data=[out:json][timeout:300];area["ref:INSEE"="75056"][admin_level=8]->.p;(nwr(area.p)["shop"];nwr(area.p)["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|fuel|car_rental|cinema|theatre|nightclub|clinic|dentist|doctors)$"];nwr(area.p)["craft"];nwr(area.p)["office"~"estate_agent|insurance"];);out center tags;' https://overpass-api.de/api/interpreter -o osm.json
-+ python3 -
+ITEM 0984a17f57b148db95491085f2cc1533 BDCOM 2023 Feature Service https://carto2.apur.org/apur/rest/services/BDCOM/bdcom2023/MapServer/0
+BDCOM 2023 60845
+ITEM 6315a92e5c39483587f299593d195d6d BDCOM 2020 Feature Service https://carto2.apur.org/apur/rest/services/OPENDATA/BDCOM_OD/MapServer/1
+ITEM bd4301f240d94e7ea9bb091590e03ac1 BDCOM 2017 Feature Service https://carto2.apur.org/apur/rest/services/OPENDATA/BDCOM_OD/MapServer/0
++ Q='[out:json][timeout:600][bbox:48.815,2.224,48.902,2.470];(nwr["shop"];nwr["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|cinema|theatre|nightclub|dentist|doctors)$"];nwr["craft"];nwr["office"~"estate_agent|insurance"];);out center tags;'
++ curl -sS -m 600 -A 'limoges-3d (github actions)' --data-urlencode 'data=[out:json][timeout:600][bbox:48.815,2.224,48.902,2.470];(nwr["shop"];nwr["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|cinema|theatre|nightclub|dentist|doctors)$"];nwr["craft"];nwr["office"~"estate_agent|insurance"];);out center tags;' https://overpass-api.de/api/interpreter -o osm.json
++ head -c 300 osm.json
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" lan+ echo
+
++ python3 -c 'import json;json.load(open('\''osm.json'\''))'
 Traceback (most recent call last):
-  File "<stdin>", line 2, in <module>
+  File "<string>", line 1, in <module>
+    import json;json.load(open('osm.json'))
+                ~~~~~~~~~^^^^^^^^^^^^^^^^^^
   File "/usr/lib/python3.14/json/__init__.py", line 298, in load
     return loads(fp.read(),
         cls=cls, object_hook=object_hook,
@@ -30,12 +38,30 @@ Traceback (most recent call last):
   File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
     raise JSONDecodeError("Expecting value", s, err.value) from None
 json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
++ curl -sS -m 600 -A 'limoges-3d (github actions)' --data-urlencode 'data=[out:json][timeout:600][bbox:48.815,2.224,48.902,2.470];(nwr["shop"];nwr["amenity"~"^(restaurant|cafe|bar|fast_food|pharmacy|bank|pub|ice_cream|bureau_de_change|post_office|cinema|theatre|nightclub|dentist|doctors)$"];nwr["craft"];nwr["office"~"estate_agent|insurance"];);out center tags;' https://overpass.private.coffee/api/interpreter -o osm.json
++ head -c 300 osm.json
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-06-01T08:52:28Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+ + python3 -
+62854 commerces OSM
 + rm -f osm.json
 + ls -la
-total 28
-drwxr-xr-x 2 runner runner 4096 Nov 16 22:51 .
-drwxr-xr-x 3 runner runner 4096 Nov 16 22:50 ..
--rw-r--r-- 1 runner runner 3194 Nov 16 22:51 bdcom_info.txt
--rw-r--r-- 1 runner runner 4702 Nov 16 22:51 bdcom_t_nomenclature_2023.csv.gz
--rw-r--r-- 1 runner runner   30 Nov 16 22:50 demande.txt
--rw-r--r-- 1 runner runner 2205 Nov 16 22:51 log.txt
+total 5868
+drwxr-xr-x 2 runner runner    4096 Nov 16 22:57 .
+drwxr-xr-x 3 runner runner    4096 Nov 16 22:54 ..
+-rw-r--r-- 1 runner runner 4136481 Nov 16 22:55 bdcom_BDCOM_2023.json.gz
+-rw-r--r-- 1 runner runner    3194 Nov 16 22:54 bdcom_info.txt
+-rw-r--r-- 1 runner runner    4702 Nov 16 22:54 bdcom_t_nomenclature_2023.csv.gz
+-rw-r--r-- 1 runner runner      30 Nov 16 22:54 demande.txt
+-rw-r--r-- 1 runner runner   10157 Nov 16 22:54 hub.json
+-rw-r--r-- 1 runner runner    6512 Nov 16 22:57 log.txt
+-rw-r--r-- 1 runner runner 1825694 Nov 16 22:57 osm_commerces.json.gz
