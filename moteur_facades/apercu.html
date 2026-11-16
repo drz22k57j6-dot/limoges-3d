@@ -1,0 +1,51 @@
+<!DOCTYPE html><html><body style="margin:0"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {RGBELoader} from 'three/addons/loaders/RGBELoader.js';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {GTAOPass} from 'three/addons/postprocessing/GTAOPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {createKit,buildBuilding} from './facades.js';
+const P=new URLSearchParams(location.search),W=1500,H=900,ctx=P.get('c')||'7e',view=P.get('v')||'pieton';
+const r=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});r.setSize(W,H);r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=.82;document.body.appendChild(r.domElement);
+const s=new THREE.Scene();s.fog=new THREE.Fog(0xc3ccd6,90,320);
+const sun=new THREE.DirectionalLight(0xfff0dc,3.3);sun.position.set(-40,55,38);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-90,right:90,top:60,bottom:-60,far:300});sun.shadow.bias=-.0003;sun.shadow.normalBias=.03;s.add(sun);s.add(sun.target);sun.target.position.set(0,0,8);
+const M=createKit(THREE,'./tex/');
+const TL=new THREE.TextureLoader();const vt=(n,rep,c=0xffffff)=>{const t=k=>{const x=TL.load('../data/tex/voirie/'+n+'_'+k+'.webp');x.wrapS=x.wrapT=THREE.RepeatWrapping;x.repeat.set(...rep);x.anisotropy=8;if(k==='c')x.colorSpace=THREE.SRGBColorSpace;return x};return new THREE.MeshStandardMaterial({map:t('c'),normalMap:t('n'),roughnessMap:t('r'),color:c})};
+const add=(g,m,x,y,z)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.receiveShadow=true;o.castShadow=true;s.add(o);return o};
+// paramètres de quartier
+const C={
+ '7e': {road:11,side:3.8,styles:[['classique',1]],pShop:.45,wear:[.15,.4],tones:[0xfdf6ea,0xf3ebdc,0xffffff,0xece4d6],wid:[12,20]},
+ '16e':{road:14,side:5.5,styles:[['riche',.85],['classique',.15]],pShop:.18,wear:[.03,.18],tones:[0xfffaf0,0xf7f0e2,0xffffff],wid:[16,24]},
+ '19e':{road:10,side:3.0,styles:[['modeste',.6],['classique',.15],['moderne',.25]],pShop:.65,wear:[.45,.9],tones:[0xefe6d4,0xe6ddcc,0xf2e9da,0xd9cfbd,0xece2cf],wid:[9,16]},
+}[ctx];
+let seed=ctx==='7e'?100:ctx==='16e'?300:500;const R=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const pick=a=>{let x=R(),t=0;for(const [v,w] of a){t+=w;if(x<=t)return v}return a[0][0]};
+const L=150,S=C.side,RD=C.road,zOpp=S*2+RD;
+// sol
+add(new THREE.BoxGeometry(L+40,.14,S),vt('trottoir',[(L+40)/2.5,S/2.5],0xb9b7b3),0,.07,S/2);
+add(new THREE.BoxGeometry(L+40,.16,.24),vt('bordure',[(L+40)/1.2,.2],0xcac8c3),0,.08,S+.12);
+const rd=new THREE.Mesh(new THREE.PlaneGeometry(L+40,RD),vt('chaussee',[(L+40)/3,RD/3]));rd.rotation.x=-Math.PI/2;rd.position.set(0,.02,S+RD/2);rd.receiveShadow=true;s.add(rd);
+add(new THREE.BoxGeometry(L+40,.16,.24),vt('bordure',[(L+40)/1.2,.2],0xcac8c3),0,.08,S+RD-.12);
+add(new THREE.BoxGeometry(L+40,.14,S),vt('trottoir',[(L+40)/2.5,S/2.5],0xb9b7b3),0,.07,S+RD+S/2);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),new THREE.MeshStandardMaterial({color:0x6f6b64}));ground.rotation.x=-Math.PI/2;ground.position.y=-.02;s.add(ground);
+// passage piéton
+const zp=new THREE.MeshStandardMaterial({color:0xd9d8d2,roughness:.6});for(let k=0;k<Math.floor(RD/1);k++){const g=new THREE.Mesh(new THREE.PlaneGeometry(4,.5),zp);g.rotation.x=-Math.PI/2;g.position.set(18,.03,S+.6+k*1.0);s.add(g)}
+// lampadaires et potelets
+const fer=new THREE.MeshStandardMaterial({color:0x22302a,metalness:.5,roughness:.5}),lan=new THREE.MeshStandardMaterial({color:0xf0e6c8,emissive:0x221a08,roughness:.3});
+for(const zz of [S-.4,S+RD+.4])for(let x=-L/2+8;x<L/2;x+=26){add(new THREE.CylinderGeometry(.07,.13,6.5,12),fer,x,3.25,zz);add(new THREE.CylinderGeometry(.16,.28,.6,6),lan,x,6.6,zz);add(new THREE.ConeGeometry(.32,.3,6),fer,x,7.05,zz)}
+for(const zz of [S-.3,S+RD+.3])for(let x=-L/2;x<L/2;x+=1.7){if(Math.abs(x-18)<3)continue;add(new THREE.CylinderGeometry(.05,.06,.9,10),new THREE.MeshStandardMaterial({color:0x3b3326,metalness:.4,roughness:.5}),x,.55,zz)}
+// deux rangées d'immeubles mitoyens
+for(const side of [0,1]){let x=-L/2;let i=0;while(x<L/2){const w=C.wid[0]+R()*(C.wid[1]-C.wid[0]);const st=pick(C.styles);
+  const g=buildBuilding(THREE,M,{width:w,seed:1+Math.floor(R()*1e6),style:st,wear:C.wear[0]+R()*(C.wear[1]-C.wear[0]),tone:C.tones[Math.floor(R()*C.tones.length)],pShop:C.pShop,depth:14});
+  if(side===0)g.position.set(x,0,0);else{g.rotation.y=Math.PI;g.position.set(x+w,0,zOpp)}
+  s.add(g);x+=w;i++}}
+const cam=new THREE.PerspectiveCamera(view==='pieton'?60:50,W/H,.1,800);
+if(view==='pieton'){cam.position.set(-30,1.7,S+RD+S*.55);cam.lookAt(10,7.5,S*.2)}
+else if(view==='drone'){cam.position.set(-72,30,S+RD/2+4);cam.lookAt(15,4,S+RD/2-2)}
+else {cam.position.set(4,3.4,S+RD*.7);cam.lookAt(-2,9,0)}
+new RGBELoader().load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/kloofendal_48d_partly_cloudy_puresky_1k.hdr',h=>{h.mapping=THREE.EquirectangularReflectionMapping;s.environment=h;s.background=h;s.environmentIntensity=.6;s.backgroundIntensity=.9;
+ setTimeout(()=>{const c=new EffectComposer(r);c.addPass(new RenderPass(s,cam));const ao=new GTAOPass(s,cam,W,H);ao.blendIntensity=.9;c.addPass(ao);c.addPass(new UnrealBloomPass(new THREE.Vector2(W,H),.12,.4,.92));c.addPass(new OutputPass());c.render();document.title='done'},9000)});
+</script></body></html>
