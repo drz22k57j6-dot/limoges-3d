@@ -64,6 +64,9 @@ export function initDronePhoto(A) {
   #dpSugg div small{display:block;opacity:.55;font-size:12px;margin-top:2px}
   #dpMenuB{pointer-events:auto;width:36px;height:36px;border-radius:18px;border:1px solid var(--dp-line);background:var(--dp-glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);display:grid;place-items:center;cursor:pointer}
   #dpRight{position:absolute;right:calc(18px + env(safe-area-inset-right));top:50%;transform:translateY(-62%);display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:auto}
+  #dpVmax{width:44px;height:44px;border-radius:22px;border:1px solid var(--dp-line);background:var(--dp-glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:#fff;font:700 13px/1 inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  #dpVmax small{font:500 8px/1 inherit;opacity:.75}
+  #dpVmax.on{background:rgba(255,90,20,.9);border-color:transparent}
   #dpLens{display:flex;flex-direction:column;gap:6px;padding:5px;border-radius:22px;background:var(--dp-glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
   #dpLens button{width:34px;height:34px;border-radius:17px;border:0;background:transparent;color:#fff;font:600 11px/1 inherit;cursor:pointer}
   #dpLens button.on{background:rgba(0,0,0,.55);color:var(--dp-acc);font-size:12px}
@@ -112,14 +115,15 @@ export function initDronePhoto(A) {
   const ic = (d, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const ui = document.createElement('div'); ui.id = 'dp';
   ui.innerHTML = `<div id="dpBands"><i id="dpB1"></i><i id="dpB2"></i></div><div id="dpGrid"></div><div id="dpFlash"></div>
-  <div id="dpTop"><div id="dpTel"><span>ALT <b id="dpAlt">0 m</b></span><span>VIT <b id="dpSpd">0,0 m/s</b></span><span id="dpWhere"></span></div>
+  <div id="dpTop"><div id="dpTel"><span>ALT <b id="dpAlt">0 m</b></span><span>VIT <b id="dpSpd">0 km/h</b></span><span id="dpWhere"></span></div>
     <div id="dpSearch">${ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 14)}<input id="dpQ" placeholder="Photographier une adresse à Paris…" autocomplete="off" enterkeyhint="go"><div id="dpSugg"></div></div>
     <div id="dpMenuB">${ic('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>', 18)}</div></div>
-  <div id="dpRight"><div id="dpLens">${LENSES.map((l, i) => `<button data-i="${i}">${l.id === '0.5' ? '.5' : l.id}${i === 0 ? '' : '×'}</button>`).join('')}</div>
+  <div id="dpRight"><button id="dpVmax" aria-label="Vitesse maximale">60<small>km/h</small></button><div id="dpLens">${LENSES.map((l, i) => `<button data-i="${i}">${l.id === '0.5' ? '.5' : l.id}${i === 0 ? '' : '×'}</button>`).join('')}</div>
     <button id="dpShut" aria-label="Prendre une photo"><i></i></button>
     <div id="dpRow"><div id="dpRoll" aria-label="Pellicule"></div><div id="dpVid" aria-label="Vidéo"><i></i></div></div></div>
   <div id="dpAuto"><p><b id="dpAutoT">Pilote automatique</b><span id="dpAutoS"></span></p><button id="dpStop">Reprendre la main</button></div>`;
   document.body.appendChild(ui);
+  { const b = ui.querySelector('#dpVmax'); if (b) b.addEventListener('click', () => { if (window.__drSpeed) window.__drSpeed.toggle(); }); }
   const sheet = document.createElement('div'); sheet.id = 'dpSheet'; sheet.innerHTML = '<div class="card" id="dpCard"></div>'; document.body.appendChild(sheet);
   const gal = document.createElement('div'); gal.id = 'dpGal'; gal.innerHTML = '<header><button id="dpGalX">Fermer</button><span>Pellicule</span><span id="dpGalN" style="opacity:.6;font-size:13px;font-weight:500"></span></header><div id="dpGrid2"></div>'; document.body.appendChild(gal);
   const view = document.createElement('div'); view.id = 'dpView'; view.innerHTML = '<header><button id="dpViewX">Pellicule</button><span id="dpViewT" style="font-size:15px"></span><span style="width:60px"></span></header><div class="ph"><img id="dpImg" alt=""></div><footer><p id="dpInfo"></p><button id="dpShare">Enregistrer</button><button class="del" id="dpDel">Supprimer</button></footer>'; document.body.appendChild(view);
@@ -157,7 +161,7 @@ export function initDronePhoto(A) {
   A.onFrame(dt => {
     if ((telT -= dt) > 0) return; telT = 0.2;
     const P = A.PL, g = A.surfaceH(P.x, P.z);
-    $('dpAlt').textContent = Math.round(P.y - g) + ' m'; $('dpSpd').textContent = (P.spd || 0).toFixed(1).replace('.', ',') + ' m/s';
+    $('dpAlt').textContent = Math.round(P.y - g) + ' m'; $('dpSpd').textContent = Math.round((P.spd || 0) * 3.6) + ' km/h';
     $('dpWhere').textContent = A.streetName() || '';
   });
 

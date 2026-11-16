@@ -128,7 +128,7 @@ window.CITIES = {
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { initDronePhoto } from './drone/photo.js';
+import { initDronePhoto } from './drone/photo.js?v=32';
 import { initAgent } from './drone/agent.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
@@ -269,7 +269,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=31';
+const V = '?v=32';
 const loadGLB = async (url, key) => { const buf = await fetchProg(url + V, key); return await loader.parseAsync(buf, ''); };
 const loadBin = async (url, key) => { const r = await fetch(url + V); if (!r.ok) throw new Error(url); const b = await r.arrayBuffer(); setProg(key, 1); return b; };
 
@@ -1047,7 +1047,7 @@ $('pipBox').onclick = () => { if (gameRecorder && gameRecorder.state === 'record
 $('bTime').onclick = () => { ti = (ti + 1) % TIMES.length; applyTime(); };
 $('bQ').onclick = () => { if (gameRecorder && gameRecorder.state === 'recording') { toast('Qualité verrouillée pendant l\'enregistrement'); return; } qi = (qi + 1) % QUALITIES.length; applyQuality(); };
 $('bVille').onclick = () => { if (!tiles) { toast('Ville photo en chargement…'); return; } setCity(cityMode === 'google' ? 'ign' : 'google'); };
-$('bSpd').onclick = () => { setDrMode(drMode ? 0 : 1); toast(drMode ? 'Mode SPORT : 300 km/h max' : 'Mode PRÉCIS : 58 km/h max (tournage)'); };
+$('bSpd').onclick = () => window.__drSpeed.toggle();
 $('bReset').onclick = () => { PL.y = Math.max(PL.y, planeGround(PL.x, PL.z) + 18); PL.vx = PL.vz = PL.vy = 0; PL.spd = 0; toast('Drone stabilisé en vol'); };
 $('bPlane').onclick = () => {};   // voiture supprimée
 $('bId').onclick = () => { DID.on = !DID.on; $('bId').textContent = DID.on ? 'ID ✓' : 'ID ✗'; };
@@ -1161,7 +1161,8 @@ const DR = { R: 0.78, LEG: 0.21, VMAX: 16, VZ: 5, YAW: 1.6 };
 // deux régimes : PRÉCIS (tournage, 58 km/h) et SPORT (300 km/h, montée rapide)
 const DR_MODES = [{ VMAX: 16, VZ: 5, YAW: 1.6, lbl: '60 KM/H' }, { VMAX: 300 / 3.6, VZ: 20, YAW: 2.2, lbl: '300 KM/H' }];
 let drMode = 0;
-function setDrMode(m) { drMode = m; const d = DR_MODES[m]; DR.VMAX = d.VMAX; DR.VZ = d.VZ; DR.YAW = d.YAW; const b = document.getElementById('bSpd'); if (b) { b.textContent = d.lbl; b.style.background = m ? 'rgba(255,90,20,.85)' : ''; } }
+function setDrMode(m) { drMode = m; const d = DR_MODES[m]; DR.VMAX = d.VMAX; DR.VZ = d.VZ; DR.YAW = d.YAW; const b = document.getElementById('bSpd'); if (b) { b.textContent = d.lbl; b.style.background = m ? 'rgba(255,90,20,.85)' : ''; } const c = document.getElementById('dpVmax'); if (c) { c.innerHTML = (m ? 300 : 60) + '<small>km/h</small>'; c.classList.toggle('on', !!m); } }
+window.__drSpeed = { toggle: () => { setDrMode(drMode ? 0 : 1); toast(drMode ? 'Mode SPORT : 300 km/h max' : 'Mode PRÉCIS : 58 km/h max (tournage)'); } };
 function droneWalls(x, y, z, r) { // pousse hors des murs plus hauts que le drone, au contact exact
   let hit = false; const ci = Math.floor(x / CELL), cj = Math.floor(z / CELL);
   for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
