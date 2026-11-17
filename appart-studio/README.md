@@ -13,7 +13,7 @@
 
 1. 10 rue de Rivoli, 75004 Paris — 4e.
 2. 1 boulevard Voltaire, 75011 Paris — 2e (immeuble d'angle à vérifier à l'exécution).
-3. 12 rue de la Ferronnerie, 75001 Paris — 1er (rue étroite, secteur central).
+3. 15 rue des Écouffes, 75004 Paris — 1er (rue étroite, secteur central).
 4. 10 avenue Victor-Hugo, 75016 Paris — 5e.
 5. 8 avenue de France, 75013 Paris — 10e.
 
