@@ -138,7 +138,7 @@ export async function locateApartment(address, floor, ctx) {
   const [lx,lz]=drone.ll(lon,lat), point=[lx+CITY.X0,CITY.Y0-lz];
   const exact=await exactIdentity(hit.properties?.label||q,point[0],point[1],CITY);
   let feature=null,matchMode='proximité';
-  if(exact){feature=await fetchFeatureById(exact.id); if(feature) matchMode='adresse exacte BAN ↔ bâtiment';}
+  if(exact){feature=await fetchFeatureById(exact.id); if(feature) matchMode='adresse exacte BAN ↔ bâtiment'; else exact=null;}
   let fallbackDistance=0;
   if(!feature){
     const near=await fetchNearby(point); if(!near) throw new Error('Aucun bâtiment BD TOPO trouvé dans un rayon de 35 m.');
