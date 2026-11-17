@@ -1,1 +1,2 @@
 2026-11-17
+Relance après correction du calcul des coordonnées et prise en charge des panoramas 360°.
