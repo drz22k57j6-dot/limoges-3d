@@ -721,7 +721,7 @@ function entryDoor(T, G, extra, M, R, cx, y0, ww, wh, REC, num, o) {
   if (reno > .4 || o.style === 'modeste') extra.push([box(T, .16, .26, .04, cx + ww / 2 + .28, y0 + 1.35, .02), M.paint(0x8c9196, .3, .6)]);
   // plaque de numéro émaillée (atlas partagé)
   { const n = Math.max(1, Math.min(256, parseInt(String(num)) || 1)) - 1, u0 = (n % 16) / 16, v0 = 1 - (Math.floor(n / 16) + 1) / 16, g = new T.PlaneGeometry(.17, .13).translate(cx + ww / 2 + .22, y0 + 2.52, .025), uv = g.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + (3 + uv.getX(i) * 58) / 1024, v0 + (10 + (13 + uv.getY(i) * 38)) / 1024);
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + (3 + uv.getX(i) * 58) / 1024, v0 + (13 + uv.getY(i) * 38) / 1024);
     extra.push([g, M.plaques]); }
   // tag sur la porte (portes non rénovées)
   if (reno < .4 && R() < o.tagP) extra.push([new T.PlaneGeometry(lw * .9, lw * .45).translate(cx - lw / 2, y0 + .9, z + .16), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1), transparent: true, roughness: .7, depthWrite: false })]);
