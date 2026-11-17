@@ -1,80 +1,228 @@
-import { locateApartment, updateFloor } from './locate.js';
+// Appart Studio — interface : adresse → arrivée face à l'immeuble → plan.
+import { locateApartment, geocode, orientationName } from './locate.js';
+import { createFacadeView } from './view.js';
+import { createPlanEditor } from './planEditor.js';
 
-const TESTS=[
- ['10 rue de Rivoli, 75004 Paris',4],
- ['1 boulevard Voltaire, 75011 Paris',2],
- ['15 rue des Écouffes, 75004 Paris',1],
- ['10 avenue Victor-Hugo, 75016 Paris',5],
- ['8 avenue de France, 75013 Paris',10],
+// adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
+const TESTS = [
+  ['38 Rue Cler, 75007 Paris', 2], ['33 Rue Cler, 75007 Paris', 4], ['44 Rue Cler, 75007 Paris', 5],
+  ['46 Rue Cler, 75007 Paris', 3], ['40 Rue Cler, 75007 Paris', 1],
+  ['10 Rue de Rivoli, 75004 Paris', 4], ['15 Rue des Écouffes, 75004 Paris', 1], ['10 Avenue Victor-Hugo, 75016 Paris', 5],
 ];
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-export async function initAppartStudio({THREE,scene,camera,renderer,CITY,drone,ground}){
- if(window.__appartStudio?.mounted)return;
- const state=window.__appartStudio={mounted:true,current:null,debug:false};
- const style=document.createElement('style');
- style.textContent=`
- #as-launch{position:fixed;z-index:80;left:calc(14px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom));background:#b51f32;color:#fff;border:1px solid #ffffff55;border-radius:14px;padding:12px 16px;font:700 14px -apple-system,Arial;box-shadow:0 6px 24px #0008;touch-action:manipulation}
- #as-panel{position:fixed;z-index:81;left:10px;right:10px;bottom:calc(72px + env(safe-area-inset-bottom));max-height:72dvh;overflow:auto;background:#10141deF;color:#fff;border:1px solid #ffffff30;border-radius:18px;padding:14px;font:14px/1.4 -apple-system,Arial;display:none;box-shadow:0 10px 35px #0009;touch-action:pan-y}
- #as-panel.on{display:block}#as-panel input,#as-panel select{width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff35;background:#202735;color:#fff;font:16px -apple-system,Arial;touch-action:manipulation}
- #as-panel button{touch-action:manipulation;border:1px solid #ffffff30;border-radius:10px;background:#293445;color:#fff;padding:10px;font:600 13px -apple-system,Arial}
- #as-go{background:#b51f32!important}#as-status{font-size:12px;color:#b9c5d4;min-height:18px;margin:8px 0}
- #as-tests{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
- #as-adjust{display:flex;gap:8px;align-items:center}#as-adjust button{flex:1}
- #as-debug{font:11px/1.45 ui-monospace,monospace;color:#aab8ca;white-space:pre-wrap;margin-top:10px}
- #as-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}#as-head b{font-size:16px}
- @media(min-width:700px){#as-panel{left:18px;right:auto;width:380px;bottom:18px;max-height:80vh}}
- `;
- document.head.appendChild(style);
- document.body.insertAdjacentHTML('beforeend',`
- <button id="as-launch">APPART STUDIO</button>
- <section id="as-panel" aria-label="Appart Studio">
-  <div id="as-head"><b>Localiser un appartement</b><button id="as-debug-toggle">DEBUG</button><button id="as-close">✕</button></div>
-  <input id="as-address" autocomplete="street-address" placeholder="Adresse à Paris…">
-  <div id="as-tests"></div>
-  <label for="as-floor">Étage (0 = RDC)</label>
-  <input id="as-floor" type="number" min="0" max="40" step="1" value="1">
-  <div id="as-adjust" style="margin-top:8px"><button id="as-minus">− 10 cm</button><button id="as-plus">+ 10 cm</button></div>
-  <button id="as-go" style="width:100%;margin-top:9px">LOCALISER L'APPARTEMENT</button>
-  <div id="as-status">5 adresses de démonstration préchargées.</div>
-  <div id="as-debug"></div>
- </section>`);
- const panel=document.getElementById('as-panel'),address=document.getElementById('as-address'),floor=document.getElementById('as-floor'),status=document.getElementById('as-status'),debug=document.getElementById('as-debug');
- document.getElementById('as-tests').innerHTML=TESTS.map((t,i)=>'<button data-test="'+i+'">'+(i+1)+'. '+esc(t[0].replace(', Paris',''))+'</button>').join('');
- document.getElementById('as-launch').onclick=()=>panel.classList.toggle('on');
- document.getElementById('as-close').onclick=()=>panel.classList.remove('on');
- let debugOn=false;
- document.getElementById('as-debug-toggle').onclick=()=>{debugOn=!debugOn;document.getElementById('as-debug-toggle').textContent=debugOn?'DEBUG ✓':'DEBUG';debug.style.display=debugOn?'block':'none';};
- debug.style.display='none';
- setInterval(()=>{if(debugOn){const fps=Number(window.__fps||0);debug.dataset.fps='FPS : '+fps.toFixed(0);if(state.current&&debug.textContent)debug.textContent='FPS : '+fps.toFixed(0)+'\n'+debug.textContent.split('\n').filter(x=>!x.startsWith('FPS :')).join('\n');else if(!debug.textContent)debug.textContent=debug.dataset.fps;}},1000);
- document.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>{const t=TESTS[Number(b.dataset.test)];address.value=t[0];floor.value=t[1];});
- async function run(){
-  const old=state.current?.marker;if(old){scene.remove(old);old.traverse(o=>{o.geometry?.dispose?.();if(o.material)o.material.dispose?.();});state.current=null;}
-  status.textContent='Géocodage, recherche BAN et emprise IGN…';debug.textContent='';
-  document.getElementById('as-go').disabled=true;
-  try{
-   const result=await locateApartment(address.value,Number(floor.value),{THREE,scene,camera,renderer,CITY,drone,ground});
-   state.current=result;
-   const p=result.feature.properties,fd=result.floorData;
-   status.textContent='✓ '+result.matchMode+' · '+result.address;
-   debug.textContent=[
-    'ID IGN : '+(p.cleabs||'inconnu'),
-    'Hauteur IGN : '+(fd.height.toFixed(2))+' m · étages BD TOPO : '+fd.floors+' (RDC inclus)',
-    'RDC : '+fd.hRDC.toFixed(2)+' m · étage courant : '+fd.hEtage.toFixed(2)+' m · toit : '+fd.hToit.toFixed(2)+' m',
-    'Plancher : '+fd.offset.toFixed(2)+' m au-dessus du sol + correction '+result.adjust.toFixed(2)+' m',
-    'Façade : '+result.facade.edgeAngle.toFixed(3)+' rad · BAN→façade : '+result.facade.distance.toFixed(2)+' m',
-    result.exact?'BAN exact : '+result.exact.address.label+' ('+result.exact.address.source+')':'Secours WFS : '+result.fallbackDistance.toFixed(2)+' m du point BAN',
-    fd.haussmann?'RDC haut (heuristique haussmannien)':'RDC standard'
-   ].join('\n');
-  }catch(e){status.textContent='Erreur : '+e.message;debug.textContent='';console.error('[Appart Studio]',e);}
-  finally{document.getElementById('as-go').disabled=false;}
- }
- document.getElementById('as-go').onclick=run;
- document.getElementById('as-minus').onclick=()=>adjust(-.1);
- document.getElementById('as-plus').onclick=()=>adjust(.1);
- function adjust(delta){
-  const r=state.current;if(!r)return;
-  updateFloor(r,delta,ground);
-  debug.textContent=debug.textContent.replace(/Correction [^\n]+/,'Correction '+r.adjust.toFixed(2)+' m');
- }
- window.__appartStudio={...state,locate:run,tests:TESTS,adjust};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const floorName = f => f === 0 ? 'Rez-de-chaussée' : f === 1 ? '1er étage' : f + 'e étage';
+
+const CSS = `
+body.as-mode > :not(#c):not(.as-ui):not(script):not(style){display:none!important}
+body.as-mode #as-launch{display:none!important}
+.as-ui{font:15px/1.35 -apple-system,BlinkMacSystemFont,'SF Pro Text',Arial;color:#fff;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.as-ui button{font:inherit;color:#fff;cursor:pointer;touch-action:manipulation}
+#as-launch{position:fixed;z-index:80;left:calc(14px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#e2364d,#b51f32);border:1px solid #ffffff40;border-radius:16px;padding:13px 18px;font-weight:800;letter-spacing:.04em;box-shadow:0 8px 28px #0009}
+#as-start,#as-loading{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#05080dcc;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:18px}
+#as-start.on,#as-loading.on{display:flex}
+#as-card{width:min(440px,100%);background:#121822f2;border:1px solid #ffffff22;border-radius:24px;padding:24px 20px 20px;box-shadow:0 20px 60px #000a;position:relative}
+#as-card h1{margin:0;font-size:26px;letter-spacing:-.02em}#as-card h1 em{font-style:normal;color:#ff4d63}
+#as-card p{margin:6px 0 18px;color:#aeb8c7;font-size:14px}
+#as-x{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:0;background:#ffffff14}
+.as-lbl{display:block;font-size:12px;font-weight:700;color:#8b97a8;letter-spacing:.08em;text-transform:uppercase;margin:0 0 6px}
+#as-addr{width:100%;box-sizing:border-box;padding:15px 14px;border-radius:14px;border:1px solid #ffffff2a;background:#1b2330;color:#fff;font:17px -apple-system,Arial;outline:none;-webkit-user-select:text;user-select:text}
+#as-addr:focus{border-color:#ff4d63}
+#as-sug{margin:6px 0 0;border-radius:14px;overflow:hidden;background:#1b2330;border:1px solid #ffffff1a;display:none}
+#as-sug.on{display:block}#as-sug button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #ffffff10;background:none;padding:12px 14px}
+#as-sug button small{display:block;color:#8b97a8;font-size:12px}
+#as-floors{display:flex;gap:7px;overflow-x:auto;padding:2px 0 4px;margin-top:16px;scrollbar-width:none}#as-floors::-webkit-scrollbar{display:none}
+#as-floors button{flex:0 0 auto;min-width:52px;height:46px;border-radius:12px;border:1px solid #ffffff22;background:#1b2330;font-weight:700}
+#as-floors button.on{background:#ff4d63;border-color:#ff4d63}
+#as-go{width:100%;margin-top:18px;height:56px;border-radius:16px;border:0;background:linear-gradient(135deg,#ff4d63,#c8233a);font-weight:800;font-size:17px;box-shadow:0 8px 24px #ff4d6340}
+#as-go:disabled{opacity:.45}
+#as-err{color:#ff8a9a;font-size:13px;min-height:18px;margin-top:10px}
+#as-tests{display:none;margin-top:14px;border-top:1px solid #ffffff18;padding-top:12px}
+#as-tests.on{display:block}#as-tests div{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#as-tests button{border:1px solid #ffffff22;background:#1b2330;border-radius:10px;padding:9px 6px;font-size:12px;text-align:left}
+#as-spin{width:54px;height:54px;border-radius:50%;border:4px solid #ffffff22;border-top-color:#ff4d63;animation:asr 0.9s linear infinite;margin:0 auto 18px}
+@keyframes asr{to{transform:rotate(360deg)}}
+#as-loading .box{text-align:center}#as-loading b{font-size:20px;display:block}#as-loading span{color:#aeb8c7;font-size:14px;display:block;margin-top:6px}
+#as-bar{position:fixed;z-index:85;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:none;background:#10161ff0;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid #ffffff22;border-radius:22px;padding:14px;box-shadow:0 12px 40px #000a}
+#as-bar.on{display:block}
+#as-bar .t{font-weight:800;font-size:17px}#as-bar .s{color:#aeb8c7;font-size:13px;margin-top:2px}
+#as-bar .warn{color:#ffb86b;font-size:12px;margin-top:6px}
+#as-bar .row{display:flex;gap:8px;margin-top:12px}
+#as-bar .adj{flex:0 0 auto;width:58px;height:50px;border-radius:14px;border:1px solid #ffffff22;background:#1b2330;font-weight:800;font-size:18px}
+#as-bar .adjl{align-self:center;color:#8b97a8;font-size:12px;text-align:center;flex:0 0 64px}
+#as-draw{flex:1;height:50px;border-radius:14px;border:0;background:linear-gradient(135deg,#ff4d63,#c8233a);font-weight:800}
+#as-bar .links{display:flex;justify-content:space-between;margin-top:10px}
+#as-bar .links button{border:0;background:none;color:#8b97a8;font-size:13px;padding:4px 2px}
+#as-dbg{display:none;margin-top:10px;font:11px/1.45 ui-monospace,Menlo,monospace;color:#9fb0c4;white-space:pre-wrap}
+#as-dbg.on{display:block}
+@media(min-width:760px){#as-bar{left:50%;right:auto;width:460px;transform:translateX(-50%)}}
+/* éditeur */
+#as-editor{position:fixed;inset:0;z-index:95;background:#0d121a;display:none;flex-direction:column}
+#as-editor.on{display:flex}
+#ase-top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;border-bottom:1px solid #ffffff14}
+#ase-top button{width:44px;height:44px;border-radius:12px;border:1px solid #ffffff1f;background:#1b2330;font-size:20px;flex:0 0 auto}
+#ase-title{flex:1;min-width:0}#ase-title b{display:block;font-size:16px}#ase-title span{display:block;font-size:12px;color:#8b97a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ase-cv{flex:1;width:100%;min-height:0;touch-action:none;display:block}
+#ase-hint{position:absolute;left:12px;right:12px;bottom:calc(150px + env(safe-area-inset-bottom));text-align:center;font-size:12px;color:#aeb8c7;pointer-events:none;transition:.2s}
+#ase-hint.flash{color:#fff;font-weight:700;font-size:14px}
+#ase-sheet{position:absolute;left:10px;right:10px;bottom:calc(150px + env(safe-area-inset-bottom));background:#161e2af5;border:1px solid #ffffff22;border-radius:18px;padding:14px;display:none;box-shadow:0 10px 40px #000b}
+#ase-sheet.on{display:block}#ase-sheet b{display:block;margin-bottom:10px}
+.ase-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.ase-grid button{height:46px;border-radius:12px;border:2px solid;background:#1b2330;font-size:12px;font-weight:700;padding:0 2px}
+.ase-row{display:flex;gap:6px;flex-wrap:wrap}.ase-row button{flex:1;height:46px;border-radius:12px;border:1px solid #ffffff22;background:#1b2330;font-weight:700;min-width:70px}
+.ase-danger{background:#5a1d27!important;border-color:#ff4d6366!important}
+#ase-bottom{padding:8px 10px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ffffff14;background:#0d121a}
+#ase-3d{width:100%;height:44px;border-radius:12px;border:1px dashed #ffffff33;background:none;color:#8b97a8;font-weight:700;margin-bottom:8px}#ase-3d small{font-weight:500;opacity:.7}
+#ase-tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#ase-tools button{height:64px;border-radius:16px;border:1px solid #ffffff1f;background:#1b2330;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#ase-tools button i{font-style:normal;font-size:20px;line-height:1}
+#ase-tools button.on{background:#ff4d63;border-color:#ff4d63}
+`;
+
+export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, drone, ground }) {
+  if (window.__appartStudio?.mounted) return;
+  const state = { mounted: true, res: null, picked: null, floor: 2 };
+  window.__appartStudio = state;
+  const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+  const ctx = { THREE, scene, camera, renderer, CITY, drone, ground };
+  const view = createFacadeView(ctx);
+
+  document.body.insertAdjacentHTML('beforeend', `
+  <button id="as-launch" class="as-ui" style="display:none">APPART STUDIO</button>
+  <section id="as-start" class="as-ui"><div id="as-card">
+    <button id="as-x" aria-label="Fermer">✕</button>
+    <h1 id="as-h1">Appart <em>Studio</em></h1>
+    <p>Votre appartement en 3D, à votre étage, avec votre vraie vue et votre vrai soleil.</p>
+    <label class="as-lbl" for="as-addr">Adresse de l'appartement</label>
+    <input id="as-addr" type="text" inputmode="text" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Ex. 38 rue Cler">
+    <div id="as-sug"></div>
+    <span class="as-lbl" style="margin-top:16px">Étage</span>
+    <div id="as-floors"></div>
+    <button id="as-go" disabled>Voir mon immeuble</button>
+    <div id="as-err"></div>
+    <div id="as-tests"><span class="as-lbl">Adresses de test</span><div></div></div>
+  </div></section>
+  <section id="as-loading" class="as-ui"><div class="box"><div id="as-spin"></div><b>On trouve votre immeuble…</b><span id="as-step">Recherche de l'adresse</span></div></section>
+  <section id="as-bar" class="as-ui">
+    <div class="t" id="as-bt"></div><div class="s" id="as-bs"></div><div class="warn" id="as-bw"></div>
+    <div class="row"><button class="adj" id="as-m">−</button><div class="adjl">Ajuster<br>la hauteur</div><button class="adj" id="as-p">+</button></div>
+    <div class="row"><button id="as-draw">C'est bien mon étage → Dessiner mon plan</button></div>
+    <div class="links"><button id="as-change">← Changer d'adresse</button><button id="as-dbgb">Détails</button><button id="as-quit">Quitter</button></div>
+    <div id="as-dbg"></div>
+  </section>`);
+  const $ = id => document.getElementById(id);
+  const editor = createPlanEditor({ onBack: () => $('as-bar').classList.add('on') });
+
+  // le bouton n'apparaît qu'une fois le jeu lancé (écran de chargement fermé)
+  const showLaunch = setInterval(() => { if (!$('loader')) { $('as-launch').style.display = ''; clearInterval(showLaunch); } }, 500);
+
+  // étages
+  $('as-floors').innerHTML = Array.from({ length: 16 }, (_, f) => `<button data-f="${f}">${f === 0 ? 'RDC' : f}</button>`).join('');
+  const setFloor = f => { state.floor = f; document.querySelectorAll('#as-floors button').forEach(b => b.classList.toggle('on', Number(b.dataset.f) === f)); };
+  document.querySelectorAll('#as-floors button').forEach(b => b.onclick = () => setFloor(Number(b.dataset.f)));
+  setFloor(2);
+
+  // tests cachés : appui long sur le titre
+  $('as-tests').querySelector('div').innerHTML = TESTS.map((t, i) => `<button data-t="${i}">${esc(t[0].replace(/, 750\d\d Paris/, ''))}<br><small>${floorName(t[1])}</small></button>`).join('');
+  let lp = 0;
+  $('as-h1').addEventListener('pointerdown', () => { lp = setTimeout(() => $('as-tests').classList.toggle('on'), 650); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('as-h1').addEventListener(ev, () => clearTimeout(lp));
+  document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = TESTS[Number(b.dataset.t)]; $('as-addr').value = t[0]; state.picked = null; setFloor(t[1]); $('as-go').disabled = false; go(); });
+
+  // autocomplétion
+  let sugT = 0, sugN = 0;
+  $('as-addr').addEventListener('input', () => {
+    state.picked = null; $('as-err').textContent = '';
+    const q = $('as-addr').value.trim(); $('as-go').disabled = q.length < 4;
+    clearTimeout(sugT);
+    if (q.length < 3) { $('as-sug').classList.remove('on'); return; }
+    sugT = setTimeout(async () => {
+      const n = ++sugN;
+      try {
+        const list = await geocode(q, CITY, 5); if (n !== sugN) return;
+        $('as-sug').innerHTML = list.map((f, i) => `<button data-s="${i}">${esc(f.properties.name || f.properties.label)}<small>${esc(f.properties.postcode || '')} ${esc(f.properties.city || '')}</small></button>`).join('');
+        $('as-sug').classList.toggle('on', list.length > 0);
+        $('as-sug').querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+          const f = list[Number(b.dataset.s)]; state.picked = f; $('as-addr').value = f.properties.label; $('as-sug').classList.remove('on'); $('as-go').disabled = false; $('as-addr').blur();
+        });
+      } catch (e) { /* l'autocomplétion est un confort : on se tait */ }
+    }, 250);
+  });
+  $('as-addr').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('as-go').disabled) go(); });
+
+  // ouverture / fermeture
+  const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
+  function quit() {
+    view.hide(); editor.close();
+    for (const id of ['as-start', 'as-loading', 'as-bar']) $(id).classList.remove('on');
+    document.body.classList.remove('as-mode'); state.res = null;
+  }
+  $('as-launch').onclick = enter;
+  $('as-x').onclick = () => { if (state.res) { $('as-start').classList.remove('on'); $('as-bar').classList.add('on'); } else quit(); };
+  $('as-quit').onclick = quit;
+  $('as-change').onclick = () => { $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
+
+  // localisation
+  async function go() {
+    $('as-sug').classList.remove('on'); $('as-err').textContent = '';
+    const q = $('as-addr').value.trim(); if (!q) return;
+    $('as-start').classList.remove('on'); $('as-loading').classList.add('on'); $('as-step').textContent = 'Recherche de l\'adresse';
+    try {
+      const res = await locateApartment(q, state.floor, ctx, state.picked);
+      $('as-step').textContent = 'Chargement du quartier';
+      const F = res.local.F, n = res.local.n;
+      await drone.teleport(F[0] + n[0] * 8, F[1] + n[1] * 8, { nom: res.address, dist: 0, alt: 25 });
+      $('as-step').textContent = 'Calcul de votre étage';
+      const v = await view.show(res);
+      state.res = res; res.gap = v.gap;
+      view.onSnap(() => { if (state.res === res) showBar(res); });
+      showBar(res);
+      $('as-loading').classList.remove('on'); $('as-bar').classList.add('on');
+    } catch (e) {
+      console.error('[Appart Studio]', e);
+      $('as-loading').classList.remove('on'); $('as-start').classList.add('on');
+      $('as-err').textContent = e.message || 'Erreur inattendue.';
+    }
+  }
+  $('as-go').onclick = go;
+
+  function showBar(res) {
+    const fd = res.floorData, street = res.street || res.address.replace(/^\d+\w?\s+/, '').replace(/\s+\d{5}.*$/, '');
+    $('as-bt').textContent = (res.housenumber ? res.housenumber + ' ' : '') + (street || res.address);
+    $('as-bs').textContent = floorName(fd.floor) + ' · façade ' + orientationName(res.local.bearing) + ' · rue de ' + Math.round(res.gap ?? 0) + ' m' + (res.snap ? ' · calé sur les fenêtres ✓' : '');
+    $('as-bw').textContent = fd.floor > fd.topFloor ? 'Attention : selon l\'IGN, cet immeuble a ' + (fd.topFloor + 1) + ' niveaux (RDC compris).' : (res.matchMode !== 'adresse exacte' ? 'Immeuble choisi par proximité : vérifie que c\'est le bon.' : '');
+    renderDbg();
+  }
+  function renderDbg() {
+    const r = state.res; if (!r) return;
+    const p = r.feature.properties || {}, fd = r.floorData;
+    $('as-dbg').textContent = [
+      'ID IGN : ' + (p.cleabs || '?') + ' · ' + r.matchMode,
+      'Hauteur : ' + fd.height.toFixed(1) + ' m · niveaux IGN : ' + fd.floors + ' (RDC compris)',
+      'RDC ' + fd.hRDC.toFixed(2) + ' m · étage ' + fd.hEtage.toFixed(2) + ' m' + (fd.haussmann ? ' · haussmannien' : ''),
+      (r.snap ? 'Plancher calé sur la façade : ' + r.snap.y.toFixed(2) + ' m alt. · niveau ' + r.snap.h.toFixed(2) + ' m' : 'Plancher estimé : ' + fd.offset.toFixed(2) + ' m au-dessus du sol') + ' · correction ' + (r.adjust >= 0 ? '+' : '') + r.adjust.toFixed(2),
+      'Façade : ' + Math.round(r.local.bearing) + '° · adresse → façade ' + r.facade.distance.toFixed(1) + ' m · rue ' + (r.gap ?? 0).toFixed(1) + ' m',
+      'FPS : ' + Math.round(window.__fps || 0),
+    ].join('\n');
+  }
+  setInterval(() => { if ($('as-dbg').classList.contains('on')) renderDbg(); }, 1000);
+  $('as-dbgb').onclick = () => $('as-dbg').classList.toggle('on');
+  const adjust = d => { const r = state.res; if (!r) return; r.adjust = Math.round((r.adjust + d) * 100) / 100; view.refresh(); renderDbg(); };
+  $('as-m').onclick = () => adjust(-0.1);
+  $('as-p').onclick = () => adjust(0.1);
+
+  // plan
+  $('as-draw').onclick = () => {
+    const r = state.res; if (!r) return;
+    const { F, A, B, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
+    const pu = P => (P[0] - F[0]) * u[0] + (P[1] - F[1]) * u[1];
+    const north = [0 * u[0] + -1 * u[1], 0 * v[0] + -1 * v[1]];        // nord local = (0,-1) exprimé dans le plan
+    const span = [pu(A), pu(B)].sort((a, b) => a - b);
+    $('as-bar').classList.remove('on');
+    editor.open({
+      key: r.address + '|' + r.floorData.floor, title: r.address + ' · ' + floorName(r.floorData.floor),
+      street: r.street, orient: orientationName(r.local.bearing), north, facadeSpan: span,
+    });
+    state.frame = { F, u, v, floorY: view.floorY(r) };
+  };
+
+  Object.assign(state, { open: enter, quit, tests: TESTS, editor, view });
 }

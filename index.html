@@ -1411,6 +1411,8 @@ window.__drone = {
     GIMBAL.i = 0; GIMBAL.dirs[0][2] = 0.08; if (QUART) { QUART.actif = GFX.facades = true; QUART.maj(x, z); }
     toast('Rue Cler — façades réelles en cours de construction…');
   },
+  // habillage des façades réelles (moteur_facades) autour d'un point — utilisé par Appart Studio
+  facades(x, z, on = true) { if (!QUART) return false; QUART.actif = GFX.facades = !!on; if (on) QUART.maj(x, z); return true; },
   PL, modes: [60, 300, 1500], speed: () => drMode, setSpeed: m => setDrMode(m), toast,
   ll: (lon, lat) => { const [X, Y] = DPHOTO.lambert93(lon, lat); return [X - CITY.X0, -(Y - CITY.Y0)]; },
   async teleport(x, z, o = {}) {
@@ -1932,6 +1934,8 @@ function loop(now) {
     QUART._dt = (QUART._dt ?? dt) * 0.97 + dt * 0.03; if (isTouch && QUART._dt > 0.05 && QUART.rayon > 45 && !QUART.attente && (QUART._cool = (QUART._cool || 0) - dt) < 0) { QUART._cool = 4; QUART.setRayon(QUART.rayon - 10, 25); } }
   if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); governor(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
+  // Appart Studio : caméra cinématique imposée (le drone est garé sur la caméra pour que le streaming suive)
+  if (window.__camOverride && window.__camOverride(dt, t)) { drone.visible = false; PL.vx = PL.vy = PL.vz = 0; PL.spd = 0; }
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
   // sun follows car for shadows
   sun.position.set(F.x + sunDir.x * 450, F.y + sunDir.y * 450, F.z + sunDir.z * 450); sun.target.position.set(F.x, F.y, F.z);

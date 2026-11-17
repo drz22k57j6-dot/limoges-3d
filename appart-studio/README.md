@@ -1,45 +1,45 @@
-# Appart Studio — phase 1
+# Appart Studio — phases 1 et 2
 
-## Démo
+## Parcours (iPhone)
 
-- Ouvrir le site Paris en monde 3D.
-- Appuyer sur **APPART STUDIO** en bas à gauche.
-- Choisir une adresse de démonstration ou saisir une adresse.
-- Vérifier l'étage (convention française : 0 = RDC), puis localiser.
-- Le repère rouge est posé au niveau du plancher, à l'intérieur de la façade retenue.
-- Les boutons ±10 cm corrigent immédiatement la hauteur.
+1. Réglages du jeu lancé → bouton **APPART STUDIO** (en bas à gauche).
+2. Écran unique : adresse (autocomplétion Géoplateforme dès 3 lettres) + étage (RDC → 15) → **Voir mon immeuble**.
+3. Écran « On trouve votre immeuble… » pendant le chargement du quartier. L'utilisateur ne touche jamais la carte ni le drone (interface drone masquée).
+4. Caméra posée dans la rue, face à la façade, l'étage surligné sur toute la largeur. Bandeau : adresse, étage, orientation, largeur de rue, ±10 cm.
+5. **C'est bien mon étage → Dessiner mon plan** : éditeur 2D plein écran, façade verrouillée en haut, boussole réelle.
 
-## Adresses de recette
+Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en tête, là où le moteur de façades habille les vraies rues).
 
-1. 10 rue de Rivoli, 75004 Paris — 4e.
-2. 1 boulevard Voltaire, 75011 Paris — 2e (immeuble d'angle à vérifier à l'exécution).
-3. 15 rue des Écouffes, 75004 Paris — 1er (rue étroite, secteur central).
-4. 10 avenue Victor-Hugo, 75016 Paris — 5e.
-5. 8 avenue de France, 75013 Paris — 10e.
+## Localisation (locate.js)
 
-## Données et calcul
+- Géocodage Géoplateforme (déjà utilisé par le jeu).
+- Correspondance exacte numéro + voie dans `data/paris/identite/*.json`. Plusieurs bâtiments peuvent porter la même adresse (cour, annexes) : on garde celui dont l'emprise BD TOPO (WFS) est la plus proche du point BAN, donc celui qui touche la rue.
+- Secours : bâtiment le plus proche dans 35 m (signalé à l'utilisateur).
+- Étage estimé : 0 = RDC ; `nombre_d_etages` IGN inclut le RDC. Garde-fou si la donnée IGN est incohérente (ex. 7 niveaux pour 15 m) : nombre de niveaux recalculé à 3 m.
 
-- Géocodage : service Géoplateforme déjà utilisé par le jeu.
-- Correspondance exacte : fichiers `data/paris/identite/i_j.json`, comparaison normalisée du numéro + nom de voie dans `adresses[].label`.
-- Secours : recherche WFS BD TOPO dans une bbox de 35 m autour du point BAN, choix du polygone le plus proche.
-- Emprise et arête de façade : géométrie BD TOPO EPSG:2154, segment le plus proche du point BAN ; normale orientée vers le point BAN (ou vers l'extérieur si le point est dans l'emprise).
-- Repère du moteur : `x = X - CITY.X0`, `z = -(Y - CITY.Y0)`.
+## Aimantage sur les fenêtres (view.js + moteur_facades)
 
-### Nombre d'étages
+`buildBuilding` expose désormais `userData.etages = { yF, F, ent }` (hauteurs réelles des niveaux générés) et `quartier.js` les range dans `window.__facadeEtages` par identifiant IGN et par façade. Dès que la façade de l'immeuble est construite, la bande d'étage se cale sur la vraie rangée de fenêtres (RDC double hauteur des commerces pris en compte). Sinon, estimation IGN + correction ±10 cm.
 
-L'attribut IGN BD TOPO `nombre_d_etages` est le **nombre total de niveaux hors-sol, rez-de-chaussée compris** ; les sous-sols ne sont pas comptés. Source : Descriptif de contenu BD TOPO v3.5 (juillet 2025), fiche « Nombre d'étages ».
+## Éditeur de plan (planEditor.js, roomDetect.js)
 
-Calcul appliqué :
-- `nbNiveauxAuDessusRDC = max(1, etages - 1)`
-- `hRDC = 4 m` pour un haussmannien probable, sinon `3 m`
-- `hEtage = (hauteur_m - hRDC - hToit) / nbNiveauxAuDessusRDC`
-- `hToit = 3 m` uniquement si une information explicite de toiture mansardée est présente ; sinon 0.
-- `plancher(0) = sol`; pour `etage > 0`, `sol + hRDC + (etage - 1) × hEtage`.
+- Outils : Pièces (nommer, redimensionner par poignées), Mur, Fenêtre, Porte. Annuler / Rétablir. Sauvegarde automatique (localStorage, par adresse + étage).
+- Murs : aimantation 10 cm, sur les nœuds et les murs existants, redressement automatique horizontal / vertical.
+- Pièces détectées automatiquement : graphe planaire des murs, faces fermées, murs pendants ignorés.
+- Fenêtres / portes : posées d'un toucher, glissables le long du mur, largeur ±10 cm, jamais superposées.
+- `getPlan()` renvoie `{ murs, ouvertures, pieces }` en mètres (repère u = le long de la façade, v = vers l'intérieur) pour la phase 3.
 
-Le caractère haussmannien est une heuristique provisoire (nature/usage ou hauteur et nombre de niveaux) : l'utilisateur peut corriger la hauteur par pas de 10 cm.
+## Moteur (index.html)
 
-## Limites honnêtes de cette PR
+- `window.__camOverride` : caméra imposée par Appart Studio (le drone est garé sur la caméra pour que le streaming suive).
+- `window.__drone.facades(x, z)` : active le moteur de façades autour d'un point.
 
-- La rangée de fenêtres du générateur de façades n'est pas exposée sous forme de métadonnées consommables ; l'aimantage automatique aux fenêtres attendra une API de rangées côté générateur. Le réglage ±10 cm est disponible immédiatement.
-- Cette phase ne réalise pas encore le patch shader d'ouverture du volume cible, la maquette découpée, ni le calcul du soleil : ces éléments sont respectivement prévus dans les phases 3 et 4.
-- Les 5 adresses sont des scénarios de recette, pas des résultats de test certifiés. Une exécution réelle sur iPhone est nécessaire pour joindre les captures d'écran et confirmer chaque ID IGN/hauteur avant fusion.
+## Testé (Chrome headless, format iPhone 390×780)
+
+- 38 rue Cler, 2e : adresse exacte → BATIMENT0000000241927509, façade Est, rue de 13 m, bande calée sur les fenêtres.
+- Éditeur : agrandissement 7 × 5 m, 2 cloisons → Séjour 17,65 m² / Chambre 11,10 m² / Salle de bain 6,25 m², 3 fenêtres, 1 porte, annuler/rétablir.
+
+## Limites
+
+- Phase 3 (appartement 3D dans l'immeuble) et phase 4 (soleil) non commencées : bouton « Voir en 3D » désactivé.
+- Hors des rues habillées par le moteur de façades, l'étage reste une estimation IGN (corrigeable ±10 cm).
