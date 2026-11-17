@@ -1,0 +1,4020 @@
+{
+  "zone": {
+    "name": "Rue Cler, Paris 7e",
+    "bbox": [
+      2.304,
+      48.854,
+      2.3085,
+      48.8595
+    ]
+  },
+  "generated_at": "2026-11-17T05:21:12.044458Z",
+  "sources": {
+    "panoramax_photos": 1000,
+    "mapillary_photos": 0
+  },
+  "summary": {
+    "facades": 499,
+    "covered_panoramax": 0,
+    "covered_mapillary": 0,
+    "covered_any": 0,
+    "panoramax_percent": 0.0,
+    "mapillary_percent": 0.0,
+    "any_percent": 0.0,
+    "median_photo_age_years": null
+  },
+  "facades": [
+    {
+      "building_id": "BATIMENT0000000241923321",
+      "facade_id": "BATIMENT0000000241923321:0",
+      "length_m": 19.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241923764",
+      "facade_id": "BATIMENT0000000241923764:0",
+      "length_m": 32.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241923775",
+      "facade_id": "BATIMENT0000000241923775:0",
+      "length_m": 20.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241923777",
+      "facade_id": "BATIMENT0000000241923777:0",
+      "length_m": 20.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241923807",
+      "facade_id": "BATIMENT0000000241923807:0",
+      "length_m": 20.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241923813",
+      "facade_id": "BATIMENT0000000241923813:0",
+      "length_m": 19.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924615",
+      "facade_id": "BATIMENT0000000241924615:0",
+      "length_m": 7.65,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924616",
+      "facade_id": "BATIMENT0000000241924616:0",
+      "length_m": 8.56,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924617",
+      "facade_id": "BATIMENT0000000241924617:0",
+      "length_m": 10.96,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924619",
+      "facade_id": "BATIMENT0000000241924619:0",
+      "length_m": 7.53,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924621",
+      "facade_id": "BATIMENT0000000241924621:0",
+      "length_m": 22.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924621",
+      "facade_id": "BATIMENT0000000241924621:1",
+      "length_m": 17.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924622",
+      "facade_id": "BATIMENT0000000241924622:0",
+      "length_m": 12.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924623",
+      "facade_id": "BATIMENT0000000241924623:0",
+      "length_m": 16.73,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924624",
+      "facade_id": "BATIMENT0000000241924624:0",
+      "length_m": 16.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924626",
+      "facade_id": "BATIMENT0000000241924626:0",
+      "length_m": 20.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924627",
+      "facade_id": "BATIMENT0000000241924627:0",
+      "length_m": 14.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924630",
+      "facade_id": "BATIMENT0000000241924630:0",
+      "length_m": 11.61,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924632",
+      "facade_id": "BATIMENT0000000241924632:0",
+      "length_m": 20.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924635",
+      "facade_id": "BATIMENT0000000241924635:0",
+      "length_m": 30.46,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924639",
+      "facade_id": "BATIMENT0000000241924639:0",
+      "length_m": 9.52,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924640",
+      "facade_id": "BATIMENT0000000241924640:0",
+      "length_m": 9.49,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924641",
+      "facade_id": "BATIMENT0000000241924641:0",
+      "length_m": 12.46,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924641",
+      "facade_id": "BATIMENT0000000241924641:1",
+      "length_m": 11.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924646",
+      "facade_id": "BATIMENT0000000241924646:0",
+      "length_m": 9.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924648",
+      "facade_id": "BATIMENT0000000241924648:0",
+      "length_m": 9.8,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924938",
+      "facade_id": "BATIMENT0000000241924938:0",
+      "length_m": 8.86,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924938",
+      "facade_id": "BATIMENT0000000241924938:1",
+      "length_m": 12.24,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925156",
+      "facade_id": "BATIMENT0000000241925156:0",
+      "length_m": 15.62,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925156",
+      "facade_id": "BATIMENT0000000241925156:1",
+      "length_m": 9.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925202",
+      "facade_id": "BATIMENT0000000241925202:0",
+      "length_m": 20.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925796",
+      "facade_id": "BATIMENT0000000241925796:0",
+      "length_m": 11.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926031",
+      "facade_id": "BATIMENT0000000241926031:0",
+      "length_m": 7.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926031",
+      "facade_id": "BATIMENT0000000241926031:1",
+      "length_m": 6.79,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926033",
+      "facade_id": "BATIMENT0000000241926033:0",
+      "length_m": 6.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926035",
+      "facade_id": "BATIMENT0000000241926035:0",
+      "length_m": 16.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926037",
+      "facade_id": "BATIMENT0000000241926037:0",
+      "length_m": 14.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926037",
+      "facade_id": "BATIMENT0000000241926037:1",
+      "length_m": 10.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926044",
+      "facade_id": "BATIMENT0000000241926044:0",
+      "length_m": 5.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926051",
+      "facade_id": "BATIMENT0000000241926051:0",
+      "length_m": 16.86,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926052",
+      "facade_id": "BATIMENT0000000241926052:0",
+      "length_m": 9.84,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926054",
+      "facade_id": "BATIMENT0000000241926054:0",
+      "length_m": 14.52,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926055",
+      "facade_id": "BATIMENT0000000241926055:0",
+      "length_m": 13.47,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926056",
+      "facade_id": "BATIMENT0000000241926056:0",
+      "length_m": 8.89,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926057",
+      "facade_id": "BATIMENT0000000241926057:0",
+      "length_m": 11.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926057",
+      "facade_id": "BATIMENT0000000241926057:1",
+      "length_m": 5.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926060",
+      "facade_id": "BATIMENT0000000241926060:0",
+      "length_m": 14.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926060",
+      "facade_id": "BATIMENT0000000241926060:1",
+      "length_m": 11.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926060",
+      "facade_id": "BATIMENT0000000241926060:2",
+      "length_m": 6.71,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926061",
+      "facade_id": "BATIMENT0000000241926061:0",
+      "length_m": 6.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926062",
+      "facade_id": "BATIMENT0000000241926062:0",
+      "length_m": 11.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926064",
+      "facade_id": "BATIMENT0000000241926064:0",
+      "length_m": 12.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926064",
+      "facade_id": "BATIMENT0000000241926064:1",
+      "length_m": 12.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926066",
+      "facade_id": "BATIMENT0000000241926066:0",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926067",
+      "facade_id": "BATIMENT0000000241926067:0",
+      "length_m": 6.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926068",
+      "facade_id": "BATIMENT0000000241926068:0",
+      "length_m": 5.79,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926068",
+      "facade_id": "BATIMENT0000000241926068:1",
+      "length_m": 5.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926069",
+      "facade_id": "BATIMENT0000000241926069:0",
+      "length_m": 5.57,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926070",
+      "facade_id": "BATIMENT0000000241926070:0",
+      "length_m": 6.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926070",
+      "facade_id": "BATIMENT0000000241926070:1",
+      "length_m": 8.29,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926071",
+      "facade_id": "BATIMENT0000000241926071:0",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926071",
+      "facade_id": "BATIMENT0000000241926071:1",
+      "length_m": 5.47,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926072",
+      "facade_id": "BATIMENT0000000241926072:0",
+      "length_m": 5.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926074",
+      "facade_id": "BATIMENT0000000241926074:0",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926081",
+      "facade_id": "BATIMENT0000000241926081:0",
+      "length_m": 5.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926099",
+      "facade_id": "BATIMENT0000000241926099:0",
+      "length_m": 11.83,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926099",
+      "facade_id": "BATIMENT0000000241926099:1",
+      "length_m": 13.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926100",
+      "facade_id": "BATIMENT0000000241926100:0",
+      "length_m": 6.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926101",
+      "facade_id": "BATIMENT0000000241926101:0",
+      "length_m": 19.96,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926102",
+      "facade_id": "BATIMENT0000000241926102:0",
+      "length_m": 6.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926105",
+      "facade_id": "BATIMENT0000000241926105:0",
+      "length_m": 5.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926106",
+      "facade_id": "BATIMENT0000000241926106:0",
+      "length_m": 5.98,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926106",
+      "facade_id": "BATIMENT0000000241926106:1",
+      "length_m": 6.23,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926107",
+      "facade_id": "BATIMENT0000000241926107:0",
+      "length_m": 6.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926111",
+      "facade_id": "BATIMENT0000000241926111:0",
+      "length_m": 10.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926112",
+      "facade_id": "BATIMENT0000000241926112:0",
+      "length_m": 5.28,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926674",
+      "facade_id": "BATIMENT0000000241926674:0",
+      "length_m": 23.0,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926676",
+      "facade_id": "BATIMENT0000000241926676:0",
+      "length_m": 7.85,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926992",
+      "facade_id": "BATIMENT0000000241926992:0",
+      "length_m": 7.37,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926992",
+      "facade_id": "BATIMENT0000000241926992:1",
+      "length_m": 9.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926994",
+      "facade_id": "BATIMENT0000000241926994:0",
+      "length_m": 11.61,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927000",
+      "facade_id": "BATIMENT0000000241927000:0",
+      "length_m": 10.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927001",
+      "facade_id": "BATIMENT0000000241927001:0",
+      "length_m": 13.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927002",
+      "facade_id": "BATIMENT0000000241927002:0",
+      "length_m": 24.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927006",
+      "facade_id": "BATIMENT0000000241927006:0",
+      "length_m": 5.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000356563650",
+      "facade_id": "BATIMENT0000000356563650:2",
+      "length_m": 16.53,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924880",
+      "facade_id": "BATIMENT0000000241924880:0",
+      "length_m": 12.34,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924880",
+      "facade_id": "BATIMENT0000000241924880:1",
+      "length_m": 10.13,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924884",
+      "facade_id": "BATIMENT0000000241924884:0",
+      "length_m": 14.9,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924889",
+      "facade_id": "BATIMENT0000000241924889:0",
+      "length_m": 8.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924979",
+      "facade_id": "BATIMENT0000000241924979:0",
+      "length_m": 8.27,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924979",
+      "facade_id": "BATIMENT0000000241924979:1",
+      "length_m": 17.27,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241924984",
+      "facade_id": "BATIMENT0000000241924984:0",
+      "length_m": 24.23,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925112",
+      "facade_id": "BATIMENT0000000241925112:0",
+      "length_m": 13.79,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925112",
+      "facade_id": "BATIMENT0000000241925112:1",
+      "length_m": 25.81,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925113",
+      "facade_id": "BATIMENT0000000241925113:0",
+      "length_m": 11.83,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925116",
+      "facade_id": "BATIMENT0000000241925116:0",
+      "length_m": 26.69,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925116",
+      "facade_id": "BATIMENT0000000241925116:1",
+      "length_m": 12.46,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925201",
+      "facade_id": "BATIMENT0000000241925201:0",
+      "length_m": 8.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925328",
+      "facade_id": "BATIMENT0000000241925328:0",
+      "length_m": 22.17,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925328",
+      "facade_id": "BATIMENT0000000241925328:1",
+      "length_m": 6.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925330",
+      "facade_id": "BATIMENT0000000241925330:0",
+      "length_m": 12.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925333",
+      "facade_id": "BATIMENT0000000241925333:0",
+      "length_m": 5.29,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925335",
+      "facade_id": "BATIMENT0000000241925335:0",
+      "length_m": 50.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925338",
+      "facade_id": "BATIMENT0000000241925338:0",
+      "length_m": 15.4,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925344",
+      "facade_id": "BATIMENT0000000241925344:0",
+      "length_m": 30.42,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925381",
+      "facade_id": "BATIMENT0000000241925381:0",
+      "length_m": 12.85,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925381",
+      "facade_id": "BATIMENT0000000241925381:1",
+      "length_m": 45.73,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925423",
+      "facade_id": "BATIMENT0000000241925423:0",
+      "length_m": 9.14,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925423",
+      "facade_id": "BATIMENT0000000241925423:1",
+      "length_m": 10.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925424",
+      "facade_id": "BATIMENT0000000241925424:0",
+      "length_m": 51.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925424",
+      "facade_id": "BATIMENT0000000241925424:1",
+      "length_m": 41.45,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925425",
+      "facade_id": "BATIMENT0000000241925425:0",
+      "length_m": 11.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925425",
+      "facade_id": "BATIMENT0000000241925425:1",
+      "length_m": 12.24,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925426",
+      "facade_id": "BATIMENT0000000241925426:0",
+      "length_m": 27.87,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925426",
+      "facade_id": "BATIMENT0000000241925426:1",
+      "length_m": 9.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925427",
+      "facade_id": "BATIMENT0000000241925427:0",
+      "length_m": 11.61,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925427",
+      "facade_id": "BATIMENT0000000241925427:1",
+      "length_m": 11.85,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925428",
+      "facade_id": "BATIMENT0000000241925428:0",
+      "length_m": 10.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925429",
+      "facade_id": "BATIMENT0000000241925429:0",
+      "length_m": 6.69,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925429",
+      "facade_id": "BATIMENT0000000241925429:1",
+      "length_m": 13.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925430",
+      "facade_id": "BATIMENT0000000241925430:0",
+      "length_m": 9.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925430",
+      "facade_id": "BATIMENT0000000241925430:1",
+      "length_m": 11.83,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926889",
+      "facade_id": "BATIMENT0000000241926889:0",
+      "length_m": 23.43,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926891",
+      "facade_id": "BATIMENT0000000241926891:0",
+      "length_m": 9.9,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926892",
+      "facade_id": "BATIMENT0000000241926892:0",
+      "length_m": 10.09,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926893",
+      "facade_id": "BATIMENT0000000241926893:0",
+      "length_m": 9.9,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926894",
+      "facade_id": "BATIMENT0000000241926894:0",
+      "length_m": 10.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926897",
+      "facade_id": "BATIMENT0000000241926897:0",
+      "length_m": 14.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926900",
+      "facade_id": "BATIMENT0000000241926900:0",
+      "length_m": 11.09,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926903",
+      "facade_id": "BATIMENT0000000241926903:0",
+      "length_m": 20.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926903",
+      "facade_id": "BATIMENT0000000241926903:1",
+      "length_m": 9.99,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926905",
+      "facade_id": "BATIMENT0000000241926905:0",
+      "length_m": 9.74,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926905",
+      "facade_id": "BATIMENT0000000241926905:1",
+      "length_m": 9.99,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926906",
+      "facade_id": "BATIMENT0000000241926906:0",
+      "length_m": 17.58,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926907",
+      "facade_id": "BATIMENT0000000241926907:0",
+      "length_m": 7.35,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926907",
+      "facade_id": "BATIMENT0000000241926907:1",
+      "length_m": 6.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926908",
+      "facade_id": "BATIMENT0000000241926908:0",
+      "length_m": 9.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926908",
+      "facade_id": "BATIMENT0000000241926908:1",
+      "length_m": 7.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926909",
+      "facade_id": "BATIMENT0000000241926909:0",
+      "length_m": 9.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926910",
+      "facade_id": "BATIMENT0000000241926910:0",
+      "length_m": 7.37,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926911",
+      "facade_id": "BATIMENT0000000241926911:0",
+      "length_m": 13.69,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926912",
+      "facade_id": "BATIMENT0000000241926912:0",
+      "length_m": 6.37,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926913",
+      "facade_id": "BATIMENT0000000241926913:0",
+      "length_m": 5.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926914",
+      "facade_id": "BATIMENT0000000241926914:0",
+      "length_m": 8.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926914",
+      "facade_id": "BATIMENT0000000241926914:1",
+      "length_m": 8.84,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926918",
+      "facade_id": "BATIMENT0000000241926918:0",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926919",
+      "facade_id": "BATIMENT0000000241926919:0",
+      "length_m": 6.96,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926919",
+      "facade_id": "BATIMENT0000000241926919:1",
+      "length_m": 6.83,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926920",
+      "facade_id": "BATIMENT0000000241926920:0",
+      "length_m": 6.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926922",
+      "facade_id": "BATIMENT0000000241926922:0",
+      "length_m": 7.65,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926922",
+      "facade_id": "BATIMENT0000000241926922:1",
+      "length_m": 12.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926923",
+      "facade_id": "BATIMENT0000000241926923:0",
+      "length_m": 6.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926923",
+      "facade_id": "BATIMENT0000000241926923:1",
+      "length_m": 9.9,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926925",
+      "facade_id": "BATIMENT0000000241926925:0",
+      "length_m": 9.38,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926925",
+      "facade_id": "BATIMENT0000000241926925:1",
+      "length_m": 6.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926926",
+      "facade_id": "BATIMENT0000000241926926:0",
+      "length_m": 6.01,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926926",
+      "facade_id": "BATIMENT0000000241926926:1",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926928",
+      "facade_id": "BATIMENT0000000241926928:0",
+      "length_m": 14.4,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926928",
+      "facade_id": "BATIMENT0000000241926928:1",
+      "length_m": 5.52,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926928",
+      "facade_id": "BATIMENT0000000241926928:2",
+      "length_m": 6.78,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926929",
+      "facade_id": "BATIMENT0000000241926929:0",
+      "length_m": 13.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926930",
+      "facade_id": "BATIMENT0000000241926930:0",
+      "length_m": 7.27,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926931",
+      "facade_id": "BATIMENT0000000241926931:0",
+      "length_m": 5.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926931",
+      "facade_id": "BATIMENT0000000241926931:1",
+      "length_m": 14.96,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926931",
+      "facade_id": "BATIMENT0000000241926931:2",
+      "length_m": 14.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926933",
+      "facade_id": "BATIMENT0000000241926933:0",
+      "length_m": 9.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926933",
+      "facade_id": "BATIMENT0000000241926933:1",
+      "length_m": 6.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926935",
+      "facade_id": "BATIMENT0000000241926935:1",
+      "length_m": 31.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926936",
+      "facade_id": "BATIMENT0000000241926936:0",
+      "length_m": 7.84,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927017",
+      "facade_id": "BATIMENT0000000241927017:0",
+      "length_m": 7.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927018",
+      "facade_id": "BATIMENT0000000241927018:0",
+      "length_m": 8.0,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927388",
+      "facade_id": "BATIMENT0000000241927388:0",
+      "length_m": 8.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927399",
+      "facade_id": "BATIMENT0000000241927399:0",
+      "length_m": 16.35,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927399",
+      "facade_id": "BATIMENT0000000241927399:1",
+      "length_m": 8.26,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927407",
+      "facade_id": "BATIMENT0000000241927407:0",
+      "length_m": 32.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927408",
+      "facade_id": "BATIMENT0000000241927408:0",
+      "length_m": 15.81,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927425",
+      "facade_id": "BATIMENT0000000241927425:0",
+      "length_m": 34.66,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927441",
+      "facade_id": "BATIMENT0000000241927441:0",
+      "length_m": 9.9,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927450",
+      "facade_id": "BATIMENT0000000241927450:0",
+      "length_m": 10.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927451",
+      "facade_id": "BATIMENT0000000241927451:0",
+      "length_m": 12.05,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927451",
+      "facade_id": "BATIMENT0000000241927451:1",
+      "length_m": 21.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927452",
+      "facade_id": "BATIMENT0000000241927452:0",
+      "length_m": 17.49,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927453",
+      "facade_id": "BATIMENT0000000241927453:0",
+      "length_m": 13.38,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927453",
+      "facade_id": "BATIMENT0000000241927453:1",
+      "length_m": 13.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927453",
+      "facade_id": "BATIMENT0000000241927453:2",
+      "length_m": 6.64,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927513",
+      "facade_id": "BATIMENT0000000241927513:0",
+      "length_m": 16.38,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927513",
+      "facade_id": "BATIMENT0000000241927513:1",
+      "length_m": 12.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927514",
+      "facade_id": "BATIMENT0000000241927514:0",
+      "length_m": 13.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927516",
+      "facade_id": "BATIMENT0000000241927516:0",
+      "length_m": 14.93,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927516",
+      "facade_id": "BATIMENT0000000241927516:1",
+      "length_m": 10.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927520",
+      "facade_id": "BATIMENT0000000241927520:0",
+      "length_m": 15.69,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927520",
+      "facade_id": "BATIMENT0000000241927520:1",
+      "length_m": 11.26,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927521",
+      "facade_id": "BATIMENT0000000241927521:0",
+      "length_m": 15.59,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927523",
+      "facade_id": "BATIMENT0000000241927523:0",
+      "length_m": 11.99,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927524",
+      "facade_id": "BATIMENT0000000241927524:0",
+      "length_m": 12.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927524",
+      "facade_id": "BATIMENT0000000241927524:1",
+      "length_m": 6.93,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927525",
+      "facade_id": "BATIMENT0000000241927525:0",
+      "length_m": 11.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927526",
+      "facade_id": "BATIMENT0000000241927526:0",
+      "length_m": 11.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927532",
+      "facade_id": "BATIMENT0000000241927532:0",
+      "length_m": 14.96,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927533",
+      "facade_id": "BATIMENT0000000241927533:0",
+      "length_m": 16.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927533",
+      "facade_id": "BATIMENT0000000241927533:1",
+      "length_m": 12.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927535",
+      "facade_id": "BATIMENT0000000241927535:0",
+      "length_m": 11.89,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927536",
+      "facade_id": "BATIMENT0000000241927536:0",
+      "length_m": 8.85,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927536",
+      "facade_id": "BATIMENT0000000241927536:1",
+      "length_m": 18.34,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927537",
+      "facade_id": "BATIMENT0000000241927537:0",
+      "length_m": 9.68,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927765",
+      "facade_id": "BATIMENT0000000241927765:0",
+      "length_m": 24.13,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927765",
+      "facade_id": "BATIMENT0000000241927765:1",
+      "length_m": 9.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248112",
+      "facade_id": "BATIMENT0000000253248112:0",
+      "length_m": 22.59,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248112",
+      "facade_id": "BATIMENT0000000253248112:1",
+      "length_m": 13.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248126",
+      "facade_id": "BATIMENT0000000253248126:0",
+      "length_m": 20.75,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248126",
+      "facade_id": "BATIMENT0000000253248126:1",
+      "length_m": 14.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248126",
+      "facade_id": "BATIMENT0000000253248126:2",
+      "length_m": 13.8,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248127",
+      "facade_id": "BATIMENT0000000253248127:0",
+      "length_m": 22.77,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248131",
+      "facade_id": "BATIMENT0000000253248131:0",
+      "length_m": 23.41,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248134",
+      "facade_id": "BATIMENT0000000253248134:0",
+      "length_m": 12.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248134",
+      "facade_id": "BATIMENT0000000253248134:1",
+      "length_m": 14.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248134",
+      "facade_id": "BATIMENT0000000253248134:2",
+      "length_m": 9.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248134",
+      "facade_id": "BATIMENT0000000253248134:3",
+      "length_m": 24.52,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248135",
+      "facade_id": "BATIMENT0000000253248135:0",
+      "length_m": 25.24,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248135",
+      "facade_id": "BATIMENT0000000253248135:1",
+      "length_m": 13.66,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248136",
+      "facade_id": "BATIMENT0000000253248136:0",
+      "length_m": 70.8,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248611",
+      "facade_id": "BATIMENT0000000253248611:0",
+      "length_m": 25.41,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248611",
+      "facade_id": "BATIMENT0000000253248611:1",
+      "length_m": 9.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253248611",
+      "facade_id": "BATIMENT0000000253248611:2",
+      "length_m": 14.76,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925673",
+      "facade_id": "BATIMENT0000000241925673:0",
+      "length_m": 10.27,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925677",
+      "facade_id": "BATIMENT0000000241925677:0",
+      "length_m": 13.54,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925686",
+      "facade_id": "BATIMENT0000000241925686:0",
+      "length_m": 8.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925687",
+      "facade_id": "BATIMENT0000000241925687:0",
+      "length_m": 11.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925691",
+      "facade_id": "BATIMENT0000000241925691:0",
+      "length_m": 20.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925691",
+      "facade_id": "BATIMENT0000000241925691:1",
+      "length_m": 12.0,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925699",
+      "facade_id": "BATIMENT0000000241925699:0",
+      "length_m": 7.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925699",
+      "facade_id": "BATIMENT0000000241925699:1",
+      "length_m": 12.65,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241925757",
+      "facade_id": "BATIMENT0000000241925757:0",
+      "length_m": 16.28,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926042",
+      "facade_id": "BATIMENT0000000241926042:0",
+      "length_m": 18.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926050",
+      "facade_id": "BATIMENT0000000241926050:0",
+      "length_m": 16.62,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926076",
+      "facade_id": "BATIMENT0000000241926076:0",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926079",
+      "facade_id": "BATIMENT0000000241926079:0",
+      "length_m": 5.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926080",
+      "facade_id": "BATIMENT0000000241926080:0",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926083",
+      "facade_id": "BATIMENT0000000241926083:0",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926083",
+      "facade_id": "BATIMENT0000000241926083:1",
+      "length_m": 5.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926084",
+      "facade_id": "BATIMENT0000000241926084:0",
+      "length_m": 10.28,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926084",
+      "facade_id": "BATIMENT0000000241926084:1",
+      "length_m": 10.4,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926085",
+      "facade_id": "BATIMENT0000000241926085:0",
+      "length_m": 8.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926085",
+      "facade_id": "BATIMENT0000000241926085:1",
+      "length_m": 9.49,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926085",
+      "facade_id": "BATIMENT0000000241926085:2",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926086",
+      "facade_id": "BATIMENT0000000241926086:0",
+      "length_m": 8.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926087",
+      "facade_id": "BATIMENT0000000241926087:0",
+      "length_m": 6.2,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926087",
+      "facade_id": "BATIMENT0000000241926087:1",
+      "length_m": 17.55,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926405",
+      "facade_id": "BATIMENT0000000241926405:0",
+      "length_m": 41.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926406",
+      "facade_id": "BATIMENT0000000241926406:0",
+      "length_m": 18.37,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926407",
+      "facade_id": "BATIMENT0000000241926407:0",
+      "length_m": 6.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926408",
+      "facade_id": "BATIMENT0000000241926408:0",
+      "length_m": 14.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926409",
+      "facade_id": "BATIMENT0000000241926409:1",
+      "length_m": 7.62,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926409",
+      "facade_id": "BATIMENT0000000241926409:2",
+      "length_m": 7.53,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926410",
+      "facade_id": "BATIMENT0000000241926410:0",
+      "length_m": 11.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926410",
+      "facade_id": "BATIMENT0000000241926410:1",
+      "length_m": 14.13,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926410",
+      "facade_id": "BATIMENT0000000241926410:2",
+      "length_m": 6.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926449",
+      "facade_id": "BATIMENT0000000241926449:0",
+      "length_m": 12.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926452",
+      "facade_id": "BATIMENT0000000241926452:0",
+      "length_m": 19.09,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926458",
+      "facade_id": "BATIMENT0000000241926458:0",
+      "length_m": 30.05,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926459",
+      "facade_id": "BATIMENT0000000241926459:0",
+      "length_m": 13.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926463",
+      "facade_id": "BATIMENT0000000241926463:0",
+      "length_m": 6.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926463",
+      "facade_id": "BATIMENT0000000241926463:1",
+      "length_m": 12.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926466",
+      "facade_id": "BATIMENT0000000241926466:0",
+      "length_m": 10.34,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926467",
+      "facade_id": "BATIMENT0000000241926467:0",
+      "length_m": 12.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926469",
+      "facade_id": "BATIMENT0000000241926469:0",
+      "length_m": 26.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926471",
+      "facade_id": "BATIMENT0000000241926471:0",
+      "length_m": 13.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926473",
+      "facade_id": "BATIMENT0000000241926473:0",
+      "length_m": 10.58,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926474",
+      "facade_id": "BATIMENT0000000241926474:0",
+      "length_m": 11.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926475",
+      "facade_id": "BATIMENT0000000241926475:0",
+      "length_m": 14.0,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926476",
+      "facade_id": "BATIMENT0000000241926476:0",
+      "length_m": 12.09,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926479",
+      "facade_id": "BATIMENT0000000241926479:0",
+      "length_m": 11.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926484",
+      "facade_id": "BATIMENT0000000241926484:0",
+      "length_m": 11.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926486",
+      "facade_id": "BATIMENT0000000241926486:0",
+      "length_m": 13.29,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926487",
+      "facade_id": "BATIMENT0000000241926487:0",
+      "length_m": 13.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926487",
+      "facade_id": "BATIMENT0000000241926487:1",
+      "length_m": 17.18,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926488",
+      "facade_id": "BATIMENT0000000241926488:0",
+      "length_m": 17.18,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926489",
+      "facade_id": "BATIMENT0000000241926489:0",
+      "length_m": 13.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926495",
+      "facade_id": "BATIMENT0000000241926495:0",
+      "length_m": 13.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926496",
+      "facade_id": "BATIMENT0000000241926496:0",
+      "length_m": 11.81,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926497",
+      "facade_id": "BATIMENT0000000241926497:0",
+      "length_m": 27.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926498",
+      "facade_id": "BATIMENT0000000241926498:0",
+      "length_m": 10.86,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926499",
+      "facade_id": "BATIMENT0000000241926499:0",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926499",
+      "facade_id": "BATIMENT0000000241926499:1",
+      "length_m": 8.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926500",
+      "facade_id": "BATIMENT0000000241926500:0",
+      "length_m": 13.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926501",
+      "facade_id": "BATIMENT0000000241926501:0",
+      "length_m": 8.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926501",
+      "facade_id": "BATIMENT0000000241926501:1",
+      "length_m": 16.27,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926501",
+      "facade_id": "BATIMENT0000000241926501:2",
+      "length_m": 15.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926502",
+      "facade_id": "BATIMENT0000000241926502:0",
+      "length_m": 10.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926503",
+      "facade_id": "BATIMENT0000000241926503:0",
+      "length_m": 16.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926504",
+      "facade_id": "BATIMENT0000000241926504:0",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926504",
+      "facade_id": "BATIMENT0000000241926504:1",
+      "length_m": 14.43,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926505",
+      "facade_id": "BATIMENT0000000241926505:0",
+      "length_m": 21.41,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926517",
+      "facade_id": "BATIMENT0000000241926517:1",
+      "length_m": 5.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926523",
+      "facade_id": "BATIMENT0000000241926523:0",
+      "length_m": 19.77,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926523",
+      "facade_id": "BATIMENT0000000241926523:1",
+      "length_m": 11.25,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926523",
+      "facade_id": "BATIMENT0000000241926523:2",
+      "length_m": 10.62,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926525",
+      "facade_id": "BATIMENT0000000241926525:0",
+      "length_m": 20.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926526",
+      "facade_id": "BATIMENT0000000241926526:0",
+      "length_m": 18.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926526",
+      "facade_id": "BATIMENT0000000241926526:1",
+      "length_m": 30.14,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926528",
+      "facade_id": "BATIMENT0000000241926528:1",
+      "length_m": 20.98,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926680",
+      "facade_id": "BATIMENT0000000241926680:0",
+      "length_m": 22.84,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926703",
+      "facade_id": "BATIMENT0000000241926703:0",
+      "length_m": 7.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926703",
+      "facade_id": "BATIMENT0000000241926703:1",
+      "length_m": 10.23,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926706",
+      "facade_id": "BATIMENT0000000241926706:0",
+      "length_m": 18.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926706",
+      "facade_id": "BATIMENT0000000241926706:1",
+      "length_m": 15.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927008",
+      "facade_id": "BATIMENT0000000241927008:0",
+      "length_m": 10.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927010",
+      "facade_id": "BATIMENT0000000241927010:0",
+      "length_m": 5.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927011",
+      "facade_id": "BATIMENT0000000241927011:0",
+      "length_m": 9.99,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927013",
+      "facade_id": "BATIMENT0000000241927013:0",
+      "length_m": 8.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927014",
+      "facade_id": "BATIMENT0000000241927014:0",
+      "length_m": 17.77,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927014",
+      "facade_id": "BATIMENT0000000241927014:1",
+      "length_m": 6.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927021",
+      "facade_id": "BATIMENT0000000241927021:0",
+      "length_m": 13.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927025",
+      "facade_id": "BATIMENT0000000241927025:0",
+      "length_m": 20.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927026",
+      "facade_id": "BATIMENT0000000241927026:0",
+      "length_m": 7.37,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927029",
+      "facade_id": "BATIMENT0000000241927029:0",
+      "length_m": 9.8,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927034",
+      "facade_id": "BATIMENT0000000241927034:0",
+      "length_m": 8.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927036",
+      "facade_id": "BATIMENT0000000241927036:0",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927060",
+      "facade_id": "BATIMENT0000000241927060:0",
+      "length_m": 14.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927061",
+      "facade_id": "BATIMENT0000000241927061:0",
+      "length_m": 14.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253244901",
+      "facade_id": "BATIMENT0000000253244901:0",
+      "length_m": 9.69,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253244901",
+      "facade_id": "BATIMENT0000000253244901:1",
+      "length_m": 11.26,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000253244901",
+      "facade_id": "BATIMENT0000000253244901:2",
+      "length_m": 9.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000309677654",
+      "facade_id": "BATIMENT0000000309677654:0",
+      "length_m": 16.47,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000309677655",
+      "facade_id": "BATIMENT0000000309677655:0",
+      "length_m": 12.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000309677686",
+      "facade_id": "BATIMENT0000000309677686:0",
+      "length_m": 27.07,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000309677686",
+      "facade_id": "BATIMENT0000000309677686:1",
+      "length_m": 8.19,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000309677686",
+      "facade_id": "BATIMENT0000000309677686:2",
+      "length_m": 33.65,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926769",
+      "facade_id": "BATIMENT0000000241926769:0",
+      "length_m": 6.36,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926787",
+      "facade_id": "BATIMENT0000000241926787:0",
+      "length_m": 5.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926787",
+      "facade_id": "BATIMENT0000000241926787:1",
+      "length_m": 6.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926829",
+      "facade_id": "BATIMENT0000000241926829:0",
+      "length_m": 20.76,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926829",
+      "facade_id": "BATIMENT0000000241926829:1",
+      "length_m": 9.6,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926829",
+      "facade_id": "BATIMENT0000000241926829:2",
+      "length_m": 36.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241926829",
+      "facade_id": "BATIMENT0000000241926829:3",
+      "length_m": 8.73,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927020",
+      "facade_id": "BATIMENT0000000241927020:0",
+      "length_m": 13.09,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927022",
+      "facade_id": "BATIMENT0000000241927022:0",
+      "length_m": 16.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927022",
+      "facade_id": "BATIMENT0000000241927022:1",
+      "length_m": 13.63,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927027",
+      "facade_id": "BATIMENT0000000241927027:0",
+      "length_m": 12.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927027",
+      "facade_id": "BATIMENT0000000241927027:1",
+      "length_m": 12.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927030",
+      "facade_id": "BATIMENT0000000241927030:0",
+      "length_m": 13.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927031",
+      "facade_id": "BATIMENT0000000241927031:0",
+      "length_m": 10.66,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927031",
+      "facade_id": "BATIMENT0000000241927031:1",
+      "length_m": 17.14,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927032",
+      "facade_id": "BATIMENT0000000241927032:0",
+      "length_m": 17.58,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927032",
+      "facade_id": "BATIMENT0000000241927032:1",
+      "length_m": 10.4,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927037",
+      "facade_id": "BATIMENT0000000241927037:0",
+      "length_m": 13.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927040",
+      "facade_id": "BATIMENT0000000241927040:0",
+      "length_m": 9.36,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927041",
+      "facade_id": "BATIMENT0000000241927041:0",
+      "length_m": 12.4,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927043",
+      "facade_id": "BATIMENT0000000241927043:0",
+      "length_m": 29.0,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927044",
+      "facade_id": "BATIMENT0000000241927044:0",
+      "length_m": 11.8,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927047",
+      "facade_id": "BATIMENT0000000241927047:0",
+      "length_m": 6.53,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927047",
+      "facade_id": "BATIMENT0000000241927047:1",
+      "length_m": 7.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927047",
+      "facade_id": "BATIMENT0000000241927047:2",
+      "length_m": 6.86,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927047",
+      "facade_id": "BATIMENT0000000241927047:3",
+      "length_m": 6.71,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927047",
+      "facade_id": "BATIMENT0000000241927047:4",
+      "length_m": 62.27,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927050",
+      "facade_id": "BATIMENT0000000241927050:0",
+      "length_m": 14.33,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927053",
+      "facade_id": "BATIMENT0000000241927053:0",
+      "length_m": 13.6,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927054",
+      "facade_id": "BATIMENT0000000241927054:0",
+      "length_m": 18.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927056",
+      "facade_id": "BATIMENT0000000241927056:0",
+      "length_m": 11.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927059",
+      "facade_id": "BATIMENT0000000241927059:0",
+      "length_m": 12.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927063",
+      "facade_id": "BATIMENT0000000241927063:0",
+      "length_m": 12.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927063",
+      "facade_id": "BATIMENT0000000241927063:1",
+      "length_m": 6.74,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927064",
+      "facade_id": "BATIMENT0000000241927064:0",
+      "length_m": 10.09,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927067",
+      "facade_id": "BATIMENT0000000241927067:0",
+      "length_m": 15.54,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927067",
+      "facade_id": "BATIMENT0000000241927067:1",
+      "length_m": 36.65,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927067",
+      "facade_id": "BATIMENT0000000241927067:2",
+      "length_m": 5.35,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927067",
+      "facade_id": "BATIMENT0000000241927067:3",
+      "length_m": 11.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927069",
+      "facade_id": "BATIMENT0000000241927069:0",
+      "length_m": 15.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927072",
+      "facade_id": "BATIMENT0000000241927072:0",
+      "length_m": 6.14,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927075",
+      "facade_id": "BATIMENT0000000241927075:0",
+      "length_m": 17.76,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927076",
+      "facade_id": "BATIMENT0000000241927076:0",
+      "length_m": 8.93,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927076",
+      "facade_id": "BATIMENT0000000241927076:1",
+      "length_m": 13.34,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927261",
+      "facade_id": "BATIMENT0000000241927261:0",
+      "length_m": 26.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927261",
+      "facade_id": "BATIMENT0000000241927261:1",
+      "length_m": 5.85,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927261",
+      "facade_id": "BATIMENT0000000241927261:2",
+      "length_m": 6.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927262",
+      "facade_id": "BATIMENT0000000241927262:0",
+      "length_m": 26.72,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927262",
+      "facade_id": "BATIMENT0000000241927262:1",
+      "length_m": 6.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927262",
+      "facade_id": "BATIMENT0000000241927262:2",
+      "length_m": 6.26,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927264",
+      "facade_id": "BATIMENT0000000241927264:0",
+      "length_m": 22.61,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927264",
+      "facade_id": "BATIMENT0000000241927264:1",
+      "length_m": 17.68,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927271",
+      "facade_id": "BATIMENT0000000241927271:0",
+      "length_m": 18.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927273",
+      "facade_id": "BATIMENT0000000241927273:0",
+      "length_m": 29.25,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927281",
+      "facade_id": "BATIMENT0000000241927281:0",
+      "length_m": 18.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927284",
+      "facade_id": "BATIMENT0000000241927284:0",
+      "length_m": 23.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927285",
+      "facade_id": "BATIMENT0000000241927285:0",
+      "length_m": 24.57,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927285",
+      "facade_id": "BATIMENT0000000241927285:1",
+      "length_m": 19.96,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927287",
+      "facade_id": "BATIMENT0000000241927287:0",
+      "length_m": 11.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927315",
+      "facade_id": "BATIMENT0000000241927315:0",
+      "length_m": 18.87,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927317",
+      "facade_id": "BATIMENT0000000241927317:0",
+      "length_m": 22.64,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927317",
+      "facade_id": "BATIMENT0000000241927317:1",
+      "length_m": 6.18,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927318",
+      "facade_id": "BATIMENT0000000241927318:0",
+      "length_m": 12.18,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927318",
+      "facade_id": "BATIMENT0000000241927318:1",
+      "length_m": 7.94,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927322",
+      "facade_id": "BATIMENT0000000241927322:0",
+      "length_m": 9.65,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927327",
+      "facade_id": "BATIMENT0000000241927327:0",
+      "length_m": 10.14,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927329",
+      "facade_id": "BATIMENT0000000241927329:0",
+      "length_m": 7.0,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927330",
+      "facade_id": "BATIMENT0000000241927330:0",
+      "length_m": 9.73,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927330",
+      "facade_id": "BATIMENT0000000241927330:1",
+      "length_m": 6.81,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927333",
+      "facade_id": "BATIMENT0000000241927333:0",
+      "length_m": 8.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927350",
+      "facade_id": "BATIMENT0000000241927350:0",
+      "length_m": 13.45,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927351",
+      "facade_id": "BATIMENT0000000241927351:0",
+      "length_m": 23.66,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927351",
+      "facade_id": "BATIMENT0000000241927351:1",
+      "length_m": 20.77,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927351",
+      "facade_id": "BATIMENT0000000241927351:2",
+      "length_m": 29.84,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927351",
+      "facade_id": "BATIMENT0000000241927351:3",
+      "length_m": 14.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927352",
+      "facade_id": "BATIMENT0000000241927352:0",
+      "length_m": 18.05,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927353",
+      "facade_id": "BATIMENT0000000241927353:0",
+      "length_m": 7.81,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927355",
+      "facade_id": "BATIMENT0000000241927355:0",
+      "length_m": 13.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927355",
+      "facade_id": "BATIMENT0000000241927355:1",
+      "length_m": 5.87,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927357",
+      "facade_id": "BATIMENT0000000241927357:0",
+      "length_m": 8.52,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927357",
+      "facade_id": "BATIMENT0000000241927357:1",
+      "length_m": 5.39,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927360",
+      "facade_id": "BATIMENT0000000241927360:0",
+      "length_m": 11.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927367",
+      "facade_id": "BATIMENT0000000241927367:0",
+      "length_m": 6.91,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927367",
+      "facade_id": "BATIMENT0000000241927367:1",
+      "length_m": 6.71,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927369",
+      "facade_id": "BATIMENT0000000241927369:0",
+      "length_m": 11.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927369",
+      "facade_id": "BATIMENT0000000241927369:1",
+      "length_m": 9.45,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927370",
+      "facade_id": "BATIMENT0000000241927370:0",
+      "length_m": 9.34,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927370",
+      "facade_id": "BATIMENT0000000241927370:1",
+      "length_m": 9.14,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927371",
+      "facade_id": "BATIMENT0000000241927371:0",
+      "length_m": 11.16,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927371",
+      "facade_id": "BATIMENT0000000241927371:1",
+      "length_m": 11.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927372",
+      "facade_id": "BATIMENT0000000241927372:0",
+      "length_m": 10.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927372",
+      "facade_id": "BATIMENT0000000241927372:1",
+      "length_m": 8.93,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927372",
+      "facade_id": "BATIMENT0000000241927372:2",
+      "length_m": 5.79,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927372",
+      "facade_id": "BATIMENT0000000241927372:3",
+      "length_m": 7.81,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927373",
+      "facade_id": "BATIMENT0000000241927373:0",
+      "length_m": 5.59,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927373",
+      "facade_id": "BATIMENT0000000241927373:1",
+      "length_m": 15.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927373",
+      "facade_id": "BATIMENT0000000241927373:2",
+      "length_m": 15.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927377",
+      "facade_id": "BATIMENT0000000241927377:0",
+      "length_m": 12.34,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927379",
+      "facade_id": "BATIMENT0000000241927379:0",
+      "length_m": 12.74,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927380",
+      "facade_id": "BATIMENT0000000241927380:0",
+      "length_m": 20.02,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927381",
+      "facade_id": "BATIMENT0000000241927381:0",
+      "length_m": 16.05,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927383",
+      "facade_id": "BATIMENT0000000241927383:0",
+      "length_m": 8.93,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927387",
+      "facade_id": "BATIMENT0000000241927387:0",
+      "length_m": 5.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927387",
+      "facade_id": "BATIMENT0000000241927387:1",
+      "length_m": 6.82,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927387",
+      "facade_id": "BATIMENT0000000241927387:2",
+      "length_m": 8.71,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927387",
+      "facade_id": "BATIMENT0000000241927387:3",
+      "length_m": 6.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927387",
+      "facade_id": "BATIMENT0000000241927387:4",
+      "length_m": 5.44,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927390",
+      "facade_id": "BATIMENT0000000241927390:0",
+      "length_m": 6.18,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927390",
+      "facade_id": "BATIMENT0000000241927390:1",
+      "length_m": 11.83,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927390",
+      "facade_id": "BATIMENT0000000241927390:2",
+      "length_m": 29.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927392",
+      "facade_id": "BATIMENT0000000241927392:0",
+      "length_m": 6.17,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927392",
+      "facade_id": "BATIMENT0000000241927392:1",
+      "length_m": 11.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927395",
+      "facade_id": "BATIMENT0000000241927395:0",
+      "length_m": 11.67,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927398",
+      "facade_id": "BATIMENT0000000241927398:0",
+      "length_m": 10.82,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927412",
+      "facade_id": "BATIMENT0000000241927412:0",
+      "length_m": 8.1,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927412",
+      "facade_id": "BATIMENT0000000241927412:1",
+      "length_m": 17.99,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927417",
+      "facade_id": "BATIMENT0000000241927417:0",
+      "length_m": 18.58,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927424",
+      "facade_id": "BATIMENT0000000241927424:0",
+      "length_m": 5.08,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927424",
+      "facade_id": "BATIMENT0000000241927424:1",
+      "length_m": 15.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927429",
+      "facade_id": "BATIMENT0000000241927429:0",
+      "length_m": 23.29,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927440",
+      "facade_id": "BATIMENT0000000241927440:0",
+      "length_m": 12.78,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927444",
+      "facade_id": "BATIMENT0000000241927444:1",
+      "length_m": 22.84,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927506",
+      "facade_id": "BATIMENT0000000241927506:0",
+      "length_m": 13.25,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927509",
+      "facade_id": "BATIMENT0000000241927509:0",
+      "length_m": 12.3,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927509",
+      "facade_id": "BATIMENT0000000241927509:1",
+      "length_m": 16.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927510",
+      "facade_id": "BATIMENT0000000241927510:0",
+      "length_m": 12.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927511",
+      "facade_id": "BATIMENT0000000241927511:0",
+      "length_m": 15.05,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927538",
+      "facade_id": "BATIMENT0000000241927538:0",
+      "length_m": 7.24,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927538",
+      "facade_id": "BATIMENT0000000241927538:1",
+      "length_m": 15.62,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927539",
+      "facade_id": "BATIMENT0000000241927539:0",
+      "length_m": 9.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927539",
+      "facade_id": "BATIMENT0000000241927539:1",
+      "length_m": 14.29,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927540",
+      "facade_id": "BATIMENT0000000241927540:0",
+      "length_m": 14.74,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927540",
+      "facade_id": "BATIMENT0000000241927540:1",
+      "length_m": 10.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927540",
+      "facade_id": "BATIMENT0000000241927540:2",
+      "length_m": 5.25,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927541",
+      "facade_id": "BATIMENT0000000241927541:0",
+      "length_m": 11.8,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927543",
+      "facade_id": "BATIMENT0000000241927543:0",
+      "length_m": 11.76,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927545",
+      "facade_id": "BATIMENT0000000241927545:0",
+      "length_m": 8.51,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927546",
+      "facade_id": "BATIMENT0000000241927546:0",
+      "length_m": 5.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927546",
+      "facade_id": "BATIMENT0000000241927546:1",
+      "length_m": 8.32,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927547",
+      "facade_id": "BATIMENT0000000241927547:0",
+      "length_m": 5.47,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927547",
+      "facade_id": "BATIMENT0000000241927547:1",
+      "length_m": 8.76,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927549",
+      "facade_id": "BATIMENT0000000241927549:0",
+      "length_m": 8.54,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927550",
+      "facade_id": "BATIMENT0000000241927550:0",
+      "length_m": 13.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927551",
+      "facade_id": "BATIMENT0000000241927551:0",
+      "length_m": 12.97,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927552",
+      "facade_id": "BATIMENT0000000241927552:0",
+      "length_m": 13.35,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927555",
+      "facade_id": "BATIMENT0000000241927555:0",
+      "length_m": 6.61,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927556",
+      "facade_id": "BATIMENT0000000241927556:0",
+      "length_m": 13.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927557",
+      "facade_id": "BATIMENT0000000241927557:0",
+      "length_m": 11.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927559",
+      "facade_id": "BATIMENT0000000241927559:0",
+      "length_m": 13.47,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927560",
+      "facade_id": "BATIMENT0000000241927560:0",
+      "length_m": 12.21,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927563",
+      "facade_id": "BATIMENT0000000241927563:0",
+      "length_m": 16.85,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927564",
+      "facade_id": "BATIMENT0000000241927564:0",
+      "length_m": 16.95,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927564",
+      "facade_id": "BATIMENT0000000241927564:1",
+      "length_m": 5.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927565",
+      "facade_id": "BATIMENT0000000241927565:0",
+      "length_m": 17.43,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927565",
+      "facade_id": "BATIMENT0000000241927565:1",
+      "length_m": 8.22,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927569",
+      "facade_id": "BATIMENT0000000241927569:0",
+      "length_m": 10.18,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927759",
+      "facade_id": "BATIMENT0000000241927759:0",
+      "length_m": 21.77,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927773",
+      "facade_id": "BATIMENT0000000241927773:0",
+      "length_m": 17.9,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927773",
+      "facade_id": "BATIMENT0000000241927773:1",
+      "length_m": 30.04,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927790",
+      "facade_id": "BATIMENT0000000241927790:0",
+      "length_m": 28.49,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927792",
+      "facade_id": "BATIMENT0000000241927792:0",
+      "length_m": 7.12,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927793",
+      "facade_id": "BATIMENT0000000241927793:0",
+      "length_m": 15.03,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927793",
+      "facade_id": "BATIMENT0000000241927793:1",
+      "length_m": 7.41,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927795",
+      "facade_id": "BATIMENT0000000241927795:0",
+      "length_m": 14.11,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927796",
+      "facade_id": "BATIMENT0000000241927796:0",
+      "length_m": 11.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927797",
+      "facade_id": "BATIMENT0000000241927797:0",
+      "length_m": 11.06,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927799",
+      "facade_id": "BATIMENT0000000241927799:0",
+      "length_m": 9.83,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927801",
+      "facade_id": "BATIMENT0000000241927801:0",
+      "length_m": 31.88,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000241927804",
+      "facade_id": "BATIMENT0000000241927804:0",
+      "length_m": 17.59,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    },
+    {
+      "building_id": "BATIMENT0000000309676159",
+      "facade_id": "BATIMENT0000000309676159:0",
+      "length_m": 19.48,
+      "panoramax_count": 0,
+      "mapillary_count": 0,
+      "best_photo": null
+    }
+  ]
+}
