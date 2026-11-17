@@ -254,7 +254,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=56';
+const V = '?v=57';
 // téléphone : textures des modèles réduites (au-delà de max px), la mémoire graphique d'un iPhone étant le premier motif de crash
 function alleger(root, max) {
   if (!isTouch) return root;
@@ -1386,6 +1386,14 @@ window.__drone = {
     toast('Rue test ' + ctx + ' — moteur de façades');
   },
 
+  // vraie rue Cler (7e) habillée par le moteur de façades : drone posé devant le Café du Marché, à 2,5 m du sol
+  async rueCler() {
+    const x = -2973.3, z = -30.3, tx = -2983.3, tz = -41.7;
+    await window.__drone.teleport(x, z, { nom: 'Rue Cler (7e réel)', dist: 0, alt: 30 });
+    PL.x = x; PL.z = z; PL.y = planeGround(x, z) + 2.5; PL.vx = PL.vy = PL.vz = 0; PL.yaw = Math.atan2(tx - x, tz - z); camYaw = PL.yaw;
+    GIMBAL.i = 0; GIMBAL.dirs[0][2] = 0.08; if (QUART) { QUART.actif = GFX.facades = true; QUART.maj(x, z); }
+    toast('Rue Cler — façades réelles en cours de construction…');
+  },
   PL, modes: [60, 300, 1500], speed: () => drMode, setSpeed: m => setDrMode(m), toast,
   ll: (lon, lat) => { const [X, Y] = DPHOTO.lambert93(lon, lat); return [X - CITY.X0, -(Y - CITY.Y0)]; },
   async teleport(x, z, o = {}) {
@@ -1943,7 +1951,7 @@ main();
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=56"></script>
+<script type="module" src="drone/reglages.js?v=57"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>
