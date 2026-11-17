@@ -13,12 +13,12 @@ from rues_test import typ
 
 SRC, INSEE, NOM = sys.argv[1], sys.argv[2], sys.argv[3]
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, 'data', 'paris', 'facades')
+OUT = os.environ.get('SORTIE') or os.path.join(ROOT, 'data', 'paris', 'facades')
 E0, N0, RX, RY = 652087, 6862038, 10000, 6000
 loc = lambda x, y: (round(x - E0, 1), round(-(y - N0), 1))
 secteur = lambda x, z: f'{math.floor((x + RX) / 1000)}_{math.floor((-z + RY) / 1000)}'
 
-arr = shape(json.load(open(f'{SRC}/arr7.json'))['geometry'])
+arr = shape(json.load(open(f'{SRC}/arr.json' if os.path.exists(f'{SRC}/arr.json') else f'{SRC}/arr7.json'))['geometry'])
 bats = json.load(open(f'{SRC}/bat.json'))
 routes = json.load(open(f'{SRC}/routes.json'))
 mods = set()

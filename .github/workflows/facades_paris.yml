@@ -1,0 +1,46 @@
+# Génère les données du moteur de façades pour les 20 arrondissements (en parallèle), puis les fusionne et les publie.
+name: Façades Paris
+on:
+  workflow_dispatch:
+  push:
+    paths: ['outils/facades_demande.txt']
+permissions:
+  contents: write
+concurrency:
+  group: facades-paris
+  cancel-in-progress: true
+jobs:
+  arrondissement:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        ar: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install shapely numpy >/dev/null
+      - name: Données IGN + façades
+        run: |
+          N=$(printf "%02d" ${{ matrix.ar }})
+          for i in 1 2 3; do python3 outils/ign_quartier.py 751$N /tmp/ign && break; sleep 20; done
+          SORTIE=/tmp/sortie/$N python3 outils/facades_quartier.py /tmp/ign 751$N ${{ matrix.ar }}e
+      - uses: actions/upload-artifact@v4
+        with:
+          name: facades-${{ matrix.ar }}
+          path: /tmp/sortie
+  fusion:
+    needs: arrondissement
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/tout
+      - run: python3 outils/fusion_facades.py /tmp/tout
+      - name: Publier
+        run: |
+          git config user.name "facades-bot"; git config user.email "actions@github.com"
+          git add data/paris/facades; git commit -m "Données façades : tout Paris" || exit 0
+          for i in 1 2 3 4; do git pull --rebase && git push && break; sleep 8; done
