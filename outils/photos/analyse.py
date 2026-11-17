@@ -204,6 +204,61 @@ def rectify(image,facade,photo):
  rgb=np.asarray(image)[vy,ux].copy()
  return Image.fromarray(np.dstack((rgb,np.where(valid,255,0).astype(np.uint8))),"RGBA"),valid
 
+def perspective_view(image,photo,facade):
+ """Construit une vue perspective 1024x512 centrée sur la façade depuis la photo source."""
+ sw,sh=image.size
+ mx=(facade["a"][0]+facade["b"][0])/2; mz=(facade["a"][1]+facade["b"][1])/2
+ dx=mx-float(photo["x"]); dn=-(mz-float(photo["z"]))
+ heading=(math.degrees(math.atan2(dx,dn))+360.0)%360.0
+ hfov=100.0; vw,vh=1024,512
+ vfov=math.degrees(2*math.atan(math.tan(math.radians(hfov/2))*vh/vw))
+ xx,yy=np.meshgrid((np.arange(vw)+.5)/vw,(np.arange(vh)+.5)/vh)
+ yaw=heading+(xx-.5)*hfov
+ pitch=(.5-yy)*vfov
+ fov=photo.get("fov")
+ try: is360=fov is not None and float(fov)>=360
+ except (TypeError,ValueError): is360=False
+ try: az=float(photo.get("azimuth"))%360
+ except (TypeError,ValueError): az=heading
+ if is360:
+  sx=((yaw-az)%360)/360*sw+sw/2
+  sy=(.5-pitch/180)*sh
+ else:
+  source_hfov=60.0
+  try:
+   if fov is not None and 1<float(fov)<180: source_hfov=float(fov)
+  except (TypeError,ValueError): pass
+  source_vfov=math.degrees(2*math.atan(math.tan(math.radians(source_hfov/2))*sh/sw))
+  rel=np.radians(wrap_angle(yaw-az))
+  sx=(.5+np.tan(rel)/(2*math.tan(math.radians(source_hfov/2))))*sw
+  sy=(.5-np.tan(np.radians(pitch))/(2*math.tan(math.radians(source_vfov/2))))*sh
+ valid=(sx>=0)&(sx<sw)&(sy>=0)&(sy<sh)
+ ix=np.clip(np.rint(sx).astype(np.int32),0,sw-1); iy=np.clip(np.rint(sy).astype(np.int32),0,sh-1)
+ rgba=np.asarray(image.convert("RGB"))[iy,ix].copy()
+ rgba[~valid]=0
+ return Image.fromarray(rgba,"RGB"),sx.astype(np.float32),sy.astype(np.float32),valid,heading
+
+def project_facade_grid(facade,photo,heading,width,height,offsets=None,heights=None):
+ """Projette les points 3D de la façade vers la vue perspective 1024x512."""
+ a=np.asarray(facade["a"],dtype=np.float64); b=np.asarray(facade["b"],dtype=np.float64)
+ t=(np.arange(width,dtype=np.float64)+.5)/width
+ base_x=a[0]+(b[0]-a[0])*t; base_z=a[1]+(b[1]-a[1])*t
+ if heights is None: heights=4.0-((np.arange(height,dtype=np.float64)+.5)/height)*5.0
+ heights=np.asarray(heights,dtype=np.float64)
+ if offsets is None: offsets=np.zeros((height,width),dtype=np.float64)
+ else: offsets=np.asarray(offsets,dtype=np.float64)
+ px=base_x[None,:]+facade["nx"]*offsets
+ pz=base_z[None,:]+facade["nz"]*offsets
+ dx=px-float(photo["x"]); dn=-(pz-float(photo["z"]))
+ horizontal=np.maximum(np.hypot(dx,dn),1e-5)
+ yaw=(np.degrees(np.arctan2(dx,dn))+360)%360
+ pitch=np.degrees(np.arctan2(heights[:,None]-CAMERA_H,horizontal))
+ hfov=100.0; vfov=math.degrees(2*math.atan(math.tan(math.radians(hfov/2))*512/1024))
+ u=(.5+np.tan(np.radians(wrap_angle(yaw-heading)))/(2*math.tan(math.radians(hfov/2))))*1024
+ v=(.5-np.tan(np.radians(pitch))/(2*math.tan(math.radians(vfov/2))))*512
+ valid=(u>=0)&(u<1024)&(v>=0)&(v<512)
+ return np.clip(np.rint(u).astype(np.int32),0,1023),np.clip(np.rint(v).astype(np.int32),0,511),valid
+
 def labels_to_groups(model):
  names={int(k):str(v).lower() for k,v in model.config.id2label.items()}
  groups={name:set() for name in KEYWORDS}
@@ -215,7 +270,7 @@ def labels_to_groups(model):
 def rgb_to_lab(rgb):
  arr=np.asarray(rgb,dtype=np.float64)/255.0
  lin=np.where(arr<=0.04045,arr/12.92,((arr+0.055)/1.055)**2.4)
- xyz=lin@np.array([[.4124564,.3575761,.1804375],[.2126729,.7151522,.0721750],[.0193339,.1191920,.9503041]])
+ xyz=lin@np.array([[.4124564,.3575761,.1804375],[.2126729,.7151522,.0721750],[.0193339,.1191920,.9503041]]).T
  xyz/=np.array([.95047,1.0,1.08883]); d=6/29
  f=np.where(xyz>d**3,np.cbrt(xyz),xyz/(3*d*d)+4/29)
  return np.stack((116*f[...,1]-16,500*(f[...,0]-f[...,1]),200*(f[...,1]-f[...,2])),axis=-1)
@@ -254,65 +309,119 @@ def intervals(mask,metres_per_col):
 def analyze_one(model,processor,groups,facade,photo,fid,photo_index):
  image=download_image(photo.get("url"))
  if image is None: return None
- rectified,valid=rectify(image,facade,photo); image.close()
- arr=np.asarray(rectified.convert("RGB")); pil=Image.fromarray(arr)
- inputs=processor(images=pil,return_tensors="pt")
- with torch.inference_mode():
-  logits=model(**inputs).logits
-  seg=torch.nn.functional.interpolate(logits,size=(OUT_H,arr.shape[1]),mode="bilinear",align_corners=False).argmax(dim=1)[0].cpu().numpy()
- masks={name:np.isin(seg,list(ids)) if ids else np.zeros(seg.shape,dtype=bool) for name,ids in groups.items()}
- visible=valid&(np.asarray(rectified.getchannel("A"))>0); obstacle=masks["obstacle"]; usable=visible&~obstacle
- rgb=arr.copy()
- floor_px=rgb[usable&masks["sol"]]
- if len(floor_px):
-  med=np.median(floor_px,axis=0); target=float(np.mean(med))
-  gains=np.clip(target/np.maximum(med,1.0),.7,1.4)
-  rgb=np.clip(rgb.astype(np.float32)*gains[None,None,:],0,255).astype(np.uint8)
- wallmask=usable[:160]&masks["mur"][:160]; wallrgb=rgb[:160][wallmask]; facade_color=None; facade_lab=None
- if len(wallrgb):
-  lum=wallrgb@np.array([.2126,.7152,.0722]); wallrgb=wallrgb[lum>=np.median(lum)]
+ try:
+  view,source_x,source_y,source_valid,heading=perspective_view(image,photo,facade)
+  view_arr=np.asarray(view)
+  inputs=processor(images=view,return_tensors="pt")
+  with torch.inference_mode():
+   logits=model(**inputs).logits
+   seg=torch.nn.functional.interpolate(logits,size=(512,1024),mode="bilinear",align_corners=False).argmax(dim=1)[0].cpu().numpy()
+  masks_view={name:np.isin(seg,list(ids)) if ids else np.zeros(seg.shape,dtype=bool) for name,ids in groups.items()}
+  width=max(1,min(OUT_W_MAX,int(math.ceil(facade["length"]*PPM))))
+  height=OUT_H
+  u,v,project_valid=project_facade_grid(facade,photo,heading,width,height)
+  valid=project_valid&source_valid[v,u]
+  rgb=view_arr[v,u].copy()
+  masks={name:m[ v,u ]&valid for name,m in masks_view.items()}
+  visible=valid
+  obstacle=masks["obstacle"]
+  usable=visible&~obstacle
+  floor_px=rgb[usable&masks["sol"]]
+  if len(floor_px):
+   med=np.median(floor_px,axis=0); target=float(np.mean(med))
+   gains=np.clip(target/np.maximum(med,1.0),.7,1.4)
+   rgb=np.clip(rgb.astype(np.float32)*gains[None,None,:],0,255).astype(np.uint8)
+  # Couleur de façade : uniquement la bande visible comprise entre 0 et 4 m.
+  wallmask=usable[:160]&masks["mur"][:160]
+  wallrgb=rgb[:160][wallmask]; facade_color=None; facade_lab=None
   if len(wallrgb):
-   facade_lab=np.median(rgb_to_lab(wallrgb),axis=0); facade_color=lab_to_hex(facade_lab)
- r0,r1=20,OUT_H; bandusable=usable[r0:r1]
- bandm={k:v[r0:r1] for k,v in masks.items()}
- nonfront=bandusable&~bandm["mur"]&~bandm["ouverture"]&~bandm["auvent"]
- storefront_color=median_hex(rgb[r0:r1][nonfront])
- open_cols=np.zeros(arr.shape[1],dtype=bool); door_cols=np.zeros(arr.shape[1],dtype=bool)
- for col in range(arr.shape[1]):
-  vis=bandusable[:,col]
-  if vis.sum() and (bandm["ouverture"][:,col]&vis).sum()/vis.sum()>.5:
-   open_cols[col]=True
-   door_cols[col]=bool(bandm["ouverture"][-24:,col].any())
- doors=intervals(door_cols,facade["length"]/arr.shape[1])
- windows=intervals(open_cols&~door_cols,facade["length"]/arr.shape[1])
- awning=usable&masks["auvent"]; awn_count=int(awning.sum()); awn_present=awn_count/max(1,int(bandusable.sum()))>.04
- awn_rgb=rgb[awning]; awn_color=median_hex(awn_rgb) if awn_present else None
- striped=False; color2=None; awn_width=None
- if awn_present and len(awn_rgb)>=20:
-  _,centers=kmeans2(awn_rgb.reshape(-1,3)); col_labels=[]
-  for col in range(arr.shape[1]):
-   ys=np.flatnonzero(awning[:,col])
-   if len(ys):
-    pix=rgb[ys,col]; labs=np.argmin(((pix[:,None,:]-centers[None,:,:])**2).sum(axis=2),axis=1)
-    col_labels.append((col,int(np.bincount(labs,minlength=2).argmax())))
-  runs=[v for _,v in col_labels]
-  transitions=sum(runs[i]!=runs[i-1] for i in range(1,len(runs)))
-  striped=transitions>=2
-  if striped: color2=lab_to_hex(np.median(rgb_to_lab(np.asarray([centers[1]],dtype=np.uint8)),axis=0))
-  awn_width=round(awn_count/max(1,OUT_H)/PPM,2)
- signmask=usable&masks["enseigne"]; sign_text=""
- if signmask.any():
-  ys,xs=np.where(signmask); y0,y1=ys.min(),ys.max()+1; x0,x1=xs.min(),xs.max()+1
-  crop=rgb[y0:y1,x0:x1].copy(); local=signmask[y0:y1,x0:x1]; crop[~local]=255
-  sign_text=re.sub(r"\s+"," ",image_to_string(Image.fromarray(crop),lang="fra")).strip()[:240]
- # Masquer les pixels segmentés comme personnes/véhicules/obstacles avant artefact.
- blurred=np.asarray(Image.fromarray(rgb).filter(ImageFilter.GaussianBlur(radius=12)))
- base=np.asarray(rectified).copy(); base[obstacle,:3]=blurred[obstacle]
- Image.fromarray(base,"RGBA").save(WARP_DIR/f"{fid.replace(':','_')}_{re.sub(r'[^A-Za-z0-9_-]','_',str(photo.get('id') or photo_index))}.png",optimize=True)
- return {"facade_lab":facade_lab,"facade_color":facade_color,"storefront_color":storefront_color,
-  "awning_present":bool(awn_present),"awning_color":awn_color,"awning_color2":color2,"awning_striped":bool(striped),
-  "awning_width":awn_width,"windows":windows,"doors":doors,"sign":sign_text,
-  "visible_ratio":float(usable.sum()/max(1,visible.sum()))}
+   lum=wallrgb@np.array([.2126,.7152,.0722]); wallrgb=wallrgb[lum>=np.median(lum)]
+   if len(wallrgb):
+    facade_lab=np.median(rgb_to_lab(wallrgb),axis=0); facade_color=lab_to_hex(facade_lab)
+  # Devanture et ouvertures : de 0 à 3,5 m.
+  r0,r1=20,OUT_H
+  bandusable=usable[r0:r1]
+  bandm={k:m[r0:r1] for k,m in masks.items()}
+  nonfront=bandusable&~bandm["mur"]&~bandm["ouverture"]&~bandm["auvent"]
+  storefront_color=median_hex(rgb[r0:r1][nonfront])
+  open_cols=np.zeros(width,dtype=bool); door_cols=np.zeros(width,dtype=bool)
+  for col in range(width):
+   vis=bandusable[:,col]
+   if vis.sum() and (bandm["ouverture"][:,col]&vis).sum()/vis.sum()>.5:
+    open_cols[col]=True
+    door_cols[col]=bool(bandm["ouverture"][-24:,col].any())
+  doors=intervals(door_cols,facade["length"]/width)
+  windows=intervals(open_cols&~door_cols,facade["length"]/width)
+  # Auvents : segmentation sur la photo perspective d'origine, échantillonnée
+  # à 2,2–4,5 m et entre 0 et 2,5 m devant le plan de façade.
+  awn_heights=np.linspace(2.2,4.5,24)
+  awn_offsets=np.linspace(0.0,2.5,11)
+  awning_samples=[]; awning_rgb=[]; awning_cols=np.zeros(width,dtype=bool)
+  for off in awn_offsets:
+   off_grid=np.full((len(awn_heights),width),off,dtype=np.float64)
+   au,av,av_valid=project_facade_grid(facade,photo,heading,width,len(awn_heights),
+      offsets=off_grid,heights=awn_heights)
+   av_valid &= source_valid[av,au]
+   sample=masks_view["auvent"][av,au]&av_valid
+   if sample.any():
+    awning_samples.append(sample)
+    awning_rgb.append(view_arr[av,au][sample])
+    awning_cols |= sample.any(axis=0)
+  awn_count=sum(int(x.sum()) for x in awning_samples)
+  awn_present=awn_count/max(1,len(awn_offsets)*len(awn_heights)*width)>.04
+  awn_rgb=np.concatenate(awning_rgb,axis=0) if awning_rgb else np.empty((0,3),dtype=np.uint8)
+  awn_color=median_hex(awn_rgb) if awn_present else None
+  striped=False; color2=None; awn_width=None
+  if awn_present and len(awn_rgb)>=20:
+   _,centers=kmeans2(awn_rgb.reshape(-1,3)); col_labels=[]
+   for col in np.flatnonzero(awning_cols):
+    pix=np.concatenate([view_arr[project_facade_grid(facade,photo,heading,width,len(awn_heights),
+      offsets=np.full((len(awn_heights),width),off),heights=awn_heights)[1][:,col],
+      project_facade_grid(facade,photo,heading,width,len(awn_heights),
+      offsets=np.full((len(awn_heights),width),off),heights=awn_heights)[0][:,col]] for off in []]) if False else None
+    col_labels.append(int((col//max(1,width//2))%2))
+   # Les bandes alternées sont déterminées sur les couleurs agrégées par colonne.
+   col_colors=[]
+   for col in range(width):
+    values=[]
+    for off in awn_offsets:
+     off_grid=np.full((len(awn_heights),width),off,dtype=np.float64)
+     au,av,av_valid=project_facade_grid(facade,photo,heading,width,len(awn_heights),offsets=off_grid,heights=awn_heights)
+     ok=masks_view["auvent"][av[:,col],au[:,col]]&av_valid[:,col]
+     if ok.any(): values.extend(view_arr[av[ok,col],au[ok,col]].tolist())
+    if values: col_colors.append((col,np.median(np.asarray(values),axis=0)))
+   if len(col_colors)>=3:
+    labs=np.array([np.argmin(((c[1][None,:]-centers)**2).sum(axis=1)) for c in col_colors])
+    striped=sum(labs[i]!=labs[i-1] for i in range(1,len(labs)))>=2
+    if striped: color2=lab_to_hex(np.median(rgb_to_lab(np.asarray([centers[1]],dtype=np.uint8)),axis=0))
+   awn_width=round(float(awning_cols.sum())*facade["length"]/width,2)
+  # OCR : la boîte enseigne trouvée sur la projection est reportée vers les
+  # coordonnées de la photo source, puis extraite à pleine résolution.
+  signmask=usable&masks["enseigne"]; sign_text=""
+  if signmask.any():
+   ys,xs=np.where(signmask)
+   vu,vv,ok=project_facade_grid(facade,photo,heading,width,height)
+   sel=ok[ys,xs]
+   if sel.any():
+    srcx=source_x[vv[ys[sel],xs[sel]],vu[ys[sel],xs[sel]]]
+    srcy=source_y[vv[ys[sel],xs[sel]],vu[ys[sel],xs[sel]]]
+    x0=max(0,int(np.floor(np.min(srcx)))-4); x1=min(image.width,int(np.ceil(np.max(srcx)))+5)
+    y0=max(0,int(np.floor(np.min(srcy)))-4); y1=min(image.height,int(np.ceil(np.max(srcy)))+5)
+    if x1>x0 and y1>y0:
+     crop=image.crop((x0,y0,x1,y1)).resize(((x1-x0)*2,(y1-y0)*2),Image.Resampling.LANCZOS)
+     sign_text=re.sub(r"\s+"," ",image_to_string(crop,lang="fra",config="--psm 7")).strip()[:240]
+  # Artefact redressé ; les zones d'obstacles sont floutées avant sauvegarde.
+  blurred=np.asarray(Image.fromarray(rgb).filter(ImageFilter.GaussianBlur(radius=12)))
+  alpha=np.where(valid,255,0).astype(np.uint8)
+  base=np.dstack((rgb,alpha)); base[obstacle,:3]=blurred[obstacle]
+  WARP_DIR.mkdir(parents=True,exist_ok=True)
+  Image.fromarray(base,"RGBA").save(WARP_DIR/f"{fid.replace(':','_')}_{re.sub(r'[^A-Za-z0-9_-]','_',str(photo.get('id') or photo_index))}.png",optimize=True)
+  return {"facade_lab":facade_lab,"facade_color":facade_color,"storefront_color":storefront_color,
+   "awning_present":bool(awn_present),"awning_color":awn_color,"awning_color2":color2,"awning_striped":bool(striped),
+   "awning_width":awn_width,"windows":windows,"doors":doors,"sign":sign_text,
+   "visible_ratio":float(usable.sum()/max(1,visible.sum()))}
+ finally:
+  image.close()
 
 def combine(results,photos,facade):
  usable=[r for r in results if r]
@@ -343,7 +452,17 @@ def combine(results,photos,facade):
   "enseigne":max(signs,key=len) if signs else "","confiance":round(float(confidence),3),
   "photos":[str(p.get("id","")) for p in photos[:len(usable)]],"source":"Panoramax (CC BY-SA)"}
 
+def test_lab_roundtrip():
+ sample=np.asarray([[200,190,170]],dtype=np.uint8)
+ recovered=lab_to_hex(rgb_to_lab(sample)[0])
+ expected=np.array([200,190,170],dtype=int)
+ actual=np.array([int(recovered[i:i+2],16) for i in (1,3,5)],dtype=int)
+ if np.max(np.abs(actual-expected))>2:
+  raise RuntimeError(f"Échec test RGB↔Lab : #c8beaa reconverti en {recovered}")
+ print(f"Test RGB↔Lab OK : #c8beaa → {recovered}")
+
 def main():
+ test_lab_roundtrip()
  if not REPORT_IN.exists(): raise FileNotFoundError(f"Rapport introuvable : {REPORT_IN}")
  report=json.loads(REPORT_IN.read_text(encoding="utf-8"))
  facades=load_facades(); report_ids={str(x.get("facade_id")) for x in report.get("facades",[])}
