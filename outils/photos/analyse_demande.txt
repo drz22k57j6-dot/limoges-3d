@@ -1,2 +1,2 @@
 2026-11-17
-Lancer l'analyse visuelle des façades rue Cler avec SegFormer et OCR.
+Relancer l'analyse après correction du calcul Lab, segmentation perspective des auvents et OCR pleine résolution.
