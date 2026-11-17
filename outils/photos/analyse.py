@@ -375,11 +375,7 @@ def analyze_one(model,processor,groups,facade,photo,fid,photo_index):
   if awn_present and len(awn_rgb)>=20:
    _,centers=kmeans2(awn_rgb.reshape(-1,3)); col_labels=[]
    for col in np.flatnonzero(awning_cols):
-    pix=np.concatenate([view_arr[project_facade_grid(facade,photo,heading,width,len(awn_heights),
-      offsets=np.full((len(awn_heights),width),off),heights=awn_heights)[1][:,col],
-      project_facade_grid(facade,photo,heading,width,len(awn_heights),
-      offsets=np.full((len(awn_heights),width),off),heights=awn_heights)[0][:,col]] for off in []]) if False else None
-    col_labels.append(int((col//max(1,width//2))%2))
+     col_labels.append(col)
    # Les bandes alternées sont déterminées sur les couleurs agrégées par colonne.
    col_colors=[]
    for col in range(width):
