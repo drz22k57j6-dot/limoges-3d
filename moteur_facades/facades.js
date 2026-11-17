@@ -21,7 +21,7 @@ export function createKit(T, base) {
   const walls = new Map();
   function wall(kind, tone, wear, key) {
     const k = kind + tone + ':' + wear.toFixed(2) + (key || ''); if (walls.has(k)) return walls.get(k);
-    const m = new T.MeshStandardMaterial({ ...set(kind), color: tone, roughness: 1 });
+    const m = new T.MeshStandardMaterial({ ...set(kind), color: key === 'vc' ? 0xffffff : tone, vertexColors: key === 'vc', roughness: 1 });
     const U = { uWear: { value: wear } };
     m.onBeforeCompile = sh => {
       sh.uniforms.uWear = U.uWear;
@@ -37,7 +37,7 @@ export function createKit(T, base) {
           float soot=fbm(c*1.6+9.); diffuseColor.rgb*=1.-uWear*.18*smoothstep(.55,.9,soot);
           diffuseColor.rgb=mix(diffuseColor.rgb, diffuseColor.rgb*vec3(.84,.80,.73), uWear*.55); }`);
     };
-    m.customProgramCacheKey = () => 'mur_usure';
+    m.customProgramCacheKey = () => 'mur_usure' + (key === 'vc' ? 'vc' : '');
     walls.set(k, m); return m;
   }
   const std = o => new T.MeshStandardMaterial(o);
@@ -75,10 +75,27 @@ export function createKit(T, base) {
     vitrines: [0x1d3b2f, 0x5a1f24, 0x1e2a44, 0x2b2b2b, 0x6b5a3a, 0x24443f].map(c => std({ color: c, roughness: .4, metalness: .1 })),
     ribs: null,
   };
+  // motifs de garde-corps (texture ajourée répétée) : classique (barreaux + anneaux), riche (anneaux doubles, volutes)
+  M.garde = [0, 1].map(orne => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d'); g.strokeStyle = g.fillStyle = '#fff'; g.lineCap = 'round';
+    const W = 256, Hh = 256, yb = Hh * .62;
+    g.lineWidth = 7; for (const yy of [Hh * .26, Hh * .5]) { g.beginPath(); g.moveTo(0, yy); g.lineTo(W, yy); g.stroke(); }
+    g.lineWidth = 5; for (let x = 6; x < W; x += orne ? 21.3 : 25.6) { g.beginPath(); g.moveTo(x, Hh * .5); g.lineTo(x, Hh); g.stroke(); }
+    if (orne) { g.lineWidth = 6; for (let x = 32; x < W; x += 64) { g.beginPath(); g.arc(x, Hh * .38, 26, 0, 6.29); g.stroke(); g.beginPath(); g.arc(x + 32, Hh * .38, 10, 0, 6.29); g.stroke(); g.beginPath(); g.moveTo(x - 26, Hh * .38); g.quadraticCurveTo(x, Hh * .18, x + 26, Hh * .38); g.stroke(); } }
+    else { g.lineWidth = 6; for (let x = 32; x < W; x += 64) { g.beginPath(); g.arc(x, Hh * .38, 27, 0, 6.29); g.stroke(); } }
+    g.lineWidth = 9; g.beginPath(); g.moveTo(0, 4); g.lineTo(W, 4); g.stroke();
+    const t = new T.CanvasTexture(c); t.wrapS = T.RepeatWrapping; t.anisotropy = 4; void yb;
+    return new T.MeshStandardMaterial({ color: 0x15171a, metalness: .6, roughness: .45, alphaMap: t, alphaTest: .5, transparent: false, side: T.DoubleSide });
+  });
+  // plaques de numéros émaillées bleues : un seul atlas (1 à 256) pour toute la ville
+  { const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d');
+    for (let i = 0; i < 256; i++) { const x = (i % 16) * 64, y = Math.floor(i / 16) * 64; g.fillStyle = '#1b3f8f'; g.fillRect(x, y + 10, 64, 44); g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(x + 3, y + 13, 58, 38); g.fillStyle = '#fff'; g.font = `bold ${i + 1 > 99 ? 22 : 28}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), x + 32, y + 33); }
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; M.plaques = new T.MeshStandardMaterial({ map: t, roughness: .25 }); }
   // nervures du rideau métallique (relief partagé)
   const rc = document.createElement('canvas'); rc.width = 4; rc.height = 32; const rg = rc.getContext('2d');
   const gr = rg.createLinearGradient(0, 0, 0, 32); gr.addColorStop(0, '#000'); gr.addColorStop(.35, '#fff'); gr.addColorStop(.65, '#ddd'); gr.addColorStop(1, '#000'); rg.fillStyle = gr; rg.fillRect(0, 0, 4, 32);
   M.ribs = new T.CanvasTexture(rc); M.ribs.wrapS = M.ribs.wrapT = T.RepeatWrapping;
+  M.partages = () => { const S = new Set(); for (const v of Object.values(M)) { if (v && v.isMaterial) S.add(v); else if (Array.isArray(v)) v.forEach(x => x && x.isMaterial && S.add(x)); } walls.forEach(m => S.add(m)); paints.forEach(m => S.add(m)); return S; };
   return M;
 }
 
@@ -119,18 +136,14 @@ function moulure(T, d, h) {
   s.lineTo(d * .56, h * .55); s.lineTo(d * .62, h * .58); s.quadraticCurveTo(d * .95, h * .62, d, h * .88); s.lineTo(d, h); s.lineTo(0, h); s.closePath();
   return s;
 }
-function rail(T, arr, x0, x1, y, h, z, orne) {
-  arr.push(box(T, x1 - x0, .055, .06, (x0 + x1) / 2, y + h, z));
-  arr.push(box(T, x1 - x0, .04, .04, (x0 + x1) / 2, y + .07, z));
-  arr.push(box(T, x1 - x0, .022, .022, (x0 + x1) / 2, y + h * .74, z));
-  arr.push(box(T, x1 - x0, .022, .022, (x0 + x1) / 2, y + h * .5, z));
-  for (let x = x0 + .055; x < x1; x += .105) arr.push(box(T, .015, h * .43, .015, x, y + .07 + h * .215, z));
-  const step = orne ? .2 : .26;
-  for (let x = x0 + .12; x < x1 - .05; x += step) {
-    const t = new T.TorusGeometry(orne ? .072 : .08, .01, 5, 14); t.translate(x, y + h * .62, z); arr.push(t);
-    if (orne) { const t2 = new T.TorusGeometry(.03, .008, 4, 10); t2.translate(x + step / 2, y + h * .62, z); arr.push(t2); }
-  }
-  const n = Math.max(1, Math.ceil((x1 - x0) / 1.4)); for (let k = 0; k <= n; k++) arr.push(box(T, .045, h, .045, x0 + (x1 - x0) * k / n, y + h / 2, z));
+// garde-corps en fonte : main courante et lisse basse en volume, motif (barreaux, anneaux) en texture ajourée — très léger
+function rail(T, G, x0, x1, y, h, z, orne) {
+  G.fonte.push(box(T, x1 - x0, .055, .06, (x0 + x1) / 2, y + h, z));
+  G.fonte.push(box(T, x1 - x0, .04, .04, (x0 + x1) / 2, y + .07, z));
+  const n = Math.max(1, Math.ceil((x1 - x0) / 1.4)); for (let k = 0; k <= n; k++) G.fonte.push(box(T, .04, h, .04, x0 + (x1 - x0) * k / n, y + h / 2, z));
+  const g = new T.PlaneGeometry(x1 - x0, h - .1).translate((x0 + x1) / 2, y + .09 + (h - .1) / 2, z), uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * (x1 - x0) / (orne ? .8 : 1.04));
+  G[orne ? 'garde1' : 'garde0'].push(g);
 }
 const M4 = (T, ang, x, y, z) => new T.Matrix4().makeRotationY(ang).setPosition(x, y, z);
 
@@ -169,6 +182,7 @@ const SOLS = [0x7a5534, 0x8d6a45, 0x5e4330, 0x9a7a55, 0x6b4a2e];
 const BOIS = [0x6b4a2e, 0x3d2a1c, 0xd9cbb4, 0x8a6a48, 0xefe9de, 0x2b2b2b];
 const TISSUS = [0x6d7f8a, 0x8a3b32, 0x3f5a46, 0xb7a58a, 0x2f3a52, 0xc9b9a0, 0x555555];
 function room(T, G, R, cx, y0, w, h, zf, deep, o = {}) {
+  if (G.lod && !o.shop) { G.vc.push(vc(T, new T.PlaneGeometry(w, h).translate(cx, y0 + h / 2, zf - Math.min(deep, .6)), o.pal ?? MURS_INT[Math.floor(R() * MURS_INT.length)], .1, R, .35)); return; }   // version simple : fond sombre
   const pal = o.pal ?? MURS_INT[Math.floor(R() * MURS_INT.length)];
   const zb = zf - deep, xm = cx;
   G.vc.push(vc(T, new T.PlaneGeometry(w, h).translate(xm, y0 + h / 2, zb), pal, .06, R, .55));
@@ -183,7 +197,7 @@ function room(T, G, R, cx, y0, w, h, zf, deep, o = {}) {
   if (r < .3) {   // bibliothèque avec rangées de livres
     const lw = Math.min(w * .7, 1.2), lx = xm + (R() - .5) * (w - lw) * .6;
     G.vc.push(vc(T, new T.BoxGeometry(lw, Math.min(h * .85, 2), .32).translate(lx, y0 + Math.min(h * .85, 2) / 2, zb + .17), bw));
-    for (let s = 0; s < 4; s++) { let x = lx - lw / 2 + .06; while (x < lx + lw / 2 - .08) { const bk = .03 + R() * .05, bh = .2 + R() * .1; G.vc.push(vc(T, new T.BoxGeometry(bk, bh, .2).translate(x + bk / 2, y0 + .15 + s * .45 + bh / 2, zb + .2), TISSUS[Math.floor(R() * TISSUS.length)], .2, R)); x += bk + .005; } }
+    for (let s = 0; s < 4; s++) { let x = lx - lw / 2 + .06; while (x < lx + lw / 2 - .08) { const bk = .12 + R() * .18, bh = .2 + R() * .1; G.vc.push(vc(T, new T.BoxGeometry(bk, bh, .2).translate(x + bk / 2, y0 + .15 + s * .45 + bh / 2, zb + .2), TISSUS[Math.floor(R() * TISSUS.length)], .2, R)); x += bk + .005; } }
   } else if (r < .55) {   // canapé / commode
     const cw = Math.min(w * .8, 1.8), col = TISSUS[Math.floor(R() * TISSUS.length)];
     G.vc.push(vc(T, new T.BoxGeometry(cw, .42, .8).translate(xm, y0 + .21, zb + .45), col));
@@ -222,10 +236,12 @@ function windowUnit(T, G, R, cx, ys, ww, wh, REC, o = {}) {
     const hx = cx + side * ww / 2, a = side < 0 ? ang * (.8 + R() * .3) : -ang * (.8 + R() * .3);
     const parts = [], gl = [];
     const lx = side < 0 ? 0 : -lw;
-    parts.push(box(T, lw, fw, .05, lx + lw / 2, fw / 2, 0)); parts.push(box(T, lw, fw, .05, lx + lw / 2, lh - fw / 2, 0));
-    parts.push(box(T, fw, lh, .05, lx + fw / 2, lh / 2, 0)); parts.push(box(T, fw, lh, .05, lx + lw - fw / 2, lh / 2, 0));
-    for (let k = 1; k < 3; k++) parts.push(box(T, lw, .025, .035, lx + lw / 2, lh * k / 3, 0));
-    gl.push(box(T, lw - fw, lh - fw, .008, lx + lw / 2, lh / 2, -.005));
+    // vantail fermé : faces avant seulement (6× moins de triangles) ; ouvert : vrais volumes
+    const bx = open ? (w, h, d, x, y, z) => box(T, w, h, d, x, y, z) : (w, h, d, x, y, z) => new T.PlaneGeometry(w, h).translate(x, y, z + d / 2);
+    parts.push(bx(lw, fw, .05, lx + lw / 2, fw / 2, 0)); parts.push(bx(lw, fw, .05, lx + lw / 2, lh - fw / 2, 0));
+    parts.push(bx(fw, lh, .05, lx + fw / 2, lh / 2, 0)); parts.push(bx(fw, lh, .05, lx + lw - fw / 2, lh / 2, 0));
+    if (!G.lod) for (let k = 1; k < 3; k++) parts.push(bx(lw, .025, .035, lx + lw / 2, lh * k / 3, 0));
+    gl.push(new T.PlaneGeometry(lw - fw, lh - fw).translate(lx + lw / 2, lh / 2, -.005));
     const mt = M4(T, a, hx, ys, z);
     for (const g of parts) G.menu.push(g.applyMatrix4(mt));
     for (const g of gl) G['verre' + vi].push(g.applyMatrix4(mt));
@@ -242,14 +258,16 @@ const BACS = [0xa65a3a, 0x9b4f30, 0x2f4a3a, 0xeeeae2, 0x6f7376, 0x3a3a3a];
 function plante(T, G, R, x, y, z, s, fleur) {
   const fc = FLEURS[Math.floor(R() * FLEURS.length)];
   G.vc.push(vc(T, new T.IcosahedronGeometry(s, 0).scale(1, .8 + R() * .5, 1).translate(x, y + s * .6, z), FEUILLES[Math.floor(R() * FEUILLES.length)], .15, R));
-  if (fleur) for (let i = 0; i < 4 + Math.floor(R() * 6); i++) { const a = R() * 6.28, rr = s * (.5 + R() * .5); G.vc.push(vc(T, new T.IcosahedronGeometry(.03 + R() * .02, 0).translate(x + Math.cos(a) * rr, y + s * (.8 + R() * .7), z + Math.sin(a) * rr * .7), fc, .1, R)); }
+  if (fleur) for (let i = 0; i < 3 + Math.floor(R() * 4); i++) { const a = R() * 6.28, rr = s * (.5 + R() * .5); G.vc.push(vc(T, new T.OctahedronGeometry(.035 + R() * .02, 0).translate(x + Math.cos(a) * rr, y + s * (.8 + R() * .7), z + Math.sin(a) * rr * .7), fc, .1, R)); }
 }
 function pot(T, G, R, x, y, z, fleur) {
+  if (G.lod) return;
   const s = .1 + R() * .1, col = R() < .7 ? 0xa65a3a : BACS[Math.floor(R() * BACS.length)];
   G.vc.push(vc(T, new T.CylinderGeometry(s, s * .75, s * 1.6, 8).translate(x, y + s * .8, z), col, .1, R));
   plante(T, G, R, x, y + s * 1.6, z, s * 1.3, fleur);
 }
 function jardiniere(T, G, R, x0, x1, y, z, fleur, supports) {
+  if (G.lod) return;
   const col = BACS[Math.floor(R() * BACS.length)], w = x1 - x0;
   G.vc.push(vc(T, new T.BoxGeometry(w, .18, .2).translate((x0 + x1) / 2, y + .09, z), col, .1, R));
   for (let x = x0 + .12; x < x1 - .05; x += .2 + R() * .1) plante(T, G, R, x, y + .16, z, .1 + R() * .06, fleur);
@@ -262,6 +280,7 @@ function chaise(T, G, R, x, y, z, col, rot) {
 }
 // garniture d'un balcon filant entre x0 et x1, sol à y, profondeur utile z0..z1
 function decoBalcon(T, G, R, x0, x1, y, z0, z1, style, vert) {
+  if (G.lod) return;
   const col = [0x2f4a3a, 0x1a1a1a, 0xe8e4dc, 0x8a2a2a, 0x3a5a7a][Math.floor(R() * 5)];
   let x = x0 + .3;
   while (x < x1 - .3) {
@@ -371,12 +390,18 @@ export function buildBuilding(T, M, o) {
   if (style === 'riche') F = commerce ? [4.3 + jit(), 2.6, 3.5 + jit(), 3.2, 3.1, 3.0, 2.8] : [4.6 + jit(), 3.5 + jit(), 3.2, 3.1, 3.0, 2.8];
   else if (style === 'modeste') { const n = 4 + Math.floor(R() * 3); F = [3.4 + jit()]; for (let i = 0; i < n; i++) F.push(2.75 + jit() * .5); }
   else F = commerce ? [4.0 + jit(), 2.7, 3.4 + jit(), 3.1, 3.0, 2.8] : [4.2 + jit(), 3.4 + jit(), 3.1, 3.0, 2.85];
-  const ent = commerce && style !== 'modeste';
-  const nobleF = ent ? 2 : 1, lastF = F.length - 1;
+  // hauteur réelle (BD TOPO) : nombre d'étages déduit, puis mise à l'échelle exacte jusqu'à la gouttière
+  if (o.hGout) {
+    const n = Math.max(style === 'modeste' ? 1 : 2, Math.min(11, Math.round(o.hGout / (style === 'modeste' ? 2.85 : 3.05))));
+    while (F.length > n) F.pop(); while (F.length < n) F.push(F[F.length - 1] ?? 2.9);
+    const k = o.hGout / F.reduce((a, b) => a + b, 0); for (let i = 0; i < F.length; i++) F[i] *= k;
+  }
+  const ent = commerce && style !== 'modeste' && F.length >= 4;
+  const lastF = F.length - 1, nobleF = Math.min(ent ? 2 : 1, lastF);
   const tone = new T.Color(o.tone || 0xffffff);
   if (o.toneJit !== 0) tone.offsetHSL((R() - .5) * .012, (R() - .5) * .06, (R() - .5) * .04);
   const kind = style === 'modeste' ? 'enduit' : 'pierre';
-  const G = { mur: [], rdc: [], moul: [], zinc: [], fonte: [], menu: [], rid: [], ridT: [], vc: [], lampe: [], terre: [], tube: [], verre0: [], verre1: [], verre2: [], lum: [], vit: [] };
+  const G = { lod: o.lod || 0, mur: [], rdc: [], moul: [], zinc: [], fonte: [], garde0: [], garde1: [], menu: [], rid: [], ridT: [], vc: [], lampe: [], terre: [], tube: [], verre0: [], verre1: [], verre2: [], lum: [], vit: [] };
   const extra = [];
   const REC = style === 'riche' ? .34 : .28, winW = Math.min(1.3, bw * .48);
   const yF = []; let y = 0; for (const h of F) { yF.push(y); y += h; } const Htop = y;
@@ -433,7 +458,7 @@ export function buildBuilding(T, M, o) {
         windowUnit(T, G, R, cx, e0, ew, e1 - e0, REC, { pOpen: .04, deep: .9, floorDrop: .3 });
       } else gArr.push(box(T, ww, y0 + hh - top, REC, cx, (top + y0 + hh) / 2, -REC / 2));
       if (base) {
-        if (style !== 'modeste') for (let yy = .42, i = 0; yy < hh - .15; yy += .42, i++) for (const sx of [-1, 1]) {   // refends : assises en relief, joints verticaux décalés
+        if (style !== 'modeste' && !G.lod) for (let yy = .42, i = 0; yy < hh - .15; yy += .42, i++) for (const sx of [-1, 1]) {   // refends : assises en relief, joints verticaux décalés
           const px = cx + sx * (ww / 2 + pierW / 2); G.rdc.push(box(T, pierW + .002, .36, .035, px, yy - .21, .017));
           if (pierW > .5) G.rdc.push(box(T, .03, .36, .05, px + (i % 2 ? .2 : -.2) * pierW, yy - .21, .01));
         }
@@ -443,7 +468,7 @@ export function buildBuilding(T, M, o) {
           const closed = R() < (o.pClosed ?? .3);
           shopFront(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, shopName[Math.floor(R() * shopName.length)], !closed && b === doorBay && R() < .5, closed, o.tagP ?? .6);
         } else if (isDoor) entryDoor(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, o.numero ?? (2 + Math.floor(R() * 60)), { cochere: cochere && !commerce, style, reno, pal: o.doorPal, tagP: (o.tagP ?? .3) * .5 });
-        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
+        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
         // tag sur un trumeau du rez-de-chaussée (quartiers usés)
         if (wear > .45 && tagsRdc < 2 && R() < (o.tagP ?? .3) * .35) { tagsRdc++; const tw = Math.max(1.2, pierW * 2 + .4); extra.push([new T.PlaneGeometry(tw, tw * .5).translate(cx + ww / 2 + pierW, .9 + R() * .5, .012), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1 + Math.floor(R() * 2)), transparent: true, roughness: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })]); }
         continue;
@@ -454,7 +479,7 @@ export function buildBuilding(T, M, o) {
       G.moul.push(box(T, cw, wh + cw, cz, cx - ww / 2 - cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));
       G.moul.push(box(T, cw, wh + cw, cz, cx + ww / 2 + cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));
       G.moul.push(box(T, ww + 2 * cw, cw, cz, cx, y0 + sill + wh + cw / 2, cz / 2));
-      if (style !== 'modeste' && f !== nobleF) {   // agrafe (clé sculptée) au-dessus de chaque fenêtre
+      if (style !== 'modeste' && f !== nobleF && !G.lod) {   // agrafe (clé sculptée) au-dessus de chaque fenêtre
         const k = new T.Shape(); k.moveTo(-.09, 0); k.lineTo(.09, 0); k.lineTo(.13, .32); k.lineTo(-.13, .32); k.closePath();
         G.moul.push(ext(T, k, .09, 1).translate(cx, y0 + sill + wh - .06, 0));
         if (style === 'riche' && f === nobleF + 1) G.moul.push(new T.SphereGeometry(.09, 8, 6).scale(1, 1.2, .6).translate(cx, y0 + sill + wh + .12, .09));   // mascaron
@@ -476,10 +501,10 @@ export function buildBuilding(T, M, o) {
         if (tri) { s.moveTo(-pw, 0); s.lineTo(pw, 0); s.lineTo(0, .45); s.closePath(); } else { s.moveTo(-pw, 0); s.lineTo(pw, 0); s.absarc(0, 0, pw, 0, Math.PI, false); s.closePath(); }
         const pg = new T.ExtrudeGeometry(s, { depth: .16, bevelEnabled: false, curveSegments: 12 }); if (!tri) pg.scale(1, .36, 1); pg.translate(cx, y0 + sill + wh + .22, -.02); G.moul.push(pg);
         G.moul.push(box(T, ww + .66, .13, .22, cx, y0 + sill + wh + .18, .07));
-        for (const k of [-1, 1]) { const c = new T.Shape(); c.moveTo(0, 0); c.lineTo(.18, 0); c.quadraticCurveTo(.2, -.25, .06, -.45); c.lineTo(0, -.45); c.closePath(); const cg = new T.ExtrudeGeometry(c, { depth: .15, bevelEnabled: false, curveSegments: 5 }); cg.rotateY(-Math.PI / 2); cg.translate(cx + k * (ww / 2 + .22) + .075, y0 + sill + wh + .12, 0); G.moul.push(cg); }
+        if (!G.lod) for (const k of [-1, 1]) { const c = new T.Shape(); c.moveTo(0, 0); c.lineTo(.18, 0); c.quadraticCurveTo(.2, -.25, .06, -.45); c.lineTo(0, -.45); c.closePath(); const cg = new T.ExtrudeGeometry(c, { depth: .15, bevelEnabled: false, curveSegments: 5 }); cg.rotateY(-Math.PI / 2); cg.translate(cx + k * (ww / 2 + .22) + .075, y0 + sill + wh + .12, 0); G.moul.push(cg); }
       } else if (f < lastF) {
         if (style === 'riche' && f === nobleF + 1) G.moul.push(box(T, .22, .3, .08, cx, y0 + sill + wh + .1, .05));
-        rail(T, G.fonte, cx - ww / 2 - .06, cx + ww / 2 + .06, y0 + sill, .95, .12, style === 'riche');
+        rail(T, G, cx - ww / 2 - .06, cx + ww / 2 + .06, y0 + sill, .95, .12, style === 'riche');
         // jardinière posée sur l'appui, tenue par des supports derrière le garde-corps
         if (R() < verdure * .45) jardiniere(T, G, R, cx - ww / 2 + .02, cx + ww / 2 - .02, y0 + sill + .02, .02, R() < .8, true);
       }
@@ -506,7 +531,8 @@ export function buildBuilding(T, M, o) {
     }
   }
   // balcons filants : étage noble et dernier étage carré, garnis
-  for (const f of style === 'modeste' ? [lastF] : [nobleF, lastF]) {
+  for (const f of style === 'modeste' ? [lastF] : [...new Set([nobleF, lastF])]) {
+    if (f < 1) continue;
     const by = yF[f], dep = f === nobleF ? .85 : .7;
     G.moul.push(box(T, W + .1, .17, dep, W / 2, by + .02, dep / 2));
     G.moul.push(box(T, W + .14, .05, dep + .04, W / 2, by - .07, dep / 2));
@@ -515,14 +541,14 @@ export function buildBuilding(T, M, o) {
       c.moveTo(0, 0); c.lineTo(dep * .9, 0); c.quadraticCurveTo(dep * .25, -.12, 0, -.6); c.closePath();
       const g = new T.ExtrudeGeometry(c, { depth: .2, bevelEnabled: false, curveSegments: 6 }); g.rotateY(-Math.PI / 2); g.translate(cx + .1, by - .06, 0); G.moul.push(g);
     }
-    rail(T, G.fonte, 0, W, by + .1, 1.0, dep - .06, style === 'riche');
+    rail(T, G, 0, W, by + .1, 1.0, dep - .06, style === 'riche');
     decoBalcon(T, G, R, 0, W, by + .105, 0, dep - .1, style, verdure * (f === lastF ? 1.2 : 1));
     if (R() < verdure * .4) for (let x = .4; x < W - .9; x += 1.3 + R() * 2.5) if (R() < .5) jardiniere(T, G, R, x, x + .9, by + .62, dep + .06, R() < .8, true);   // bacs accrochés côté rue
   }
   // corniche
   const cd = style === 'modeste' ? .35 : .6;
   G.moul.push(extrudeX(T, moulure(T, cd, .55), W + .4, -.2, Htop - .12, 0));
-  if (style !== 'modeste') for (let x = .1; x < W; x += .19) G.moul.push(box(T, .09, .12, .14, x, Htop - .18, .1));
+  if (style !== 'modeste' && !G.lod) for (let x = .1; x < W; x += .19) G.moul.push(box(T, .09, .12, .14, x, Htop - .18, .1));
   G.zinc.push(box(T, W + .4, .14, .3, W / 2, Htop + .5, cd - .1, 1.6));
   // toit : mansarde zinc (riche/classique) ou toit à 45° (modeste)
   const mh = style === 'modeste' ? 2.8 : 3.6, mb = style === 'modeste' ? 2.8 : 1.35, mt = 2.6;
@@ -543,14 +569,14 @@ export function buildBuilding(T, M, o) {
     lucarne(T, G, R, t, cx, Htop, t === 'oeil' ? lw * .9 : lw, lhw, style === 'modeste' && t !== 'tabatiere' ? -.05 : lz, roofI);
   }
   // cheminées, antennes
-  const nC = Math.max(2, Math.round(W / 6));
+  const nC = Math.max(1, Math.round(W / 9));
   for (let k = 0; k < nC; k++) {
-    const cx = (k + .5) * W / nC + (R() - .5), ch = 1.8 + R() * 1.2, cy = Htop + mh + .9, cz = -D * (.35 + R() * .3), cw2 = 1.2 + R() * 1.6;
+    const cx = (k + .5) * W / nC + (R() - .5), ch = 1.2 + R() * .9, cy = Htop + mh + .9, cz = -D * (.35 + R() * .3), cw2 = .9 + R() * 1.1;
     G.mur.push(box(T, cw2, ch, .7, cx, cy + ch / 2, cz));
     G.moul.push(box(T, cw2 + .14, .14, .84, cx, cy + ch, cz));
-    for (let p = 0; p < Math.round(cw2 / .35); p++) G.terre.push(new T.CylinderGeometry(.09, .11, .4 + R() * .25, 10).translate(cx - cw2 / 2 + .2 + p * .35, cy + ch + .28, cz));
+    for (let p = 0; p < Math.round(cw2 / .35); p++) G.terre.push(new T.CylinderGeometry(.08, .1, .3 + R() * .2, 8).translate(cx - cw2 / 2 + .2 + p * .35, cy + ch + .28, cz));
   }
-  for (let k = 0; k < 1 + Math.floor(R() * 2); k++) {
+  for (let k = 0; k < (R() < .5 ? 1 : 0); k++) {
     const ax = W * (.2 + R() * .6), az = -D * (.5 + R() * .3), ay = Htop + mh + .9;
     G.tube.push(new T.CylinderGeometry(.025, .03, 3.2, 6).translate(ax, ay + 1.6, az));
     for (let j = 0; j < 4; j++) G.tube.push(box(T, 1.4 - j * .2, .02, .02, ax, ay + 2.2 + j * .25, az));
@@ -563,11 +589,14 @@ export function buildBuilding(T, M, o) {
     const used = new Set(); for (let k = 0; k < n; k++) { const i = k === 0 ? (R() < .5 ? 0 : 1) : Math.floor(R() * cands.length); if (used.has(i)) continue; used.add(i); descente(T, extra, M, R, cands[i], Htop, cd, dm); }
   }
   // assemblage
-  const wallM = M.wall(kind, tone.getHex(), wear), rdcM = M.wall(kind, tone.clone().multiplyScalar(.95).getHex(), Math.min(1, wear + .15)), moulM = M.wall(kind, tone.clone().lerp(new T.Color(0xffffff), .25).getHex(), wear * .9);
+  const wq = v => Math.round(v * 8) / 8;
+  const wallM = M.wall(kind, 0, wq(wear), 'vc'), rdcM = M.wall(kind, 0, wq(Math.min(1, wear + .15)), 'vc'), moulM = M.wall(kind, 0, wq(wear * .9), 'vc');
+  const teint = (arr, c) => { for (let i = 0; i < arr.length; i++) arr[i] = vc(T, arr[i], c.getHex()); };
+  teint(G.mur, tone); teint(G.rdc, tone.clone().multiplyScalar(.95)); teint(G.moul, tone.clone().lerp(new T.Color(0xffffff), .25));
   const grp = new T.Group();
   const add = (arr, mat, shadow = true) => { if (!arr.length) return; const g = mergeGeometries(arr.map(a => a.index ? a.toNonIndexed() : a), false); g.computeVertexNormals(); const m = new T.Mesh(g, mat); m.castShadow = shadow; m.receiveShadow = true; grp.add(m); };
   add(G.mur, wallM); add(G.rdc, rdcM); add(G.moul, moulM); add(G.zinc, M.zinc); add(G.fonte, M.fonte); add(G.menu, M.menuiserie); add(G.rid, M.rideau); add(G.ridT, M.rideauTire);
-  add(G.vc, M.vc); add(G.lampe, M.lampe, false); add(G.terre, M.terre); add(G.tube, M.zincTube); add(G.lum, M.vitrineLum, false);
+  add(G.vc, M.vc); add(G.garde0, M.garde[0]); add(G.garde1, M.garde[1]); add(G.lampe, M.lampe, false); add(G.terre, M.terre); add(G.tube, M.zincTube); add(G.lum, M.vitrineLum, false);
   for (let i = 0; i < 3; i++) add(G['verre' + i], M.verres[i], false);
   add(G.vit, M.vitre, false);
   const byMat = new Map(); for (const [g, m] of extra) { if (!byMat.has(m)) byMat.set(m, []); byMat.get(m).push(g); } for (const [m, a] of byMat) add(a, m);
@@ -681,18 +710,18 @@ function entryDoor(T, G, extra, M, R, cx, y0, ww, wh, REC, num, o) {
   if (o.cochere && R() < .65) for (const k of [-1, 1]) G.rdc.push(new T.CylinderGeometry(.1, .2, .6, 10).translate(cx + k * (ww / 2 + .08), .3, .12));
   // digicode / interphone (portes rénovées et faubourgs)
   if (reno > .4 || o.style === 'modeste') extra.push([box(T, .16, .26, .04, cx + ww / 2 + .28, y0 + 1.35, .02), M.paint(0x8c9196, .3, .6)]);
-  // plaque de numéro émaillée
-  const cnv = document.createElement('canvas'); cnv.width = 96; cnv.height = 64; const g = cnv.getContext('2d'); g.fillStyle = '#1b3f8f'; g.fillRect(0, 0, 96, 64); g.strokeStyle = '#fff'; g.lineWidth = 3; g.strokeRect(5, 5, 86, 54); g.fillStyle = '#fff'; g.font = 'bold 40px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(num), 48, 34);
-  const t = new T.CanvasTexture(cnv); t.colorSpace = T.SRGBColorSpace;
-  extra.push([new T.PlaneGeometry(.3, .2).translate(cx + ww / 2 + .35, y0 + wh + .1, .01), new T.MeshStandardMaterial({ map: t, roughness: .25 })]);
+  // plaque de numéro émaillée (atlas partagé)
+  { const n = Math.max(1, Math.min(256, parseInt(String(num)) || 1)) - 1, u0 = (n % 16) / 16, v0 = 1 - (Math.floor(n / 16) + 1) / 16, g = new T.PlaneGeometry(.3, .2).translate(cx + ww / 2 + .35, y0 + wh + .1, .01), uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + uv.getX(i) / 16, v0 + (10 + uv.getY(i) * 44) / 1024);
+    extra.push([g, M.plaques]); }
   // tag sur la porte (portes non rénovées)
   if (reno < .4 && R() < o.tagP) extra.push([new T.PlaneGeometry(lw * .9, lw * .45).translate(cx - lw / 2, y0 + .9, z + .16), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1), transparent: true, roughness: .7, depthWrite: false })]);
 }
 
 // ------------------------------------------------------------------ immeuble moderne (années 60-70)
 function buildModern(T, M, o, R) {
-  const W = o.width, D = o.depth || 12, n = o.levels || (8 + Math.floor(R() * 5)), fh = 2.75, H = 3.6 + n * fh, wear = o.wear ?? .5;
-  const G = { mur: [], menu: [], vc: [], lampe: [], rid: [], ridT: [], fonte: [], verre0: [], verre1: [], verre2: [], tube: [], lum: [] };
+  const W = o.width, D = Math.max(o.depth || 12, 2.9), fh = 2.75, n = o.levels || (o.hGout ? Math.max(1, Math.round((o.hGout - 3.6) / fh)) : 8 + Math.floor(R() * 5)), H = 3.6 + n * fh, wear = o.wear ?? .5;
+  const G = { lod: o.lod || 0, mur: [], menu: [], vc: [], lampe: [], rid: [], ridT: [], fonte: [], verre0: [], verre1: [], verre2: [], tube: [], lum: [] };
   G.mur.push(box(T, W, H, D - .3 - DEEP, W / 2, H / 2, -.3 - DEEP - (D - .3 - DEEP) / 2));
   for (const x of [.1, W - .1]) G.mur.push(box(T, .2, H, DEEP, x, H / 2, -.3 - DEEP / 2));
   for (let x = .3; x < W; x += 4) G.mur.push(box(T, .4, 3.6, .4, x, 1.8, -.2));

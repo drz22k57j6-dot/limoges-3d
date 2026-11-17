@@ -163,7 +163,7 @@ const QUALITIES = [
   { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
 let qi = isTouch ? 1 : 0;
-const GFX = { grass: true, trees: true, voirie: true };
+const GFX = { grass: true, trees: true, voirie: true, facades: true };
 // ---------------- cinematic post-processing ----------------
 const GradeShader = {
   uniforms: { tDiffuse: { value: null }, time: { value: 0 }, sat: { value: 1.08 }, contrast: { value: 1.04 }, vig: { value: 0.25 }, grain: { value: 0.015 }, warm: { value: new THREE.Vector3(1.01, 1.0, 0.98) } },
@@ -254,7 +254,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=54';
+const V = '?v=55';
 // téléphone : textures des modèles réduites (au-delà de max px), la mémoire graphique d'un iPhone étant le premier motif de crash
 function alleger(root, max) {
   if (!isTouch) return root;
@@ -322,6 +322,24 @@ function hideModelled(o) {
   const pos = g.getAttribute('position'); let n = 0, px = 0, py = 0, pz = 0;
   for (let v = 0; v < ba.count; v++) if (MODELLED.has(ids[Math.round(ba.getX(v))])) { if (!n) { px = pos.getX(v); py = pos.getY(v); pz = pos.getZ(v); } pos.setXYZ(v, px, py, pz); n++; }   // triangles réduits à un point (fonctionne aussi avec des positions compressées)
   if (n) { pos.needsUpdate = true; g.computeBoundingSphere(); }
+}
+// bâtiments IGN habillés par le moteur de façades : volume masqué (réversible) dans les tuiles chargées
+const HABILLES = new Set(), TILE_MESHES = new Set(); let QUART = null;
+function idxTile(o) {
+  const g = o.geometry, ba = g.getAttribute('_batchid'), ids = o.userData.ids; if (!ba || !ids) return;
+  const tmp = new Map(); for (let v = 0; v < ba.count; v++) { const id = ids[Math.round(ba.getX(v))]; if (!id) continue; let l = tmp.get(id); if (!l) tmp.set(id, l = []); l.push(v); }
+  const m = new Map(); for (const [id, l] of tmp) m.set(id, Int32Array.from(l)); o.userData.idVerts = m; o.userData.orig = new Map(); TILE_MESHES.add(o);
+  for (const id of HABILLES) masquerDans(o, id, true);
+}
+function masquerDans(o, id, on) {
+  const vs = o.userData.idVerts && o.userData.idVerts.get(id); if (!vs) return false; const pos = o.geometry.getAttribute('position'), O = o.userData.orig;
+  if (on) { if (O.has(id)) return false; const sv = new Float32Array(vs.length * 3); vs.forEach((v, i) => { sv[3 * i] = pos.getX(v); sv[3 * i + 1] = pos.getY(v); sv[3 * i + 2] = pos.getZ(v); }); O.set(id, sv); const x = sv[0], y = sv[1] - 1e4, z = sv[2]; for (const v of vs) pos.setXYZ(v, x, y, z); }
+  else { const sv = O.get(id); if (!sv) return false; vs.forEach((v, i) => pos.setXYZ(v, sv[3 * i], sv[3 * i + 1], sv[3 * i + 2])); O.delete(id); }
+  pos.needsUpdate = true; return true;
+}
+function masquerBatiments(ids, on) {
+  for (const id of ids) on ? HABILLES.add(id) : HABILLES.delete(id);
+  for (const o of TILE_MESHES) { if (!o.parent) { TILE_MESHES.delete(o); continue; } let ch = false; for (const id of ids) ch = masquerDans(o, id, on) || ch; if (ch) o.geometry.computeBoundingSphere(); }
 }
 function didHash(id) { let h = 2166136261; for (let k = 0; k < id.length; k++) { h ^= id.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; }
 function didStableColor(id) { const h = didHash(id); return new THREE.Color().setHSL((h % 360) / 360, 0.62 + ((h >>> 9) % 30) / 100, 0.46 + ((h >>> 17) % 18) / 100); }
@@ -1335,6 +1353,7 @@ window.__dev = {
   bloom: { s: 0.18 }, setBloom: v => { window.__dev.bloom.s = v; if (bloomPass) bloomPass.strength = v; },
   exposure: () => renderer.toneMappingExposure, setExposure: v => { renderer.toneMappingExposure = v; },
   setTrees: b => { GFX.trees = b; treeChunks.forEach(c => c.obj.visible = b); },
+  setFacades: b => { GFX.facades = b; if (QUART) QUART.actif = b; },
   setVoirie: b => { GFX.voirie = b; for (const [k, ent] of STREAM.vis) freeMeshes(ent.ms); STREAM.vis.clear(); STREAM.complete = false; streamUpdate(PL.x, PL.z, true); },
   world: () => WORLD.mode, setWorld: m => setWorld(m),
   times: TIMES.map(t => t.name), time: () => ti, setTime: i => { ti = i; applyTime(); },
@@ -1589,11 +1608,12 @@ async function startCityTiles() {
         const n = o.material.name, m = n === 'lointain' ? far : BMAT[n];
         if (m) { o.material.dispose(); o.material = m; }
         let p = o; while (p && !p.userData.ids) p = p.parent; if (p) o.userData.ids = p.userData.ids;
-        o.castShadow = o.receiveShadow = true; try { hideModelled(o); didPrep(o); } catch (e) { console.warn('identifiants', e); }
+        o.castShadow = o.receiveShadow = true; try { hideModelled(o); didPrep(o); idxTile(o); } catch (e) { console.warn('identifiants', e); }
       });
     });
     t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
     scene.add(t.group); cityTiles = t; window.__cityTiles = t;
+    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, rayon: isTouch ? 130 : 170 })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
   } catch (e) { console.warn('tuiles ville', e); }
 }
 async function startGoogleCity() {
@@ -1876,6 +1896,7 @@ function loop(now) {
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
   updateModels(dt);
   if (STREAM.idx && (STREAM.tick = (STREAM.tick || 0) - dt) < 0) { STREAM.tick = 0.25; const p = mode === 'plane' ? PL : S; streamUpdate(p.x, p.z); }
+  if (QUART) { if ((QUART._t = (QUART._t || 0) - dt) < 0) { QUART._t = 0.25; const p = mode === 'plane' ? PL : mode === 'foot' ? FT : S; QUART.maj(p.x, p.z); } QUART.tache(dt > 0.03 ? 4 : 10); }
   if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); governor(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
@@ -1922,7 +1943,7 @@ main();
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=50"></script>
+<script type="module" src="drone/reglages.js?v=55"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>

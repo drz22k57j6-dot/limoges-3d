@@ -173,6 +173,7 @@ function init(D, X) {
       seg('gfx.shadowsize', 'Qualité des ombres', [[1024, 'Basse'], [2048, 'Haute'], [4096, 'Ultra']], () => X.q().shadow, v => X.setShadowSize(v)),
       tog('gfx.trees', 'Arbres', () => X.GFX.trees, v => X.setTrees(v)),
       tog('gfx.voirie', 'Voirie réelle (Plan de voirie de Paris)', () => X.GFX.voirie, v => X.setVoirie(v), 'Trottoirs, bordures et passages piétons aux vraies formes ; sinon routes estimées'),
+      tog('gfx.facades', 'Façades détaillées (vrais bâtiments, 7e)', () => X.GFX.facades, v => X.setFacades(v), 'Immeubles habillés par le moteur de façades autour du drone : vraies hauteurs, vrais commerces'),
       sec('Post-traitement'),
       tog('gfx.post', 'Post-traitement', () => X.q().post, v => X.setPost(v), 'Nécessaire pour les réglages ci-dessous'),
       tog('gfx.ao', 'Occlusion ambiante (GTAO)', () => X.q().ao, v => X.setAo(v)),

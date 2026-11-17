@@ -82,6 +82,7 @@ const NOMS = { boulangerie: 'BOULANGERIE', boucherie: 'BOUCHERIE', fromagerie: '
 
 // ------------------------------------------------------------------ utilitaires
 const matCache = new Map();
+export const materiauxPartages = () => new Set(matCache.values());
 function mat(T, k, make) { if (!matCache.has(k)) matCache.set(k, make()); return matCache.get(k); }
 const emis = (T, hex, i = 1.2) => mat(T, 'em' + hex + i, () => new T.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: i, roughness: .5 }));
 const peint = (T, css, rough = .35) => mat(T, 'p' + css + rough, () => new T.MeshStandardMaterial({ color: new T.Color(css), roughness: rough, metalness: .05 }));
@@ -165,12 +166,12 @@ export function buildShop(c) {
   H.room(T, G, R, cx, y0 - .25, ww + .3, wh + .25, -REC, deep, { shop: true, pal: t.mur });
   extra.push([new T.PlaneGeometry(ww * .9, .06).translate(cx, y0 + wh - fasc - .02, -REC - .4).rotateX(0), emis(T, t.lum, 1.4)]);   // réglette lumineuse
   extra.push([new T.PlaneGeometry(ww * .9, wh * .55).translate(cx, y0 + wh * .45, zb + .06), mat(T, 'fond' + t.lum, () => new T.MeshStandardMaterial({ color: t.mur, emissive: t.lum, emissiveIntensity: .25, roughness: .9 }))]);
-  decor(c, t, cx, y0, ww, gh, -REC, zb, sr);
+  if (!G.lod) decor(c, t, cx, y0, ww, gh, -REC, zb, sr);
   // --- extérieur : store banne, drapeau, terrasse, étals
   if (c.first && t.store && sr() < t.store) store(c, t, col, enc, (shop.nom || t.nom || NOMS[shop.type] || '').toUpperCase());
   if (c.last && t.drapeau) drapeau(c, t.drapeau);
-  if (t.terrasse && sr() < t.terrasse && c.trottoir > 2.5) terrasse(c, sr);
-  if (t.dehors && R() < (t.pDehors ?? .5) && c.trottoir > 2.2) dehors(c, t.dehors, cx, ww);
+  if (t.terrasse && sr() < t.terrasse && c.trottoir > 2.5 && !G.lod) terrasse(c, sr);
+  if (t.dehors && R() < (t.pDehors ?? .5) && c.trottoir > 2.2 && !G.lod) dehors(c, t.dehors, cx, ww);
   if (t.ardoise && c.first && sr() < t.ardoise) ardoise(c, c.gx0 + .6);
   if (t.dab && c.last) { extra.push([H.box(T, .5, .7, .08, cx + ww / 2 + .02, y0 + 1.25, .02), M.paint(0x6c7378, .3, .6)], [new T.PlaneGeometry(.22, .16).translate(cx + ww / 2 + .02, y0 + 1.35, .065), emis(T, 0x7fb4e0, .8)]); }
 }
