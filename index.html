@@ -141,6 +141,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createTrees } from './commun/arbres.js';
 import { createRoads } from './commun/chaussee.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { initAppartStudio } from './appart-studio/ui.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (isTouch) document.documentElement.classList.add('is-touch');
@@ -1971,7 +1972,7 @@ function loop(now) {
   if (BN) { const dR = performance.now() - tR0; if (dR > 150) BN.note('lent', 'rendu d\'une image : ' + Math.round(dR) + ' ms, ' + Math.round(renderer.info.render.triangles / 1000) + 'k triangles, ' + renderer.info.render.calls + ' appels'); }
   frames++; fpsT += dt; if (fpsT > 1) { window.__fps = frames / fpsT; frames = 0; fpsT = 0; }
 }
-main();
+main().then(() => initAppartStudio({ THREE, scene, camera, renderer, CITY, drone: window.__drone, ground: planeGround })).catch(e => console.error('Appart Studio', e));
 </script>
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
