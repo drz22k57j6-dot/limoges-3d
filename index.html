@@ -254,7 +254,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=55';
+const V = '?v=56';
 // téléphone : textures des modèles réduites (au-delà de max px), la mémoire graphique d'un iPhone étant le premier motif de crash
 function alleger(root, max) {
   if (!isTouch) return root;
@@ -1613,7 +1613,7 @@ async function startCityTiles() {
     });
     t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
     scene.add(t.group); cityTiles = t; window.__cityTiles = t;
-    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, rayon: isTouch ? 130 : 170 })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
+    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, rayon: isTouch ? 100 : 140, rayonDetail: isTouch ? 50 : 70 })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
   } catch (e) { console.warn('tuiles ville', e); }
 }
 async function startGoogleCity() {
@@ -1943,7 +1943,7 @@ main();
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=55"></script>
+<script type="module" src="drone/reglages.js?v=56"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>
