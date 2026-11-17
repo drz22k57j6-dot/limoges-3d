@@ -1,0 +1,2 @@
+2026-11-17
+Lancer l'analyse visuelle des façades rue Cler avec SegFormer et OCR.
