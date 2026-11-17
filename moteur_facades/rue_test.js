@@ -32,8 +32,9 @@ function plaqueRue(T) {
   path(17, 13, 478, 230); g.fillStyle = '#1F3A6B'; g.fill();
   path(23, 19, 466, 218); g.strokeStyle = '#f4f1e8'; g.lineWidth = 2; g.stroke();
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.font = '600 38px Arial'; g.fillText('7e Arrt.', 256, 66);
-  g.font = '700 58px Arial'; g.fillText('RUE CLER', 256, 158);
+  g.font = '600 32px Arial'; g.fillText('7e Arrt.', 256, 55);
+  g.font = '700 34px Arial'; g.fillText('RUE', 256, 119);
+  g.font = '700 58px Arial'; g.fillText('CLER', 256, 184);
   g.fillStyle = '#2E5E3E';
   for (const [x, y] of [[35, 35], [477, 35], [35, 225], [477, 225]]) { g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill(); }
   const tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 8;
