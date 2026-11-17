@@ -91,8 +91,15 @@ export function createKit(T, base) {
   });
   // plaques de numéros émaillées bleues : un seul atlas (1 à 256) pour toute la ville
   { const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d');
-    for (let i = 0; i < 256; i++) { const x = (i % 16) * 64, y = Math.floor(i / 16) * 64; g.fillStyle = '#1b3f8f'; g.fillRect(x, y + 10, 64, 44); g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(x + 3, y + 13, 58, 38); g.fillStyle = '#fff'; g.font = `bold ${i + 1 > 99 ? 22 : 28}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), x + 32, y + 33); }
-    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; M.plaques = new T.MeshStandardMaterial({ map: t, roughness: .25 }); }
+    for (let i = 0; i < 256; i++) {
+      const x = (i % 16) * 64, y = Math.floor(i / 16) * 64;
+      g.fillStyle = '#2E5E3E'; g.fillRect(x, y + 10, 64, 44);
+      g.fillStyle = '#1F3A6B'; g.fillRect(x + 3, y + 13, 58, 38);
+      g.strokeStyle = '#f4f1e8'; g.lineWidth = 1.4; g.strokeRect(x + 5, y + 15, 54, 34);
+      g.fillStyle = '#fff'; g.font = `bold ${i + 1 > 99 ? 21 : 27}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(String(i + 1), x + 32, y + 33);
+    }
+    const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; M.plaques = new T.MeshStandardMaterial({ map: t, roughness: .22, metalness: .12 }); }
   // nervures du rideau métallique (relief partagé)
   const rc = document.createElement('canvas'); rc.width = 4; rc.height = 32; const rg = rc.getContext('2d');
   const gr = rg.createLinearGradient(0, 0, 0, 32); gr.addColorStop(0, '#000'); gr.addColorStop(.35, '#fff'); gr.addColorStop(.65, '#ddd'); gr.addColorStop(1, '#000'); rg.fillStyle = gr; rg.fillRect(0, 0, 4, 32);
@@ -713,8 +720,8 @@ function entryDoor(T, G, extra, M, R, cx, y0, ww, wh, REC, num, o) {
   // digicode / interphone (portes rénovées et faubourgs)
   if (reno > .4 || o.style === 'modeste') extra.push([box(T, .16, .26, .04, cx + ww / 2 + .28, y0 + 1.35, .02), M.paint(0x8c9196, .3, .6)]);
   // plaque de numéro émaillée (atlas partagé)
-  { const n = Math.max(1, Math.min(256, parseInt(String(num)) || 1)) - 1, u0 = (n % 16) / 16, v0 = 1 - (Math.floor(n / 16) + 1) / 16, g = new T.PlaneGeometry(.3, .2).translate(cx + ww / 2 + .35, y0 + wh + .1, .01), uv = g.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + uv.getX(i) / 16, v0 + (10 + uv.getY(i) * 44) / 1024);
+  { const n = Math.max(1, Math.min(256, parseInt(String(num)) || 1)) - 1, u0 = (n % 16) / 16, v0 = 1 - (Math.floor(n / 16) + 1) / 16, g = new T.PlaneGeometry(.17, .13).translate(cx + ww / 2 + .22, y0 + 2.52, .025), uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + (3 + uv.getX(i) * 58) / 1024, v0 + (10 + (13 + uv.getY(i) * 38)) / 1024);
     extra.push([g, M.plaques]); }
   // tag sur la porte (portes non rénovées)
   if (reno < .4 && R() < o.tagP) extra.push([new T.PlaneGeometry(lw * .9, lw * .45).translate(cx - lw / 2, y0 + .9, z + .16), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1), transparent: true, roughness: .7, depthWrite: false })]);
