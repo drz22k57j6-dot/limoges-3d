@@ -255,7 +255,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=62';
+const V = '?v=63';
 // boîte noire : instantanés réguliers pour connaître la cause de chaque crash (⚙ → Crashs)
 let BN = null; import('./commun/boite_noire.js' + V).then(m => m.demarrerBoiteNoire({ renderer, scene, version: V, ciblesRendu: () => [composer, didRT, typeof PIP !== 'undefined' && PIP.rt], etat: () => {
   const q = window.__quartier, P = window.__drone && window.__drone.PL;
