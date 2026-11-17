@@ -28,7 +28,7 @@ export async function initAppartStudio({THREE,scene,camera,renderer,CITY,drone,g
  document.body.insertAdjacentHTML('beforeend',`
  <button id="as-launch">APPART STUDIO</button>
  <section id="as-panel" aria-label="Appart Studio">
-  <div id="as-head"><b>Localiser un appartement</b><button id="as-close">✕</button></div>
+  <div id="as-head"><b>Localiser un appartement</b><button id="as-debug-toggle">DEBUG</button><button id="as-close">✕</button></div>
   <input id="as-address" autocomplete="street-address" placeholder="Adresse à Paris…">
   <div id="as-tests"></div>
   <label for="as-floor">Étage (0 = RDC)</label>
@@ -42,6 +42,10 @@ export async function initAppartStudio({THREE,scene,camera,renderer,CITY,drone,g
  document.getElementById('as-tests').innerHTML=TESTS.map((t,i)=>'<button data-test="'+i+'">'+(i+1)+'. '+esc(t[0].replace(', Paris',''))+'</button>').join('');
  document.getElementById('as-launch').onclick=()=>panel.classList.toggle('on');
  document.getElementById('as-close').onclick=()=>panel.classList.remove('on');
+ let debugOn=false;
+ document.getElementById('as-debug-toggle').onclick=()=>{debugOn=!debugOn;document.getElementById('as-debug-toggle').textContent=debugOn?'DEBUG ✓':'DEBUG';debug.style.display=debugOn?'block':'none';};
+ debug.style.display='none';
+ setInterval(()=>{if(debugOn){const fps=Number(window.__fps||0);debug.dataset.fps='FPS : '+fps.toFixed(0);if(state.current&&debug.textContent)debug.textContent=debug.textContent.replace(/FPS : \\d+/,debug.dataset.fps);else if(!debug.textContent)debug.textContent=debug.dataset.fps;}},1000);
  document.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>{const t=TESTS[Number(b.dataset.test)];address.value=t[0];floor.value=t[1];});
  async function run(){
   const old=state.current?.marker;if(old){scene.remove(old);old.traverse(o=>{o.geometry?.dispose?.();if(o.material)o.material.dispose?.();});state.current=null;}
