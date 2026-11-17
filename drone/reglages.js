@@ -65,6 +65,7 @@ html.flying.rg-fps #rgFps{display:block}
 #rgKmh small{font:600 12px/1 -apple-system,Arial,sans-serif;opacity:.75}
 #rgFps{position:fixed;z-index:30;left:calc(10px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));padding:5px 8px;border-radius:8px;background:rgba(0,0,0,.55);color:#7dffb2;font:600 11px/1.35 ui-monospace,Menlo,monospace;pointer-events:none;white-space:pre}
 #rgBtn{position:fixed;z-index:30;right:calc(14px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));width:48px;height:48px;border-radius:24px;border:1px solid rgba(255,255,255,.2);background:rgba(10,12,16,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;align-items:center;justify-content:center;cursor:pointer}
+#rgP .rgPre{white-space:pre-wrap;font:11px/1.4 ui-monospace,Menlo,monospace;background:rgba(255,255,255,.06);padding:8px;border-radius:8px;margin:4px 0 10px}#rgP .rgDiag{margin:4px 0 8px 18px;font-size:13px;line-height:1.4}#rgP .rgNote{opacity:.75;font-size:13px}
 #rgP{position:fixed;z-index:60;inset:0;display:none;background:rgba(6,8,12,.94);color:#fff;font-family:-apple-system,'SF Pro Text',Arial,sans-serif}
 #rgP.on{display:flex}
 #rgP *{box-sizing:border-box}
@@ -202,6 +203,7 @@ function init(D, X) {
       sl('ui.alpha', 'Opacité des manches', 0.15, 1, 0.05, () => SAVE['ui.alpha'] ?? 1, v => stickAlpha(v), v => Math.round(v * 100) + ' %'),
     ] },
     { id: 'dev', name: 'Développeur' },
+    { id: 'crash', name: 'Crashs' },
   ];
 
   // ----------------------------------------------------------- panneau
@@ -224,7 +226,24 @@ function init(D, X) {
     const C = $('rgC'); C.innerHTML = ''; $('rgBody').scrollTop = 0;
     if (id === 'lieux') return showPlaces(C);
     if (id === 'dev') return showDev(C);
+    if (id === 'crash') return showCrash(C);
     for (const it of T.items()) C.appendChild(control(it));
+  }
+
+  // ----------------------------------------------------------- crashs : rapports de la boîte noire (commun/boite_noire.js)
+  function showCrash(C, maj) {
+    const B = window.__boite;
+    if (!B) { C.innerHTML = '<p class="rgNote">Boîte noire pas encore chargée.</p>'; return; }
+    const L = B.crashs(), S = B.session(), d = S.snaps[S.snaps.length - 1] || {};
+    const live = `<div class="rgSec">En ce moment</div><pre class="rgPre">${esc(`${d.fps ?? '?'} im/s · pire image ${d.pire_ms ?? '?'} ms\n${d.tri_k ?? '?'}k triangles · ${d.appels ?? '?'} appels de dessin\nMémoire estimée : géométries ${d.mo_geo ?? '?'} Mo + textures ${d.mo_tex ?? '?'} Mo\n${Object.entries(d.parts || {}).map(([k, v]) => '  ' + k + ' : ' + v + ' Mo').join('\n')}\nFaçades : ${d.facades ? `${d.facades.cellules} cellules, rayon ${d.facades.rayon} m, en attente ${d.facades.attente}` : '—'}`)}</pre>`;
+    const liste = L.length ? L.map((c, i) => `<div class="rgSec">Crash ${i + 1} · ${esc(new Date(c.debut).toLocaleString('fr-FR'))} · après ${esc(String((c.snaps[c.snaps.length - 1] || {}).t ?? '?'))} s</div>
+      <ul class="rgDiag">${c.diag.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      <div class="rgGrid"><button data-cp="${i}">Copier le rapport</button><button data-gh="${i}">Envoyer sur GitHub</button></div>`).join('') : '<p class="rgNote">Aucun crash enregistré. Si le jeu plante, rouvre-le : le rapport apparaîtra ici avec la cause probable.</p>';
+    C.innerHTML = live + liste + (L.length ? '<div class="rgGrid"><button id="rgCrClr">Effacer l\'historique</button></div>' : '');
+    C.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { const t = B.texte(L[+b.dataset.cp]); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => b.textContent = 'Copié ✓').catch(() => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); b.textContent = 'Copié ✓'; }); });
+    C.querySelectorAll('[data-gh]').forEach(b => b.onclick = () => { const c = L[+b.dataset.gh], t = B.texte(c).slice(0, 6000); open('https://github.com/drz22k57j6-dot/limoges-3d/issues/new?title=' + encodeURIComponent('[CRASH] ' + c.debut.slice(0, 16) + ' — ' + (c.diag[0] || '').slice(0, 60)) + '&body=' + encodeURIComponent('```\n' + t + '\n```'), '_blank'); });
+    const clr = C.querySelector('#rgCrClr'); if (clr) clr.onclick = () => { B.effacer(); showCrash(C); };
+    if (!maj) { clearInterval(devT); devT = setInterval(() => { if (tab === 'crash' && P.classList.contains('on')) { const pre = C.querySelector('.rgPre'), n = document.createElement('div'); showCrash(n, true); const np = n.querySelector('.rgPre'); if (pre && np) pre.textContent = np.textContent; } }, 2000); }
   }
 
   function control(it) {

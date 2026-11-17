@@ -24,7 +24,7 @@ export async function createQuartier(T, opt) {
   const secteurs = new Map();   // k -> 'charge' | liste de bâtiments
   const cells = new Map();      // cellKey -> { batis, etat: 'attente'|'construit', groupe, ids }
   const root = new T.Group(); root.name = 'quartier_facades'; opt.scene.add(root);
-  const R_IN = opt.rayon ?? 150, R_OUT = R_IN + 60, R_FULL = opt.rayonDetail ?? 75;   // détail complet près du drone, version simple jusqu'à R_IN
+  let R_IN = opt.rayon ?? 150, R_OUT = R_IN + 60, R_FULL = opt.rayonDetail ?? 75;   // détail complet près du drone, version simple jusqu'à R_IN
   let file = [];   // tâches : { cell, bat }
   const stats = { cellules: 0, batiments: 0, ms: 0, appels: 0 };
 
@@ -104,7 +104,7 @@ export async function createQuartier(T, opt) {
     let g = null; try { g = p.L.length > 1 ? mergeGeometries(p.L, false) : p.L[0]; } catch (e) { g = null; }
     if (!g) { for (const x of p.L) F.out.add(new T.Mesh(x, p.m)); return !F.paquets.length; }
     if (p.L.length > 1) p.L.forEach(x => x.dispose());
-    const m = p.m, me = new T.Mesh(g, m); me.castShadow = !m.transparent && !(m.emissiveIntensity > .5); me.receiveShadow = true; me.matrixAutoUpdate = false; F.out.add(me);
+    const m = p.m, me = new T.Mesh(g, m); me.castShadow = opt.ombres !== false && !m.transparent && !(m.emissiveIntensity > .5); me.receiveShadow = true; me.matrixAutoUpdate = false; F.out.add(me);
     return !F.paquets.length;
   }
   function liberer(grp, geomSeule) {
@@ -124,6 +124,9 @@ export async function createQuartier(T, opt) {
   const api = {
     root, stats, actif: true,
     get attente() { return file.length; },
+    get rayon() { return R_IN; },
+    // réglage dynamique (téléphone qui rame) : rayon réduit, les cellules trop loin sont libérées au prochain passage
+    setRayon(r, d) { R_IN = r; R_OUT = r + 50; if (d !== undefined) R_FULL = d; },
     // appelée ~4 fois par seconde : charge les secteurs proches, programme / décharge les cellules
     maj(x, z) {
       if (!api.actif) { for (const c of cells.values()) if (c.etat !== 'vide') api.vider(c); file = []; return; }
@@ -150,11 +153,13 @@ export async function createQuartier(T, opt) {
         const c = file[0];
         if (c.reste.length) {
           const b = c.reste.shift();
+          opt.etape && opt.etape('façades : fabrication ' + b.id + ' (' + b.st + ', ' + b.f.length + ' façades, lod ' + c.lod + ')');
           try { fabriquer(b, c.tmp, c.lod); stats.batiments++; } catch (e) { console.warn('façade', b.id, e); }
           if (!c.groupe && !c.vu) { root.add(c.tmp); c.vu = true; }   // apparition progressive (première construction)
           if (!c.groupe) opt.masquer([b.id], true);
           break;
         }
+        opt.etape && opt.etape('façades : fusion d\'une cellule (' + c.batis.length + ' bâtiments)');
         if (!c.F) c.F = preparerFusion(c.tmp);
         if (!c.F.paquets) { etapePrep(c.F, budget, t0); continue; }
         if (etapeFusion(c.F)) {
@@ -164,7 +169,7 @@ export async function createQuartier(T, opt) {
           c.ids = c.batis.map(b => b.id); opt.masquer(c.ids, true);
         }
       }
-      stats.ms = performance.now() - t0;
+      stats.ms = performance.now() - t0; if (!file.length && opt.etape) opt.etape('');
     },
     vider(c) {
       if (c.groupe) { root.remove(c.groupe); liberer(c.groupe); c.groupe = null; }

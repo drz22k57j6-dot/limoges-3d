@@ -87,8 +87,9 @@ function mat(T, k, make) { if (!matCache.has(k)) matCache.set(k, make()); return
 const emis = (T, hex, i = 1.2) => mat(T, 'em' + hex + i, () => new T.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: i, roughness: .5 }));
 const peint = (T, css, rough = .35) => mat(T, 'p' + css + rough, () => new T.MeshStandardMaterial({ color: new T.Color(css), roughness: rough, metalness: .05 }));
 const pick = (R, a) => a[Math.floor(R() * a.length)];
+const TQ = (typeof matchMedia !== 'undefined' && matchMedia('(pointer:coarse)').matches) ? .5 : 1;
 function texte(T, txt, w, h, fond, enc, font, opt = {}) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  const c = document.createElement('canvas'); c.width = w * TQ; c.height = h * TQ; const g = c.getContext('2d'); g.scale(TQ, TQ);
   if (fond) { g.fillStyle = fond; g.fillRect(0, 0, w, h); } else g.clearRect(0, 0, w, h);
   if (opt.filet) { g.strokeStyle = enc; g.lineWidth = h * .04; g.strokeRect(h * .08, h * .08, w - h * .16, h - h * .16); }
   let sz = h * (opt.taille || .58); g.font = `${opt.gras === false ? '' : 'bold '}${sz}px ${font}`;

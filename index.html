@@ -163,6 +163,7 @@ const QUALITIES = [
   { name: 'PERF', dpr: 1, shadow: 1024, shadowAll: false, far: 1300, trees: 800, post: false, ao: false },
 ];
 let qi = isTouch ? 1 : 0;
+
 const GFX = { grass: true, trees: true, voirie: true, facades: true };
 // ---------------- cinematic post-processing ----------------
 const GradeShader = {
@@ -254,7 +255,13 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=57';
+const V = '?v=59';
+// boîte noire : instantanés réguliers pour connaître la cause de chaque crash (⚙ → Crashs)
+let BN = null; import('./commun/boite_noire.js' + V).then(m => { BN = m.demarrerBoiteNoire({ renderer, scene, version: V, etat: () => {
+  const q = window.__quartier, P = window.__drone && window.__drone.PL;
+  return { pos: P ? [Math.round(P.x), Math.round(P.y), Math.round(P.z)] : null, qualite: qi, facades: q ? { actif: q.actif, rayon: q.rayon, attente: q.attente, cellules: q.stats.cellules, batis: q.stats.batiments } : null,
+    tuiles: window.__cityTiles ? window.__cityTiles.group.children.length : null, objets_scene: scene.children.length };
+} }); window.__boite = BN; }).catch(e => console.warn('boîte noire', e));
 // téléphone : textures des modèles réduites (au-delà de max px), la mémoire graphique d'un iPhone étant le premier motif de crash
 function alleger(root, max) {
   if (!isTouch) return root;
@@ -1620,8 +1627,8 @@ async function startCityTiles() {
       });
     });
     t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
-    scene.add(t.group); cityTiles = t; window.__cityTiles = t;
-    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, rayon: isTouch ? 100 : 140, rayonDetail: isTouch ? 50 : 70 })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
+    t.group.userData.bnNom = 'tuiles'; scene.add(t.group); cityTiles = t; window.__cityTiles = t;
+    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, etape: t => BN && BN.etape(t), rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
   } catch (e) { console.warn('tuiles ville', e); }
 }
 async function startGoogleCity() {
@@ -1896,6 +1903,7 @@ async function main() {
 let prev = performance.now(), acc = 0, frames = 0, fpsT = 0;
 window.__S = S; window.__PL = PL; window.__setMode = setMode; window.__ps = planeStep; window.__dbg = { scene, renderer, camera, inp, keys };
 function loop(now) {
+  if (BN) BN.image();
   let dt = Math.min(0.05, (now - prev) / 1000); prev = now; const t = now / 1000;
   acc += dt; const h = 1 / 120;
   while (acc >= h) { if (mode === 'plane') planeStep(h); else if (mode === 'foot') footStep(h); else step(h); acc -= h; }
@@ -1904,7 +1912,9 @@ function loop(now) {
   if (mode === 'plane') { updatePlaneVisual(dt); updatePlaneCamera(dt, t); } else if (mode === 'foot') footCamera(dt); else updateCamera(dt, t);
   updateModels(dt);
   if (STREAM.idx && (STREAM.tick = (STREAM.tick || 0) - dt) < 0) { STREAM.tick = 0.25; const p = mode === 'plane' ? PL : S; streamUpdate(p.x, p.z); }
-  if (QUART) { if ((QUART._t = (QUART._t || 0) - dt) < 0) { QUART._t = 0.25; const p = mode === 'plane' ? PL : mode === 'foot' ? FT : S; QUART.maj(p.x, p.z); } QUART.tache(dt > 0.03 ? 4 : 10); }
+  if (QUART) { if ((QUART._t = (QUART._t || 0) - dt) < 0) { QUART._t = 0.25; const p = mode === 'plane' ? PL : mode === 'foot' ? FT : S; QUART.maj(p.x, p.z); } QUART.tache(dt > 0.03 ? 3 : 10);
+    // garde-fou téléphone : si ça rame durablement, on réduit le rayon d'habillage
+    QUART._dt = (QUART._dt ?? dt) * 0.97 + dt * 0.03; if (isTouch && QUART._dt > 0.05 && QUART.rayon > 45 && !QUART.attente && (QUART._cool = (QUART._cool || 0) - dt) < 0) { QUART._cool = 4; QUART.setRayon(QUART.rayon - 10, 25); } }
   if (mode === 'plane') { drone.visible = true; for (const f of onFrameHooks) f(dt); } updateBuildingLabels(dt); governor(dt); updatePip(dt);
   if (mode === 'plane') drone.visible = droneView !== 'cam';   // la caméra ne se filme pas elle-même
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
@@ -1951,7 +1961,7 @@ main();
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=57"></script>
+<script type="module" src="drone/reglages.js?v=59"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>

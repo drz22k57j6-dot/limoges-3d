@@ -12,7 +12,9 @@ const NOISE = `
 float h21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
 float fbm(vec2 p){return .5*vn(p)+.25*vn(p*2.03)+.125*vn(p*4.01)+.0625*vn(p*8.);}`;
-const DEEP = 2.0;   // profondeur des pièces visibles derrière la façade
+const DEEP = 2.0;
+// téléphone : textures dessinées (enseignes, rideaux, tags) à moitié de résolution → 4× moins de mémoire
+export const TQ = (typeof matchMedia !== 'undefined' && matchMedia('(pointer:coarse)').matches) ? .5 : 1;   // profondeur des pièces visibles derrière la façade
 
 export function createKit(T, base) {
   const TL = new T.TextureLoader(), cache = {};
@@ -172,7 +174,7 @@ function drawTags(g, R, W, H, n, big = 1) {
   }
 }
 function tagTexture(T, R, n, w = 512, h = 256) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); drawTags(g, R, w, h, n, 1.9);
+  const c = document.createElement('canvas'); c.width = w * TQ; c.height = h * TQ; const g = c.getContext('2d'); g.scale(TQ, TQ); drawTags(g, R, w, h, n, 1.9);
   const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; return t;
 }
 
@@ -615,7 +617,7 @@ function shopFront(T, G, extra, M, R, cx, y0, ww, wh, REC, name, auvent, closed,
     G.vc.push(vc(T, new T.BoxGeometry(ww * .5, .95, .5).translate(cx - ww * .1, y0 + .47, -REC - .9), 0x6b4a2e));   // comptoir
   }
   // enseigne peinte (délavée quand le commerce est fermé)
-  const c = document.createElement('canvas'); c.width = 512; c.height = 64; const g = c.getContext('2d');
+  const c = document.createElement('canvas'); c.width = 512 * TQ; c.height = 64 * TQ; const g = c.getContext('2d'); g.scale(TQ, TQ);
   g.fillStyle = '#' + mat.color.getHexString(); g.fillRect(0, 0, 512, 64); g.fillStyle = closed ? '#9d978a' : '#e9dfc4'; g.font = 'bold 38px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name, 256, 34);
   if (closed && R() < .5) { g.fillStyle = 'rgba(40,40,40,.5)'; g.fillRect(0, 0, 512, 64); }
   const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
@@ -624,7 +626,7 @@ function shopFront(T, G, extra, M, R, cx, y0, ww, wh, REC, name, auvent, closed,
     const sh = wh - .5, sw = ww - .1, zz = z + .09, tags = R() < tagP;
     extra.push([box(T, ww + .06, .32, .22, cx, y0 + wh - .5 + .16, zz - .02), M.paint(0x6c6f70, .55, .4)]);   // coffre du rideau
     for (const k of [-1, 1]) extra.push([box(T, .06, sh, .08, cx + k * (sw / 2 + .02), y0 + sh / 2, zz), M.paint(0x55585a, .5, .5)]);   // coulisses
-    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 384; const q = cv.getContext('2d');
+    const cv = document.createElement('canvas'); cv.width = 512 * TQ; cv.height = 384 * TQ; const q = cv.getContext('2d'); q.scale(TQ, TQ);
     const grille = R() < .25;
     if (grille) {   // grille articulée : losanges ajourés
       q.clearRect(0, 0, 512, 384); q.strokeStyle = '#8e9294'; q.lineWidth = 5;
