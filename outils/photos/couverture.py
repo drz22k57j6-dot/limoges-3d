@@ -87,9 +87,11 @@ def fetch_panoramax():
             props = f.get("properties") or {}
             coords = (f.get("geometry") or {}).get("coordinates")
             if not coords or len(coords)<2: continue
+            orientation = props.get("pers:interior_orientation") or {}
             photos.append({"id":str(f.get("id",props.get("id",""))),
                 "lon":float(coords[0]),"lat":float(coords[1]),
                 "azimuth":props.get("view:azimuth"),
+                "fov":orientation.get("field_of_view"),
                 "date":parse_date(props.get("datetime") or props.get("date")),
                 "url":photo_url(f)})
         nxt = next((urljoin(url,l["href"]) for l in data.get("links",[])
@@ -115,17 +117,25 @@ def fetch_mapillary():
     return photos
 
 def evaluate(facades, photos):
-    for p in photos: p["x"],p["z"]=TO_LOCAL.transform(p["lon"],p["lat"])
+    for p in photos:
+        E, N = TO_LOCAL.transform(p["lon"], p["lat"])
+        p["x"], p["z"] = E - ORIGIN_E, -(N - ORIGIN_N)
     out={}
     for f in facades:
         matches=[]
         for p in photos:
-            if p.get("azimuth") is None: continue
+            fov = p.get("fov")
+            try:
+                is_360 = fov is not None and float(fov) >= 360
+            except (TypeError, ValueError):
+                is_360 = False
+            if p.get("azimuth") is None and not is_360: continue
             vx,vz=f["x"]-p["x"],f["z"]-p["z"]
             dist=math.hypot(vx,vz)
             if not 4 <= dist <= 35: continue
-            bearing=(math.degrees(math.atan2(vx,-vz))+360)%360
-            if angle_diff(float(p["azimuth"]),bearing) >= 35: continue
+            if not is_360:
+                bearing=(math.degrees(math.atan2(vx,-vz))+360)%360
+                if angle_diff(float(p["azimuth"]),bearing) >= 35: continue
             if f["nx"]*(vx/dist)+f["nz"]*(vz/dist) >= -0.3: continue
             matches.append((p,dist))
         matches.sort(key=lambda x:(x[0]["date"] is not None,
@@ -164,7 +174,7 @@ def main():
     pct=lambda n:round(100*n/total,1) if total else 0.0
     median=round(statistics.median(ages),2) if ages else None
     report={"zone":{"name":"Rue Cler, Paris 7e","bbox":list(BBOX)},"generated_at":date_text(now),
-      "sources":{"panoramax_photos":len(pano),"mapillary_photos":len(mapi)},
+      "sources":{"panoramax_photos":len(pano),"panoramax_360_photos":sum(1 for p in pano if p.get("fov") is not None and str(p.get("fov")).replace('.', '', 1).isdigit() and float(p["fov"]) >= 360),"mapillary_photos":len(mapi),"total_photos":len(pano)+len(mapi)},
       "summary":{"facades":total,"covered_panoramax":cp,"covered_mapillary":cm,"covered_any":ca,
        "panoramax_percent":pct(cp),"mapillary_percent":pct(cm),"any_percent":pct(ca),
        "median_photo_age_years":median},"facades":rows}
@@ -177,7 +187,7 @@ def main():
       f"- Couvertes par Mapillary : **{cm}/{total} ({pct(cm)} %)**",
       f"- Couvertes par au moins une source : **{ca}/{total} ({pct(ca)} %)**",
       f"- Âge médian des photos : **{median} ans**" if median is not None else "- Âge médian des photos : non disponible",
-      f"- Photos récupérées : Panoramax {len(pano)}, Mapillary {len(mapi)}","",
+      f"- Photos récupérées : Panoramax {len(pano)}, dont 360° : {sum(1 for p in pano if p.get('fov') is not None and str(p.get('fov')).replace('.', '', 1).isdigit() and float(p['fov']) >= 360)} ; Mapillary {len(mapi)} ; total : {len(pano)+len(mapi)}","",
       "## 10 exemples (façade et meilleure URL)",""]
     lines += [f"- \`{fid}\` — {url or 'URL indisponible'}" for fid,url in examples]
     if not examples: lines.append("- Aucun exemple : aucune photo répondant aux critères.")
