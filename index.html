@@ -255,7 +255,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=61';
+const V = '?v=62';
 // boîte noire : instantanés réguliers pour connaître la cause de chaque crash (⚙ → Crashs)
 let BN = null; import('./commun/boite_noire.js' + V).then(m => m.demarrerBoiteNoire({ renderer, scene, version: V, ciblesRendu: () => [composer, didRT, typeof PIP !== 'undefined' && PIP.rt], etat: () => {
   const q = window.__quartier, P = window.__drone && window.__drone.PL;
@@ -1638,7 +1638,7 @@ async function startCityTiles() {
     t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
     t.addEventListener('dispose-model', ({ tile }) => { if (BN) BN.ponctuel('tuiles', 'déchargement', tile && tile.content && tile.content.uri || ''); });
     t.group.userData.bnNom = 'tuiles'; scene.add(t.group); cityTiles = t; window.__cityTiles = t;
-    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, bn: () => BN, rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
+    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, solPret: (x, z) => Array.isArray(relief) && relief.some(t => x >= t.x0 && x <= t.x0 + 2000 && -z >= t.y0 && -z <= t.y0 + 2000), masquer: masquerBatiments, bn: () => BN, rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
   } catch (e) { console.warn('tuiles ville', e); }
 }
 async function startGoogleCity() {
@@ -1802,8 +1802,10 @@ async function streamUpdate(x, z, force) {
     const tOrder = [...wantT].sort((p, q) => { const c = k => { const [i, j] = k.split('_').map(Number); return Math.hypot((i + 0.5) * 2000 - I.RX - x, -((j + 0.5) * 2000 - I.RY) - z); }; return c(p) - c(q); });
     // si le drone a changé de secteur (téléportation, vol rapide), on abandonne l'ancien programme : le tour suivant charge la nouvelle zone
     const parti = () => { const P = mode === 'plane' ? PL : S, [ci, cj] = sec(P.x, P.z); return ci !== si || cj !== sj; };
-    await terrainTile(tOrder[0]); if (!parti()) await Promise.all(tOrder.slice(1).map(terrainTile));
+    // voirie (trottoirs, bordures) avant les tuiles de terrain secondaires : une tuile lente ne doit pas bloquer les trottoirs
+    await terrainTile(tOrder[0]);
     for (const k of visWant) { if (parti()) { STREAM.complete = false; break; } await sectorVis(k); }
+    if (!parti()) await Promise.all(tOrder.slice(1).map(terrainTile));
     if (Math.abs(x - mapCX) > 1200 || Math.abs(z - mapCZ) > 1200 || force) buildMap(allRings, Math.round(x / 500) * 500, Math.round(z / 500) * 500);
     // tout est là ? sinon on recommence au prochain tour (fichier en échec, réseau lent)
     STREAM.complete = physWant.every(k => STREAM.phys.has(k)) && visWant.every(k => STREAM.vis.has(k) && STREAM.vis.get(k).ms) && [...wantT].every(k => !STREAM.terr.has(k) || STREAM.terr.get(k));
@@ -1974,7 +1976,7 @@ main();
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=61"></script>
+<script type="module" src="drone/reglages.js?v=62"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>

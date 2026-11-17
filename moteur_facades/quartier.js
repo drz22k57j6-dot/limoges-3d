@@ -139,6 +139,8 @@ export async function createQuartier(T, opt) {
       for (const c of cells.values()) {
         const d = Math.hypot(c.cx - x, c.cz - z), lod = d < R_FULL ? 0 : 1;
         if (d > R_OUT) { if (c.etat !== 'vide') api.vider(c); continue; }
+        // cellule construite avec un sol faux (relief absent à ce moment-là) : on la refait à la bonne hauteur
+        if (c.etat === 'construit' && c.y0 !== undefined && (!opt.solPret || opt.solPret(c.cx, c.cz)) && Math.abs(opt.groundH(c.cx, c.cz) - c.y0) > 0.3) { api.programmer(c, c.lod); continue; }
         if (c.etat === 'vide' && d < R_IN) api.programmer(c, lod);
         else if (c.etat !== 'vide' && c.lod === 1 && lod === 0) api.programmer(c, 0);                 // on s'approche : version détaillée
         else if (c.etat === 'construit' && c.lod === 0 && d > R_FULL + 45) api.programmer(c, 1);      // on s'éloigne : version simple
@@ -156,6 +158,9 @@ export async function createQuartier(T, opt) {
       while (file.length && performance.now() - t0 < budget) {
         const c = file[0];
         if (c.reste.length) {
+          // relief pas encore chargé ici (téléportation, purge mémoire) : groundH vaudrait 0 → bâtiments et trottoirs plusieurs mètres trop bas (« marche »)
+          if (opt.solPret && !opt.solPret(c.cx, c.cz)) break;
+          if (c.y0 === undefined || c.reste.length === c.batis.length) c.y0 = opt.groundH(c.cx, c.cz);
           const b = c.reste.shift();
           const fin = E('génération façades', b.id + ' ' + b.st + ' ' + b.f.length + 'f lod' + c.lod);
           try { fabriquer(b, c.tmp, c.lod); stats.batiments++; } catch (e) { console.warn('façade', b.id, e); }
