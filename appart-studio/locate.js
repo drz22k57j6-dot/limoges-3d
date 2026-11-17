@@ -5,7 +5,7 @@ const ID_CACHE = new Map();
 const $ = id => document.getElementById(id);
 
 const normalize = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .toLowerCase().replace(/\b750\d{2}\b/g, ' ').replace(/\bparis(?:\s+\d{1,2}(?:e|er|eme|ème)?\s+arrondissement)?\b/g, ' ')
+  .toLowerCase().replace(/\b750\d{2}\b/g, ' ').replace(/\bparis(?:\s+\d{1,2}(?:e|er|eme|ème)?(?:\s+arrondissement)?)?\b/g, ' ')
   .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 function addressKey(s) {
   const n = normalize(s).replace(/\b(france)\b/g, '').trim();
