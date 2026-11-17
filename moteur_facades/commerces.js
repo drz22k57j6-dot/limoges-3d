@@ -144,14 +144,14 @@ export function buildShop(c) {
     const sous = !shop.nom || shop.nom.toUpperCase() === (t.nom || NOMS[shop.type]) ? null : (t.nom || NOMS[shop.type] || null);
     if (t.ens === 'lettres') {   // lettres découpées posées sur la pierre (ou le bandeau)
       const tx = texte(T, nom, 1024, 128, null, t.txt || (col === '#f4f4f4' ? '#222' : col), t.font, { taille: .7, ombre: true });
-      extra.push([new T.PlaneGeometry(Math.min(gw, nom.length * .32 + .6), .42).translate(gm, y0 + wh - fasc / 2, dev === 'bois' ? .17 : .03), planTex(T, tx, .3, true)]);
+      extra.push([new T.PlaneGeometry(Math.min(gw, nom.length * .32 + .6), .42).translate(gm, y0 + wh - fasc / 2, dev === 'bois' ? .17 : .06), planTex(T, tx, .3, true)]);
     } else if (t.ens === 'caisson') {   // caisson lumineux
       const tx = texte(T, nom, 1024, 128, col, enc, t.font, { taille: .62 });
       extra.push([H.box(T, gw, .5, .14, gm, y0 + wh - fasc / 2, .08), M.paint(0x222222, .4)]);
       extra.push([new T.PlaneGeometry(gw - .06, .44).translate(gm, y0 + wh - fasc / 2, .156), new T.MeshStandardMaterial({ map: tx, emissiveMap: tx, emissive: 0xffffff, emissiveIntensity: .55, roughness: .3 })]);
     } else {   // bandeau peint, lettres dorées ou crème
       const tx = texte(T, nom, 1024, 128, col, enc, t.font, { taille: .56, filet: dev === 'bois', sous: dev === 'bois' && sous ? null : null });
-      extra.push([new T.PlaneGeometry(gw, fasc * .82).translate(gm, y0 + wh - fasc / 2, dev === 'bois' ? .165 : .01), planTex(T, tx, .35)]);
+      extra.push([new T.PlaneGeometry(gw, fasc * .82).translate(gm, y0 + wh - fasc / 2, dev === 'bois' ? .165 : .06), planTex(T, tx, .35)]);
       if (dev === 'bois' && sous) {   // inscriptions peintes à la feuille d'or sur la vitre
         const t2 = texte(T, sous, 512, 96, null, '#d9b765', t.font, { taille: .55, gras: false });
         extra.push([new T.PlaneGeometry(Math.min(ww - .3, 1.8), .32).translate(cx, y0 + .45 + gh * .82, z - .005), planTex(T, t2, .3, true)]);

@@ -50,7 +50,13 @@ export async function buildTestStreet(T, ctx, voirieTex, sol) {
   }
   // lampadaires et potelets
   const fer = new T.MeshStandardMaterial({ color: 0x22302a, metalness: .5, roughness: .5 }), lan = new T.MeshStandardMaterial({ color: 0xf0e6c8, emissive: 0x221a08, roughness: .3 }), pot = new T.MeshStandardMaterial({ color: 0x3b3326, metalness: .4, roughness: .5 });
-  for (const zz of [S - .4, S + RD + .4]) for (let x = -L / 2 + 8; x < L / 2; x += 26) { add(new T.CylinderGeometry(.07, .13, 6.5, 12), fer, x, 3.25, zz); add(new T.CylinderGeometry(.16, .28, .6, 6), lan, x, 6.6, zz); add(new T.ConeGeometry(.32, .3, 6), fer, x, 7.05, zz); }
+  {   // lampadaires parisiens détaillés : candélabres (7e), doubles crosses (16e), consoles murales (19e)
+    const { lampadaires } = await import('./lampadaires.js' + qv);
+    const LP = lampadaires(T, { usure: { '7e': .45, '16e': .25, '19e': .8 }[ctx] ?? .5, stickers: { '7e': 1.1, '16e': .5, '19e': 1.5 }[ctx] ?? 1, seed: C.seed + 7 });
+    if (ctx === '19e') for (const [zz, d] of [[0, 1], [zOpp, -1]]) for (let x = -L / 2 + 10 + (d < 0 ? 11 : 0); x < L / 2; x += 22) LP.console(R, x, 5.6, zz + d * .05, d);
+    else for (const [zz, o] of [[S - .5, 0], [S + RD + .5, 12]]) for (let x = -L / 2 + 6 + o; x < L / 2; x += 24) LP.candelabre(R, x, zz, { double: ctx === '16e', hauteur: ctx === '16e' ? 4.6 : 4.0, velo: .2 });
+    G.add(LP.finir());
+  }
   for (const zz of [S - .3, S + RD + .3]) for (let x = -L / 2; x < L / 2; x += 1.7) { if (Math.abs(x - 18) < 3) continue; add(new T.CylinderGeometry(.05, .06, .9, 10), pot, x, .55, zz); }
   // immeubles mitoyens des deux côtés
   const bati = (side, x, w, extra) => {

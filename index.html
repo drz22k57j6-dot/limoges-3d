@@ -254,7 +254,7 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=53';
+const V = '?v=54';
 // téléphone : textures des modèles réduites (au-delà de max px), la mémoire graphique d'un iPhone étant le premier motif de crash
 function alleger(root, max) {
   if (!isTouch) return root;
