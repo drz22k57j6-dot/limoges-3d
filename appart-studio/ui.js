@@ -3,7 +3,7 @@ import { locateApartment, updateFloor } from './locate.js';
 const TESTS=[
  ['10 rue de Rivoli, 75004 Paris',4],
  ['1 boulevard Voltaire, 75011 Paris',2],
- ['12 rue de la Ferronnerie, 75001 Paris',1],
+ ['15 rue des Écouffes, 75004 Paris',1],
  ['10 avenue Victor-Hugo, 75016 Paris',5],
  ['8 avenue de France, 75013 Paris',10],
 ];
