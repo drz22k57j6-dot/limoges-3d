@@ -45,7 +45,7 @@ export async function initAppartStudio({THREE,scene,camera,renderer,CITY,drone,g
  let debugOn=false;
  document.getElementById('as-debug-toggle').onclick=()=>{debugOn=!debugOn;document.getElementById('as-debug-toggle').textContent=debugOn?'DEBUG ✓':'DEBUG';debug.style.display=debugOn?'block':'none';};
  debug.style.display='none';
- setInterval(()=>{if(debugOn){const fps=Number(window.__fps||0);debug.dataset.fps='FPS : '+fps.toFixed(0);if(state.current&&debug.textContent)debug.textContent=debug.textContent.replace(/FPS : \\d+/,debug.dataset.fps);else if(!debug.textContent)debug.textContent=debug.dataset.fps;}},1000);
+ setInterval(()=>{if(debugOn){const fps=Number(window.__fps||0);debug.dataset.fps='FPS : '+fps.toFixed(0);if(state.current&&debug.textContent)debug.textContent='FPS : '+fps.toFixed(0)+'\n'+debug.textContent.split('\n').filter(x=>!x.startsWith('FPS :')).join('\n');else if(!debug.textContent)debug.textContent=debug.dataset.fps;}},1000);
  document.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>{const t=TESTS[Number(b.dataset.test)];address.value=t[0];floor.value=t[1];});
  async function run(){
   const old=state.current?.marker;if(old){scene.remove(old);old.traverse(o=>{o.geometry?.dispose?.();if(o.material)o.material.dispose?.();});state.current=null;}
