@@ -18,6 +18,29 @@ function teinte(T, C, R) {
   const c = new T.Color(e[0]); c.offsetHSL((R() - .5) * e[2] * .5, (R() - .5) * e[2] * 2, (R() - .5) * e[2]); return c.getHex();
 }
 
+// Plaque de rue parisienne en émail bleu et vert, inspirée du modèle historique.
+function plaqueRue(T) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  const path = (x, y, w, h) => {
+    g.beginPath(); g.moveTo(x + 12, y + h); g.lineTo(x + 12, y + 42);
+    g.quadraticCurveTo(x + 12, y + 8, x + w / 2, y + 8);
+    g.quadraticCurveTo(x + w - 12, y + 8, x + w - 12, y + 42);
+    g.lineTo(x + w - 12, y + h); g.closePath();
+  };
+  path(8, 4, 496, 248); g.fillStyle = '#2E5E3E'; g.fill();
+  path(17, 13, 478, 230); g.fillStyle = '#1F3A6B'; g.fill();
+  path(23, 19, 466, 218); g.strokeStyle = '#f4f1e8'; g.lineWidth = 2; g.stroke();
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '600 38px Arial'; g.fillText('7e Arrt.', 256, 66);
+  g.font = '700 58px Arial'; g.fillText('RUE CLER', 256, 158);
+  g.fillStyle = '#2E5E3E';
+  for (const [x, y] of [[35, 35], [477, 35], [35, 225], [477, 225]]) { g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill(); }
+  const tex = new T.CanvasTexture(c); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 8;
+  const mat = new T.MeshStandardMaterial({ map: tex, roughness: .24, metalness: .12, side: T.DoubleSide });
+  return new T.Mesh(new T.PlaneGeometry(.76, .38), mat);
+}
+
 let KIT = null;
 // sol : { MS, VO } (moteur_sol) facultatif — s'il est fourni, le sol de la rue vient du moteur de sol
 const ABANDON = { '7e': 0.18, '16e': 0.04, '19e': 0.75 };
@@ -98,6 +121,16 @@ export async function buildTestStreet(T, ctx, voirieTex, sol) {
       const adr = file?.shift(), shops = adr ? adr.shops.map((s, k) => ({ type: s.t, nom: s.nom, id: adr.num + '-' + k })) : undefined;
       bati(side, x, w, { shops, shopBuilder: rue ? buildShop : undefined, numero: adr?.num });
       x += w;
+    }
+  }
+  // Plaques « Rue Cler » aux deux extrémités, à hauteur de regard depuis la rue.
+  for (const side of [0, 1]) {
+    const z = side === 0 ? .07 : zOpp - .07;
+    for (const x of [-L / 2 + 3.2, L / 2 - 3.2]) {
+      const back = new T.Mesh(new T.BoxGeometry(.8, .42, .035), new T.MeshStandardMaterial({ color: 0x2E5E3E, metalness: .2, roughness: .35 }));
+      back.position.set(x, 3.0, z); if (side === 1) back.rotation.y = Math.PI; G.add(back);
+      const sign = plaqueRue(T); sign.position.set(x, 3.0, z + (side === 0 ? .021 : -.021));
+      if (side === 1) sign.rotation.y = Math.PI; G.add(sign);
     }
   }
   G.userData = { zMid: S + RD / 2, L };
