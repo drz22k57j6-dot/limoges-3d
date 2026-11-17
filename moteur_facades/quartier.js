@@ -27,6 +27,8 @@ export async function createQuartier(T, opt) {
   let R_IN = opt.rayon ?? 150, R_OUT = R_IN + 60, R_FULL = opt.rayonDetail ?? 75;   // détail complet près du drone, version simple jusqu'à R_IN
   let file = [];   // tâches : { cell, bat }
   const stats = { cellules: 0, batiments: 0, ms: 0, appels: 0 };
+  // boîte noire : étapes avec durée (si l'onglet meurt pendant l'une d'elles, elle reste « en cours » dans le rapport)
+  const E = (action, detail) => { const b = opt.bn && opt.bn(); return b ? b.debut('façades', action, detail) : () => {}; };
 
   // matériau des murs de cour / noyau : enduit avec fenêtres (texture répétée, coordonnées monde)
   const cour = (() => {
@@ -115,16 +117,18 @@ export async function createQuartier(T, opt) {
 
   function chargerSecteur(k) {
     if (secteurs.has(k) || !idx.secteurs[k]) return; secteurs.set(k, 'charge');
+    const fin = E('chargement bâtiments', 'secteur ' + k);
     fetch(base + k + '.json' + qv).then(r => r.json()).then(d => {
+      fin(d.b.length + ' bâtiments');
       secteurs.set(k, d.b);
       for (const b of d.b) { const ck = Math.floor(b.cx / CELLM) + '_' + Math.floor(b.cz / CELLM); let c = cells.get(ck); if (!c) cells.set(ck, c = { cx: (Math.floor(b.cx / CELLM) + .5) * CELLM, cz: (Math.floor(b.cz / CELLM) + .5) * CELLM, batis: [], etat: 'vide', lod: 1 }); c.batis.push(b); }
-    }).catch(() => secteurs.delete(k));
+    }).catch(e => { fin('échec ' + e); secteurs.delete(k); });
   }
 
   const api = {
     root, stats, actif: true,
     get attente() { return file.length; },
-    get rayon() { return R_IN; },
+    get rayon() { return R_IN; }, get rayonDetail() { return R_FULL; },
     // réglage dynamique (téléphone qui rame) : rayon réduit, les cellules trop loin sont libérées au prochain passage
     setRayon(r, d) { R_IN = r; R_OUT = r + 50; if (d !== undefined) R_FULL = d; },
     // appelée ~4 fois par seconde : charge les secteurs proches, programme / décharge les cellules
@@ -153,32 +157,35 @@ export async function createQuartier(T, opt) {
         const c = file[0];
         if (c.reste.length) {
           const b = c.reste.shift();
-          opt.etape && opt.etape('façades : fabrication ' + b.id + ' (' + b.st + ', ' + b.f.length + ' façades, lod ' + c.lod + ')');
+          const fin = E('génération façades', b.id + ' ' + b.st + ' ' + b.f.length + 'f lod' + c.lod);
           try { fabriquer(b, c.tmp, c.lod); stats.batiments++; } catch (e) { console.warn('façade', b.id, e); }
+          fin();
           if (!c.groupe && !c.vu) { root.add(c.tmp); c.vu = true; }   // apparition progressive (première construction)
           if (!c.groupe) opt.masquer([b.id], true);
           break;
         }
-        opt.etape && opt.etape('façades : fusion d\'une cellule (' + c.batis.length + ' bâtiments)');
         if (!c.F) c.F = preparerFusion(c.tmp);
-        if (!c.F.paquets) { etapePrep(c.F, budget, t0); continue; }
-        if (etapeFusion(c.F)) {
+        if (!c.F.paquets) { const fin = E('fusion cellule (copie)', c.batis.length + ' bât.'); etapePrep(c.F, budget, t0); fin(c.F.i + '/' + c.F.meshes.length); continue; }
+        const finF = E('fusion cellule (paquet)', c.F.paquets.length + ' restants');
+        const fini = etapeFusion(c.F); finF();
+        if (fini) {
           file.shift(); root.remove(c.tmp); liberer(c.tmp, true); c.tmp = null;
           if (c.groupe) { root.remove(c.groupe); liberer(c.groupe); } else stats.cellules++;
           c.groupe = c.F.out; c.F = null; root.add(c.groupe); c.etat = 'construit';
           c.ids = c.batis.map(b => b.id); opt.masquer(c.ids, true);
         }
       }
-      stats.ms = performance.now() - t0; if (!file.length && opt.etape) opt.etape('');
+      stats.ms = performance.now() - t0;
     },
     vider(c) {
+      const fin = E('déchargement cellule', c.batis.length + ' bât.');
       if (c.groupe) { root.remove(c.groupe); liberer(c.groupe); c.groupe = null; }
       if (c.tmp) { root.remove(c.tmp); liberer(c.tmp); c.tmp = null; }
       c.F = null; file = file.filter(x => x !== c);
       if (c.ids) { opt.masquer(c.ids, false); c.ids = null; }
       if (c.ids || c.etat === 'construit') stats.cellules = Math.max(0, stats.cellules - 1);
       opt.masquer(c.batis.map(b => b.id), false);
-      c.etat = 'vide';
+      c.etat = 'vide'; fin();
     },
   };
   return api;

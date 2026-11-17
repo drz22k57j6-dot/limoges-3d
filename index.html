@@ -246,7 +246,7 @@ const nightMats = [];
 const manager = new THREE.LoadingManager();
 const loader = new GLTFLoader(manager); loader.setMeshoptDecoder(MeshoptDecoder);
 const prog = {};
-function setProg(k, v) { prog[k] = v; const tot = Object.values(prog).reduce((a, b) => a + b, 0) / 10; $('bar').firstElementChild.style.width = (tot * 100).toFixed(0) + '%'; }
+function setProg(k, v) { prog[k] = v; const b = $('bar'); if (!b || !b.firstElementChild) return; const tot = Object.values(prog).reduce((a, b) => a + b, 0) / 10; b.firstElementChild.style.width = (tot * 100).toFixed(0) + '%'; }   // la barre disparaît après le chargement : sans ce garde-fou, chaque tuile de terrain chargée ensuite échouait (sol bleu)
 async function fetchProg(url, key) {
   const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status);
   const total = +r.headers.get('content-length') || 0;
@@ -255,13 +255,18 @@ async function fetchProg(url, key) {
   for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(key, Math.min(0.99, got / total)); }
   const out = new Uint8Array(got); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } setProg(key, 1); return out.buffer;
 }
-const V = '?v=59';
+const V = '?v=61';
 // boîte noire : instantanés réguliers pour connaître la cause de chaque crash (⚙ → Crashs)
-let BN = null; import('./commun/boite_noire.js' + V).then(m => { BN = m.demarrerBoiteNoire({ renderer, scene, version: V, etat: () => {
+let BN = null; import('./commun/boite_noire.js' + V).then(m => m.demarrerBoiteNoire({ renderer, scene, version: V, ciblesRendu: () => [composer, didRT, typeof PIP !== 'undefined' && PIP.rt], etat: () => {
   const q = window.__quartier, P = window.__drone && window.__drone.PL;
-  return { pos: P ? [Math.round(P.x), Math.round(P.y), Math.round(P.z)] : null, qualite: qi, facades: q ? { actif: q.actif, rayon: q.rayon, attente: q.attente, cellules: q.stats.cellules, batis: q.stats.batiments } : null,
-    tuiles: window.__cityTiles ? window.__cityTiles.group.children.length : null, objets_scene: scene.children.length };
-} }); window.__boite = BN; }).catch(e => console.warn('boîte noire', e));
+  return { pos: P ? [Math.round(P.x), Math.round(P.y), Math.round(P.z)] : null, qualite: qi, facades: q ? { actif: q.actif, rayon: q.rayon, detail: q.rayonDetail, attente: q.attente, cellules: q.stats.cellules, batis: q.stats.batiments } : null,
+    tuiles: window.__cityTiles ? window.__cityTiles.group.children.length : null, objets_scene: scene.children.length, secteurs: window.__dev && window.__dev.stream ? (s => ({ vis: s.vis.length, terr: s.terr.join(' '), occupe: s.busy })) (window.__dev.stream()) : null };
+} })).then(b => { BN = b; window.__boite = b;
+  const LM = THREE.DefaultLoadingManager, o1 = LM.onStart, o2 = LM.onLoad, o3 = LM.onError;   // chargement des textures / modèles
+  LM.onStart = (u, l, t) => { b.ponctuel('textures', 'début chargement', String(u).split('/').pop() + ' (' + l + '/' + t + ')'); o1 && o1(u, l, t); };
+  LM.onLoad = () => { b.ponctuel('textures', 'fin des chargements en cours'); o2 && o2(); };
+  LM.onError = u => { b.note('erreur', 'chargement impossible : ' + u); o3 && o3(u); };
+}).catch(e => console.warn('boîte noire', e));
 // téléphone : textures des modèles réduites (au-delà de max px), la mémoire graphique d'un iPhone étant le premier motif de crash
 function alleger(root, max) {
   if (!isTouch) return root;
@@ -313,7 +318,7 @@ let segs, segRing, allRings; const ringTop = []; const ringGrid = new Map(); // 
 // Toutes les 0,25 s, une petite image « d'identifiants » (un code couleur exact par bâtiment) est rendue depuis
 // la caméra du drone : on sait ainsi quels bâtiments sont réellement visibles (pas cachés derrière d'autres),
 // et où ils sont à l'écran. Les étiquettes sont dessinées dans l'image, donc présentes dans la vidéo.
-const DID = { list: [null], index: new Map(), meshes: new Set(), labels: new Map(), seen: new Map(), info: new Map(), cells: new Map(), tick: 0, on: true, colors: false, W: 192, H: 108 };
+const DID = { list: [null], index: new Map(), meshes: new Set(), labels: new Map(), seen: new Map(), info: new Map(), cells: new Map(), tick: 0, on: false, colors: false, W: 192, H: 108 };
 window.__DID = DID;
 const didRT = new THREE.WebGLRenderTarget(DID.W, DID.H, { depthBuffer: true }); const didPix = new Uint8Array(DID.W * DID.H * 4);
 const didMat = new THREE.ShaderMaterial({ vertexShader: 'attribute vec3 idc; varying vec3 v; void main(){ v = idc; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }', fragmentShader: 'varying vec3 v; void main(){ gl_FragColor = vec4(v, 1.0); }' });
@@ -345,8 +350,10 @@ function masquerDans(o, id, on) {
   pos.needsUpdate = true; return true;
 }
 function masquerBatiments(ids, on) {
+  const finBN = BN ? BN.debut('tuiles', on ? 'masquage volumes IGN' : 'réaffichage volumes IGN', ids.length + ' bât.') : null;
   for (const id of ids) on ? HABILLES.add(id) : HABILLES.delete(id);
   for (const o of TILE_MESHES) { if (!o.parent) { TILE_MESHES.delete(o); continue; } let ch = false; for (const id of ids) ch = masquerDans(o, id, on) || ch; if (ch) o.geometry.computeBoundingSphere(); }
+  if (finBN) finBN();
 }
 function didHash(id) { let h = 2166136261; for (let k = 0; k < id.length; k++) { h ^= id.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; }
 function didStableColor(id) { const h = didHash(id); return new THREE.Color().setHSL((h % 360) / 360, 0.62 + ((h >>> 9) % 30) / 100, 0.46 + ((h >>> 17) % 18) / 100); }
@@ -1351,6 +1358,7 @@ window.__dev = {
   DR, GIMBAL, GFX,
   qualities: QUALITIES.map(q => q.name), quality: () => qi, setQuality: i => { qi = i; applyQuality(); },
   q: () => QUALITIES[qi],
+  stream: () => ({ vis: [...STREAM.vis].map(([k, e]) => k + ':' + (e.ms ? e.ms.length : 'x')), terr: [...STREAM.terr].map(([k, v]) => k + ':' + (v ? 'ok' : '…')), phys: [...STREAM.phys], busy: STREAM.busy, complete: STREAM.complete, last: STREAM.last }),
   setDpr: v => { QUALITIES[qi].dpr = v; resize(); },
   setFar: v => { QUALITIES[qi].far = v; scene.fog.far = v; scene.fog.near = v * 0.18; camera.far = v + 400; camera.updateProjectionMatrix(); },
   shadows: () => renderer.shadowMap.enabled, setShadows: b => { renderer.shadowMap.enabled = b; sun.castShadow = b; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); },
@@ -1360,6 +1368,7 @@ window.__dev = {
   bloom: { s: 0.18 }, setBloom: v => { window.__dev.bloom.s = v; if (bloomPass) bloomPass.strength = v; },
   exposure: () => renderer.toneMappingExposure, setExposure: v => { renderer.toneMappingExposure = v; },
   setTrees: b => { GFX.trees = b; treeChunks.forEach(c => c.obj.visible = b); },
+  ids: () => DID.on, setIds: b => { DID.on = !!b; const e = $('bId'); if (e) e.textContent = DID.on ? 'ID ✓' : 'ID ✗'; },
   setFacades: b => { GFX.facades = b; if (QUART) QUART.actif = b; },
   setVoirie: b => { GFX.voirie = b; for (const [k, ent] of STREAM.vis) freeMeshes(ent.ms); STREAM.vis.clear(); STREAM.complete = false; streamUpdate(PL.x, PL.z, true); },
   world: () => WORLD.mode, setWorld: m => setWorld(m),
@@ -1616,7 +1625,7 @@ async function startCityTiles() {
     // téléphone : cache des tuiles d'immeubles plafonné en mémoire (le navigateur iOS ferme l'onglet vers 1,5 Go)
     if (isTouch) { t.lruCache.minSize = 150; t.lruCache.maxSize = 450; t.lruCache.minBytesSize = 120 * 2 ** 20; t.lruCache.maxBytesSize = 200 * 2 ** 20; }
     const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 }); MT.appliquer(far, MT.PROFILS.facade);
-    t.addEventListener('load-model', ({ scene: sc }) => {
+    t.addEventListener('load-model', ({ scene: sc, tile }) => { if (BN) BN.ponctuel('tuiles', 'chargement', tile && tile.content && tile.content.uri || '');
       alleger(sc, 512);
       sc.traverse(o => {
         if (!o.isMesh) return;
@@ -1627,8 +1636,9 @@ async function startCityTiles() {
       });
     });
     t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
+    t.addEventListener('dispose-model', ({ tile }) => { if (BN) BN.ponctuel('tuiles', 'déchargement', tile && tile.content && tile.content.uri || ''); });
     t.group.userData.bnNom = 'tuiles'; scene.add(t.group); cityTiles = t; window.__cityTiles = t;
-    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, etape: t => BN && BN.etape(t), rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
+    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, masquer: masquerBatiments, bn: () => BN, rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
   } catch (e) { console.warn('tuiles ville', e); }
 }
 async function startGoogleCity() {
@@ -1755,7 +1765,7 @@ function resetPhysics() {
 async function terrainTile(k) {
   if (STREAM.terr.has(k)) return; STREAM.terr.set(k, null);
   try { const g = await loadGLB(CITY.data + 'terrain/t_' + k + '.wasm', 'tt'); prepTerrain(g.scene);  if (!STREAM.terr.has(k)) return; STREAM.terr.set(k, g.scene); scene.add(g.scene); }
-  catch (e) { STREAM.terr.delete(k); }
+  catch (e) { STREAM.terr.delete(k); STREAM.complete = false; console.warn('terrain ' + k + ' : ' + (e && (e.message || e))); }   // retenté au tour suivant (avant : sol absent pour toujours → fond bleu)
 }
 // Chargement : vérifié 4 fois par seconde. Ordre de priorité : la physique (murs, sol) du secteur du drone,
 // puis celle des 24 secteurs autour (5 × 5 km) et de la zone où le drone sera dans 6 s ; l'affichage (routes,
@@ -1790,8 +1800,10 @@ async function streamUpdate(x, z, force) {
     if (grass && grass.setMask) { const ti = Math.floor((x + I.RX) / 2000), tj = Math.floor((-z + I.RY) / 2000); grass.setMask(CITY.data + 'tex/herbe/h_' + ti + '_' + tj + '.jpg' + V, [ti * 2000 - I.RX, -((tj + 1) * 2000 - I.RY), 2000, 2000]); }
     // 4) terrain détaillé et routes : le plus proche d'abord
     const tOrder = [...wantT].sort((p, q) => { const c = k => { const [i, j] = k.split('_').map(Number); return Math.hypot((i + 0.5) * 2000 - I.RX - x, -((j + 0.5) * 2000 - I.RY) - z); }; return c(p) - c(q); });
-    await terrainTile(tOrder[0]); await Promise.all(tOrder.slice(1).map(terrainTile));
-    for (const k of visWant) await sectorVis(k);
+    // si le drone a changé de secteur (téléportation, vol rapide), on abandonne l'ancien programme : le tour suivant charge la nouvelle zone
+    const parti = () => { const P = mode === 'plane' ? PL : S, [ci, cj] = sec(P.x, P.z); return ci !== si || cj !== sj; };
+    await terrainTile(tOrder[0]); if (!parti()) await Promise.all(tOrder.slice(1).map(terrainTile));
+    for (const k of visWant) { if (parti()) { STREAM.complete = false; break; } await sectorVis(k); }
     if (Math.abs(x - mapCX) > 1200 || Math.abs(z - mapCZ) > 1200 || force) buildMap(allRings, Math.round(x / 500) * 500, Math.round(z / 500) * 500);
     // tout est là ? sinon on recommence au prochain tour (fichier en échec, réseau lent)
     STREAM.complete = physWant.every(k => STREAM.phys.has(k)) && visWant.every(k => STREAM.vis.has(k) && STREAM.vis.get(k).ms) && [...wantT].every(k => !STREAM.terr.has(k) || STREAM.terr.get(k));
@@ -1946,14 +1958,15 @@ function loop(now) {
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : mode === 'foot' ? FT.spd : S.vf) * 3.6);
   $('spd').firstChild.nodeValue = kmh;
   $('gear').textContent = mode === 'foot' ? (FT.run > 0.5 ? 'COURSE' : 'À PIED') : mode === 'plane' ? (PL.landed ? 'POSÉ' : 'ALT ' + Math.round(PL.y - groundH(PL.x, PL.z)) + ' m') : (S.vf < -0.5 ? 'R' : (kmh < 1 && !S.thr ? 'N' : S.gear));
-  $('rpm').firstElementChild.style.width = Math.min(100, S.rpm / 75) + '%';
+  if ($('rpm')) $('rpm').firstElementChild.style.width = Math.min(100, S.rpm / 75) + '%';
   if ((streetT -= dt) < 0) {
     streetT = 0.4; const r = nearestRoad(F.x, F.z, 18); const nm = r ? roadNames[r.r.nid] : '';
     if (nm && nm !== lastStreet) { lastStreet = nm; $('street').textContent = nm; $('street').style.opacity = 1; }
     if (!nm && lastStreet) { lastStreet = ''; $('street').style.opacity = 0; }
   }
   drawMap(); updateAudio();
-  if (composer) { gradePass.uniforms.time.value = t % 100; bloomPass.enabled = !!TIMES[ti].night; bloomPass.strength = 0.45; bloomPass.threshold = 0.75; composer.render(dt); } else renderer.render(scene, camera);
+  const tR0 = performance.now(); if (composer) { gradePass.uniforms.time.value = t % 100; bloomPass.enabled = !!TIMES[ti].night; bloomPass.strength = 0.45; bloomPass.threshold = 0.75; composer.render(dt); } else renderer.render(scene, camera);
+  if (BN) { const dR = performance.now() - tR0; if (dR > 150) BN.note('lent', 'rendu d\'une image : ' + Math.round(dR) + ' ms, ' + Math.round(renderer.info.render.triangles / 1000) + 'k triangles, ' + renderer.info.render.calls + ' appels'); }
   frames++; fpsT += dt; if (fpsT > 1) { window.__fps = frames / fpsT; frames = 0; fpsT = 0; }
 }
 main();
@@ -1961,7 +1974,7 @@ main();
 <script src="commun/batiment.js"></script>
 <script type="module" src="commun/jeu3d.js"></script>
 <script type="module" src="commun/routes.js"></script>
-<script type="module" src="drone/reglages.js?v=59"></script>
+<script type="module" src="drone/reglages.js?v=61"></script>
 <link rel="stylesheet" href="commun/ui.css">
 <script src="commun/ui.js"></script>
 <script src="switcher.js"></script>

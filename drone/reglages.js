@@ -174,6 +174,7 @@ function init(D, X) {
       seg('gfx.shadowsize', 'Qualité des ombres', [[1024, 'Basse'], [2048, 'Haute'], [4096, 'Ultra']], () => X.q().shadow, v => X.setShadowSize(v)),
       tog('gfx.trees', 'Arbres', () => X.GFX.trees, v => X.setTrees(v)),
       tog('gfx.voirie', 'Voirie réelle (Plan de voirie de Paris)', () => X.GFX.voirie, v => X.setVoirie(v), 'Trottoirs, bordures et passages piétons aux vraies formes ; sinon routes estimées'),
+      tog('gfx.ids', 'Afficher les identifiants IGN des bâtiments', () => X.ids(), v => X.setIds(v), 'Étiquettes à l\'écran ; les identifiants restent enregistrés (vidéos, appui long)'),
       tog('gfx.facades', 'Façades détaillées (vrais bâtiments, 7e)', () => X.GFX.facades, v => X.setFacades(v), 'Immeubles habillés par le moteur de façades autour du drone : vraies hauteurs, vrais commerces'),
       sec('Post-traitement'),
       tog('gfx.post', 'Post-traitement', () => X.q().post, v => X.setPost(v), 'Nécessaire pour les réglages ci-dessous'),
@@ -234,15 +235,37 @@ function init(D, X) {
   function showCrash(C, maj) {
     const B = window.__boite;
     if (!B) { C.innerHTML = '<p class="rgNote">Boîte noire pas encore chargée.</p>'; return; }
-    const L = B.crashs(), S = B.session(), d = S.snaps[S.snaps.length - 1] || {};
-    const live = `<div class="rgSec">En ce moment</div><pre class="rgPre">${esc(`${d.fps ?? '?'} im/s · pire image ${d.pire_ms ?? '?'} ms\n${d.tri_k ?? '?'}k triangles · ${d.appels ?? '?'} appels de dessin\nMémoire estimée : géométries ${d.mo_geo ?? '?'} Mo + textures ${d.mo_tex ?? '?'} Mo\n${Object.entries(d.parts || {}).map(([k, v]) => '  ' + k + ' : ' + v + ' Mo').join('\n')}\nFaçades : ${d.facades ? `${d.facades.cellules} cellules, rayon ${d.facades.rayon} m, en attente ${d.facades.attente}` : '—'}`)}</pre>`;
-    const liste = L.length ? L.map((c, i) => `<div class="rgSec">Crash ${i + 1} · ${esc(new Date(c.debut).toLocaleString('fr-FR'))} · après ${esc(String((c.snaps[c.snaps.length - 1] || {}).t ?? '?'))} s</div>
+    const L = B.crashs(), S = B.session(), d = S.snaps[S.snaps.length - 1] || {}, m = d.mem || {}, M = S.max || {};
+    const live = `<div class="rgSec">En ce moment · moteur ${esc(B.moteur)}</div><pre class="rgPre">${esc(`${d.fps ?? '?'} im/s · pire image ${d.pire_ms ?? '?'} ms · ${d.tri_k ?? '?'}k triangles · ${d.appels ?? '?'} appels
+JS (tas) : ${m.js_mo === null || m.js_mo === undefined ? 'non mesurable sur Safari' : m.js_mo + ' Mo — mesuré'}
+Géométries : ${m.geo_mo ?? '?'} Mo — mesuré (mémoire JS)
+Textures : ~${m.tex_est_mo ?? '?'} Mo — estimation (${m.textures_n ?? '?'} textures)
+Cibles de rendu : ~${m.rt_est_mo ?? '?'} Mo — estimation
+Écran : ~${m.toile_est_mo ?? '?'} Mo — estimation
+Total GPU estimé : ~${m.gpu_est_mo ?? '?'} Mo (estimation, pas la VRAM réelle)
+${Object.entries(m.parts || {}).map(([k, v]) => '  ' + k + ' : ' + v + ' Mo').join('\n')}
+Maxima : GPU ~${M.gpu_est_mo ?? '?'} Mo · ${M.tri_k ?? '?'}k tri · pire image ${M.pire_ms ?? '?'} ms · pics ${S.pics.length}
+En cours : ${(d.en_cours || []).join(' | ') || '—'}
+Façades : ${d.facades ? `${d.facades.cellules} cellules, rayon ${d.facades.rayon} m (détail ${d.facades.detail} m), attente ${d.facades.attente}` : '—'}`)}</pre>`;
+    const liste = L.length ? L.map((c, i) => `<div class="rgSec">${i + 1}. ${esc(c.classe.texte)}</div><p class="rgNote">${esc(new Date(c.debut).toLocaleString('fr-FR'))} · moteur ${esc(c.moteur)} · durée ${esc(String((c.snaps.at(-1) || {}).t ?? '?'))} s</p>
       <ul class="rgDiag">${c.diag.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-      <div class="rgGrid"><button data-cp="${i}">Copier le rapport</button><button data-gh="${i}">Envoyer sur GitHub</button></div>`).join('') : '<p class="rgNote">Aucun crash enregistré. Si le jeu plante, rouvre-le : le rapport apparaîtra ici avec la cause probable.</p>';
-    C.innerHTML = live + liste + (L.length ? '<div class="rgGrid"><button id="rgCrClr">Effacer l\'historique</button></div>' : '');
-    C.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { const t = B.texte(L[+b.dataset.cp]); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => b.textContent = 'Copié ✓').catch(() => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); b.textContent = 'Copié ✓'; }); });
-    C.querySelectorAll('[data-gh]').forEach(b => b.onclick = () => { const c = L[+b.dataset.gh], t = B.texte(c).slice(0, 6000); open('https://github.com/drz22k57j6-dot/limoges-3d/issues/new?title=' + encodeURIComponent('[CRASH] ' + c.debut.slice(0, 16) + ' — ' + (c.diag[0] || '').slice(0, 60)) + '&body=' + encodeURIComponent('```\n' + t + '\n```'), '_blank'); });
-    const clr = C.querySelector('#rgCrClr'); if (clr) clr.onclick = () => { B.effacer(); showCrash(C); };
+      <div class="rgGrid"><button data-cp="${i}">Copier</button><button data-sh="${i}">Partager</button><button data-gh="${i}">Envoyer sur GitHub</button></div>`).join('') : '<p class="rgNote">Aucune session interrompue enregistrée.</p>';
+    const pv = B.parVersion(B.sessions()), vers = pv.length ? `<div class="rgSec">Comparaison par version du moteur</div><pre class="rgPre">${esc(pv.map(o => `${o.v} : ${o.sessions} sessions, ${o.crashs} crashs, durée médiane ${o.duree_mediane_s ?? '?'} s, GPU max médian ~${o.gpu_max_median_mo ?? '?'} Mo`).join('\n'))}</pre>` : '';
+    const hist = `<details class="rgCat"><summary>Historique des changements du moteur</summary><pre class="rgPre">${esc(B.historique.map(h => `${h.v} (${h.date})\n` + h.changements.map(x => ' - ' + x).join('\n')).join('\n\n'))}</pre></details>`;
+    C.innerHTML = live + `<div class="rgGrid"><button id="rgFin">Quitter proprement (session terminée)</button>${L.length ? '<button id="rgCrClr">Effacer les rapports</button>' : ''}</div>` + liste + vers + hist;
+    const txt = i => B.texte(L[i]);
+    C.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { const t = txt(+b.dataset.cp); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => b.textContent = 'Copié ✓').catch(() => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); b.textContent = 'Copié ✓'; }); });
+    C.querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { const t = txt(+b.dataset.sh); if (navigator.share) navigator.share({ title: 'Rapport de crash', text: t }).catch(() => {}); else b.textContent = 'Partage indisponible'; });
+    // GitHub : aucun jeton dans le jeu ; ouvre le formulaire d'issue pré-rempli (compte GitHub de l'utilisateur), contenu public → confirmation
+    C.querySelectorAll('[data-gh]').forEach(b => b.onclick = () => {
+      if (!confirm('Le rapport sera publié dans une issue PUBLIQUE du dépôt (appareil, position du drone, mémoire ; aucune donnée de compte). Continuer ?')) return;
+      const c = L[+b.dataset.gh], titre = '[CRASH] ' + c.moteur + ' · ' + c.classe.code + ' · ' + c.debut.slice(0, 16);
+      let corps = txt(+b.dataset.gh); const base = 'https://github.com/drz22k57j6-dot/limoges-3d/issues/new?labels=&title=' + encodeURIComponent(titre) + '&body=';
+      while (encodeURIComponent('```\n' + corps + '\n```').length + base.length > 7600) corps = corps.slice(0, Math.floor(corps.length * .9)) + '\n…(tronqué : utiliser Copier pour le rapport complet)';
+      open(base + encodeURIComponent('```\n' + corps + '\n```'), '_blank', 'noopener');
+    });
+    $('rgFin').onclick = () => { B.terminer(); $('rgFin').textContent = 'Session terminée ✓ (tu peux fermer)'; };
+    const clr = C.querySelector('#rgCrClr'); if (clr) clr.onclick = () => { if (confirm('Effacer tous les rapports ?')) { B.effacer(); showCrash(C); } };
     if (!maj) { clearInterval(devT); devT = setInterval(() => { if (tab === 'crash' && P.classList.contains('on')) { const pre = C.querySelector('.rgPre'), n = document.createElement('div'); showCrash(n, true); const np = n.querySelector('.rgPre'); if (pre && np) pre.textContent = np.textContent; } }, 2000); }
   }
 
