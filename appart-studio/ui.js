@@ -159,6 +159,15 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     for (const [dx, dy] of [[0, tol], [0, -tol], [tol, 0], [-tol, 0]]) { const p = [c[0] + dx, c[1] + dy]; let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) ins = !ins; } if (ins) return true; }
     return false;
   }
+  async function waitFacadeMetadata(id, timeout = 3000) {
+    const until = performance.now() + timeout;
+    while (performance.now() < until) {
+      const L = window.__facadeEtages?.get(id);
+      if (L?.length) return L;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return window.__facadeEtages?.get(id) || [];
+  }
   function open3d() {
     const r = state.res; if (!r) return;
     const plan = editor.getPlan(); state.plan3d = plan;
@@ -247,6 +256,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
         }
       }
       $('as-step').textContent = 'Chargement du quartier';
+      await waitFacadeMetadata(res.feature.properties?.cleabs, 3000);
       const F = res.local.F, n = res.local.n;
       await drone.teleport(F[0] + n[0] * 8, F[1] + n[1] * 8, { nom: res.address, dist: 0, alt: 25 });
       $('as-step').textContent = 'Calcul de votre étage';

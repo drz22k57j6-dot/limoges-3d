@@ -415,8 +415,10 @@ export function createPlanEditor({ onBack, onView3D }) {
     open(info) {
       ctxInfo = info; storeKey = 'as-plan:' + info.key;
       let saved = null; try { saved = JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) {}
-      P = saved && saved.o ? saved : fresh();
+      const savedFits = saved && saved.o && rectFits(saved.o);
+      P = savedFits ? saved : fresh();
       fitInitial();
+      if (saved && saved.o && !savedFits) flash('Ancien plan réinitialisé : il dépassait l’emprise IGN');
       hist = [JSON.stringify(P)]; fut = []; sel = null;
       root.querySelector('#ase-title span').textContent = info.title;
       root.classList.add('on'); recompute(); setTool('piece');
