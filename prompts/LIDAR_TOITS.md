@@ -28,8 +28,8 @@ Comparer, sur 20 bâtiments du 7e, le classement « toit bien / peu ensoleillé 
 ## Statut
 
 - [x] PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/27 (ouverte, empilée sur `feat/appart-studio-next-c-auto-first-person`, non fusionnée).
-- [ ] Taille tuiles avant/après : non mesurée ; plafond de 400 triangles/toit et métriques de taille après build codés, mais aucun build Paris comparatif exécuté.
+- [ ] Taille tuiles avant/après : non mesurée ; plafond de 400 triangles/toit, tailles détaillées/LOD et durée totale du build enregistrés dans les métriques après build, mais aucun build Paris comparatif exécuté.
 - [ ] Soleil 38 rue Cler avant/après : non mesuré ; aucun nombre d'heures (21 décembre / 21 juin) ni angle de masque annoncé.
-- [x] Tests synthétiques hors réseau : 5/5 réussis sur GitHub Actions (toit à deux pans, mansarde, terrasse + émergence, garde-fou >6 m, cour intérieure/budget). Compilation Python réussie.
+- [x] Tests synthétiques hors réseau : 6/6 réussis sur GitHub Actions (toit à deux pans, mansarde, terrasse + émergence, garde-fou >6 m, cour intérieure/budget, filtre des points hauts isolés). Compilation Python réussie.
 - [ ] Non testé : build complet sur les rasters Paris, métriques tuiles avant/après et temps de build, recette 38 rue Cler, BVH en runtime sur la scène chargée, validation des 20 bâtiments APUR.
 - [ ] Limites : résolution MNH 2 m ; émergences inférieures à cette résolution ou pixels isolés > BD TOPO +3 m non garantis. Le masque arboré global n'est pas disponible au moment du calcul des toits ; seuls les points hauts isolés sont filtrés.
