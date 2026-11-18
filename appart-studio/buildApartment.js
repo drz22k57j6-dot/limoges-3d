@@ -165,7 +165,7 @@ export function createApartment({ THREE, scene, renderer }) {
       const d = [w.b[0] - w.a[0], w.b[1] - w.a[1]], L = Math.hypot(...d), e = [d[0] / L, d[1] / L];
       const off = w.facade ? measuredFacadeOffset((w.a[0] + w.b[0]) / 2) : inwardOffset(w), t = w.facade ? 0.04 : w.epaisseur;
       const exterior = !!(w.facade || w.ext || ['F', 'E', 'S', 'W'].includes(w.id));
-      const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
+      const P = s => { const p=[w.a[0]+e[0]*s,w.a[1]+e[1]*s]; if(!w.facade && Math.abs(p[1])<0.05) p[1]=(fr.facadeDepth??0.34)+0.02; return p; };
       const ops = plan.ouvertures.filter(o => o.murId === w.id && o.centre).map(o => {
         const s = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
         return { ...o, s0: Math.max(0, s - o.largeur / 2), s1: Math.min(L, s + o.largeur / 2) };
@@ -258,7 +258,8 @@ export function createApartment({ THREE, scene, renderer }) {
 
     // sols par pièce + plafond
     for (const r of plan.pieces) {
-      const pts = r.polygone.map(p => W(p[0], p[1]));
+      const frontDepth=(fr.facadeDepth??0.34)+0.02;
+      const pts = r.polygone.map(p => W(p[0], Math.abs(p[1])<0.05 ? frontDepth : p[1]));
       const shape = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], -p[1])));
       const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
       const fl = add(g, M.floor[r.type] || M.floor._, false); fl.position.y = floorY + 0.005;
