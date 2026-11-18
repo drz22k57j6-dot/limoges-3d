@@ -257,3 +257,13 @@ Le dépôt ne contient pas de dépendance Playwright, de configuration Playwrigh
 - La façade reste l'arête géométriquement la plus proche. La sélection garantie par nom de voie via tronçons BD TOPO / géocodage inverse n'est pas encore raccordée.
 - L'écart métrique WFS / volume des tuiles 3D n'est pas mesuré ; aucune correspondance vérifiée n'est disponible dans ce parcours.
 - Pas de résultats réseau pour les adresses de recette, pas de capture et pas d'essai iPhone revendiqués.
+
+ 
+## Lot 2 — non-régression (recette à terminer)
+
+- Test d'intégration géométrique hors réseau ajouté : `node --test appart-studio/nonRegression.test.mjs`.
+- Il couvre un appartement standard (4 murs, séjour, fenêtre), le recoupage d'un mur, le refus d'une ouverture coupée, l'interdiction d'englober une cour, le garde-fou du toit et l'enveloppe d'un immeuble en L.
+- La suite demandée reste `node --test appart-studio/*.test.mjs`. Elle inclut les tests 4B, le score soleil, les tests d'emprise et `sun.test.mjs` inchangé.
+- Le parcours manuel 38 rue Cler reste à exécuter : adresse → étage → plan → 3D → soleil. Vérifier aussi les vues Maquette / Visite / Fenêtres.
+
+**Statut réel dans cette session : non validé.** Aucun runtime Node ni navigateur iPhone n'a été exécuté ici. Ne pas considérer la suite complète comme verte tant que la commande ci-dessus et le parcours manuel ne sont pas passés. Le test de référence `sun.test.mjs` n'a pas été modifié.
