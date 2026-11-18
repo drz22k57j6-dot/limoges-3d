@@ -176,7 +176,7 @@ export function createApartment({ THREE, scene, renderer }) {
         // mur extérieur : deux couches (intérieur peint / extérieur pierre)
         if (exterior) slabInterior(P(s0), P(s1), y0, y1, mat, off);
         else slab(P(s0), P(s1), t, y0, y1, mat, off);
-        if (solid) addObstacle(P(s0), P(s1), t);
+        if (solid) { const aa=P(s0),bb=P(s1),nn=[-e[1],e[0]]; addObstacle([aa[0]+nn[0]*off,aa[1]+nn[1]*off],[bb[0]+nn[0]*off,bb[1]+nn[1]*off],t); }
       };
       let s = 0;
       for (const o of ops) {
@@ -225,7 +225,7 @@ export function createApartment({ THREE, scene, renderer }) {
         const vertical = new THREE.Mesh(new THREE.BoxGeometry(.025, Math.max(.03, y1 - y0 - .04), .05), M.frame); vertical.position.set(cx, (y1 - y0) / 2, 0); leaf.add(vertical);
         pivot.add(leaf); group.add(pivot); leafPivots.push(pivot);
       }
-      windowLeaves.push({ left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]] });
+      windowLeaves.push({ left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]], inwardSign });
       windowStates.push(false);
       // Les deux vantaux s'ouvrent vers l'intérieur ; l'animation est pilotée par cam3d.
       windowMeshes.forEach(m => { if (m.userData.windowIndex === windowIndex) m.userData.windowId = windowIndex; });
@@ -233,7 +233,7 @@ export function createApartment({ THREE, scene, renderer }) {
       if (off) slab(P(o.s0 - 0.05), P(o.s1 + 0.05), 0.22, y0 - 0.04, y0, M.trim, off + Math.sign(off) * (t / 2 - 0.05));
       if (o.allege < 0.9 && !o.guardrail && typeof fr.makeGuardrail === 'function') {
         const guard = fr.makeGuardrail(totalW, 1.0), railS = P(mid), outward = -inwardSign;
-        const gp = W(railS[0] + nrm[0] * (off - inwardSign * .12), railS[1] + nrm[1] * (off - inwardSign * .12));
+        const gp = W(railS[0] - nrm[0] * inwardSign * .12, railS[1] - nrm[1] * inwardSign * .12);
         guard.position.set(gp[0] - Math.cos(baseAngle) * totalW / 2, floorY + y0, gp[1] + Math.sin(baseAngle) * totalW / 2);
         guard.rotation.y = baseAngle; guard.scale.z = outward;
         group.add(guard);
@@ -247,6 +247,7 @@ export function createApartment({ THREE, scene, renderer }) {
       const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
       const y1 = Math.min(H, o.hauteur);
       slab(P(o.s0 - 0.06), P(o.s0), t + 0.03, 0, y1 + 0.06, M.trim, off); slab(P(o.s1), P(o.s1 + 0.06), t + 0.03, 0, y1 + 0.06, M.trim, off);
+      addObstacle(P(o.s0 - 0.06), P(o.s0), t + 0.03); addObstacle(P(o.s1), P(o.s1 + 0.06), t + 0.03);
       slab(P(o.s0 - 0.06), P(o.s1 + 0.06), t + 0.03, y1, y1 + 0.06, M.trim, off);
       // battant ouvert à ~75°, pivot sur s0
       const nrm = [-e[1], e[0]], side = off ? Math.sign(off) : 1, ang = 1.3;

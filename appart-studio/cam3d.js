@@ -41,13 +41,13 @@ export function createCam3d({ THREE, camera, drone, renderer }) {
       if(d<min) { const nx=d>1e-7?ex/d:-dz/Math.sqrt(l),nz=d>1e-7?ez/d:dx/Math.sqrt(l); p[0]=qx+nx*min;p[1]=qz+nz*min; }
     }
     // Battants ouverts : leur boîte monde devient un obstacle mobile.
-    for(const win of st.info.windowLeaves||[]) for(const pivot of [win.left,win.right]) {
+    for(let wi=0;wi<(st.info.windowLeaves||[]).length;wi++) { if(!st.info.windowStates?.[wi]) continue; const win=st.info.windowLeaves[wi]; for(const pivot of [win.left,win.right]) {
       pivot.updateMatrixWorld(true); const box=new THREE.Box3().setFromObject(pivot);
       if(!box.isEmpty() && p[0]>box.min.x-R && p[0]<box.max.x+R && p[1]>box.min.z-R && p[1]<box.max.z+R) {
         const candidates=[[box.min.x-R,p[1]],[box.max.x+R,p[1]],[p[0],box.min.z-R],[p[0],box.max.z+R]];
         candidates.sort((a,b)=>Math.hypot(a[0]-p[0],a[1]-p[1])-Math.hypot(b[0]-p[0],b[1]-p[1])); p[0]=candidates[0][0];p[1]=candidates[0][1];
       }
-    }
+    }}
     return p;
   }
   function moveSafely(dx,dz) {
@@ -150,7 +150,7 @@ export function createCam3d({ THREE, camera, drone, renderer }) {
       else { st.yaw += dx * 0.006; st.pitch = Math.max(-1.2, Math.min(1.2, st.pitch - dy * 0.005)); }
       st.blend = 1;
     });
-    const up = e => { pts.delete(e.pointerId); if(tapStart?.id===e.pointerId && !tapStart.moved && (st.mode==='visite'||st.mode==='fenetre')) tapWindow(e.clientX,e.clientY); tapStart=null; };
+    const up = e => { const multi=pts.size>1; pts.delete(e.pointerId); if(!multi && tapStart?.id===e.pointerId && !tapStart.moved && (st.mode==='visite'||st.mode==='fenetre')) tapWindow(e.clientX,e.clientY); tapStart=null; };
     layer.addEventListener('pointerup', up); layer.addEventListener('pointercancel', up);
     layer.addEventListener('wheel', e => { st.orbit.r = Math.max(4, Math.min(60, st.orbit.r * (1 + e.deltaY * 0.001))); }, { passive: true });
     // joystick (visite)
