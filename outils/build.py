@@ -1,4 +1,5 @@
-import json, struct, io, math, sys, random, os
+import json, struct, io, math, sys, random, os, time
+BUILD_STARTED = time.perf_counter()
 import numpy as np, tifffile
 from PIL import Image, ImageDraw
 from shapely.geometry import shape, Polygon, MultiPolygon, LineString
@@ -627,6 +628,7 @@ print('water polys', len(wp))
 G.g["scenes"][0]["extras"] = {"origine": "31 allée Le Gréco, 87100 Limoges", "lambert93": [X0, Y0, H0], "rayon_m": R}
 G.write(OUTD+'/ville_objets.glb')
 import os
+ROOF_STATS["build_seconds"] = round(time.perf_counter()-BUILD_STARTED, 2)
 OUT_BYTES = {name: os.path.getsize(os.path.join(OUTD,name)) for name in os.listdir(OUTD) if os.path.isfile(os.path.join(OUTD,name))}
 ROOF_STATS["output_bytes"] = int(sum(OUT_BYTES.values()))
 if TILES and os.path.isdir(TILES):
