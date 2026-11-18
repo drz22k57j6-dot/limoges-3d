@@ -1681,7 +1681,7 @@ async function startGoogleCity(){
   }catch(e){console.warn('Google 3D tiles',e);fallbackPhotoCity('Carte photoréaliste indisponible — retour à la vue IGN.');}
   finally{tilesLoading=false;}
 }
-const WORLD={mode:(()=>{try{return localStorage.getItem('monde')||'3d';}catch(e){return '3d';}})(),ready:false};
+const WORLD = { mode: '3d', ready: false };
 function setWorld(m){
   if(m==='photo'&&!readCesiumIonToken()){fallbackPhotoCity('Clé Cesium ion absente — vue IGN conservée. Ajoute-la dans Réglages > Monde.');return false;}
   WORLD.mode=m;try{localStorage.setItem('monde',m);}catch(e){}
@@ -1692,7 +1692,7 @@ function setWorld(m){
 window.__setWorld=setWorld;window.__WORLD=WORLD;
 function setCity(m){
   if(m==='google'&&(!tiles||!tiles.root))return;
-  cityMode=m;const g=m==='google';if(tilesRoot)tilesRoot.visible=g;terrainRoot&&(terrainRoot.visible=!g);chunks.forEach(c=>c.hiddenByCity=g);carBlob.visible=g;
+  cityMode=m;const g=m==='google';if(tilesRoot)tilesRoot.visible=g;if(cityTiles)cityTiles.group.visible=!g;terrainRoot&&(terrainRoot.visible=!g);chunks.forEach(c=>c.hiddenByCity=g);carBlob.visible=g;
   $('bVille').textContent=g?'VILLE PHOTO':'VILLE IGN';
   $('credits').style.display=g?'none':'block';
   $('credits').textContent=g?'Données IGN et overlays indépendants affichés sur le fond photoréaliste.':'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)';
