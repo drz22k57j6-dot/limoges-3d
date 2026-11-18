@@ -2,7 +2,7 @@ import math
 import unittest
 import numpy as np
 from shapely.geometry import Polygon
-from toits_lidar import estimate_roof, build_roof_mesh
+from toits_lidar import estimate_roof, build_roof_mesh, collect_roof_samples
 
 class LidarRoofSyntheticTests(unittest.TestCase):
     def setUp(self):
@@ -45,6 +45,14 @@ class LidarRoofSyntheticTests(unittest.TestCase):
         verts,indices,step=build_roof_mesh(self.poly,roof,self.xmin,self.ymax,self.ground,got["eave"],got["mesh_max"],resolution=self.res)
         self.assertGreater(len(indices),0)
         self.assertGreater(float(verts[:,2].max()),9.5) # émergence > 1,5 m au-dessus de la terrasse
+
+    def test_isolated_high_pixel_is_filtered_but_supported_cluster_is_kept(self):
+        roof=np.full((self.n,self.n),8.0,dtype=np.float32)
+        roof[8,8]=20.0
+        roof[12:14,12:14]=12.0
+        values,edge=collect_roof_samples(self.poly,roof,self.xmin,self.ymax,8.0,resolution=self.res)
+        self.assertNotIn(20.0,values.tolist())
+        self.assertGreaterEqual(int(np.count_nonzero(values==12.0)),4)
 
     def test_height_guard_falls_back_to_bd_topo(self):
         roof=np.full((self.n,self.n),18.0,dtype=np.float32)
