@@ -225,7 +225,7 @@ export function createApartment({ THREE, scene, renderer }) {
         const vertical = new THREE.Mesh(new THREE.BoxGeometry(.025, Math.max(.03, y1 - y0 - .04), .05), M.frame); vertical.position.set(cx, (y1 - y0) / 2, 0); leaf.add(vertical);
         pivot.add(leaf); group.add(pivot); leafPivots.push(pivot);
       }
-      windowLeaves[windowIndex] = { left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]], inwardSign };
+      windowLeaves[windowIndex] = { left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]], inwardSign, baseAngle };
       windowStates[windowIndex] = false;
       // Les deux vantaux s'ouvrent vers l'intérieur ; l'animation est pilotée par cam3d.
       windowMeshes.forEach(m => { if (m.userData.windowIndex === windowIndex) m.userData.windowId = windowIndex; });

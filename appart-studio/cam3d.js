@@ -62,7 +62,7 @@ export function createCam3d({ THREE, camera, drone, renderer }) {
     const I=st.info, win=I?.windowLeaves?.[index]; if(!win) return false;
     const opening=!I.windowStates[index]; I.windowStates[index]=opening;
     st.animations=st.animations.filter(a=>a.index!==index);
-    st.animations.push({index,elapsed:0,from:[win.left.rotation.y,win.right.rotation.y],to:opening?[-win.inwardSign*Math.PI/2,win.inwardSign*Math.PI/2]:[0,0]});
+    st.animations.push({index,elapsed:0,from:[win.left.rotation.y,win.right.rotation.y],to:opening?[win.baseAngle-win.inwardSign*Math.PI/2,win.baseAngle+win.inwardSign*Math.PI/2]:[win.baseAngle,win.baseAngle]});
     return true;
   }
   function animateWindows(dt) {
