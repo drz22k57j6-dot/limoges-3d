@@ -183,7 +183,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const edgeDx = edgeB ? edgeB[0] - edgeA[0] : 0, edgeDz = edgeB ? edgeB[1] - edgeA[1] : 0, edgeLen = Math.hypot(edgeDx, edgeDz) || 1;
     const facadeWindows = (facadeMeta?.travees?.[facadeIndex] || []).map((w,i) => {
       const wx=edgeA[0]+edgeDx/edgeLen*w.position, wz=edgeA[1]+edgeDz/edgeLen*w.position;
-      return { id: facadeMeta.k+':'+facadeIndex+':'+i, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, allege:w.allege, height:w.height, guardrail:!!w.guardrail };
+      return { id: facadeMeta.k+':'+facadeIndex+':'+i, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, allege:w.allege, height:w.height, guardrail:!!w.guardrail, guardrailDepth:w.guardrailDepth };
     });
     const windowOrder = new Map(plan.ouvertures.filter(o => o.type === 'fenetre').map((o,i) => [o,i]));
     plan.ouvertures = plan.ouvertures.map(o => {

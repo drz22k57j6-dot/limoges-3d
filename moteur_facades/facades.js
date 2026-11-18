@@ -492,13 +492,13 @@ export function buildBuilding(T, M, o) {
           const closed = R() < (o.pClosed ?? .3);
           shopFront(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, shopName[Math.floor(R() * shopName.length)], !closed && b === doorBay && R() < .5, closed, o.tagP ?? .6);
         } else if (isDoor) entryDoor(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, o.numero ?? (2 + Math.floor(R() * 60)), { cochere: cochere && !commerce, style, reno, pal: o.doorPal, tagP: (o.tagP ?? .3) * .5 });
-        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!isDoor) travees[f].push({ position: cx, width: ww, allege: sill, height: wh, guardrail: style === 'modeste' ? f !== lastF : f === nobleF || f === lastF }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
+        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!isDoor) travees[f].push({ position: cx, width: ww, allege: sill, height: wh, guardrail: style === 'modeste' ? f !== lastF : f === nobleF || f === lastF, guardrailDepth: style === 'modeste' ? .03 : (f === nobleF ? .79 : .64) }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
         // tag sur un trumeau du rez-de-chaussée (quartiers usés)
         if (wear > .45 && tagsRdc < 2 && R() < (o.tagP ?? .3) * .35) { tagsRdc++; const tw = Math.max(1.2, pierW * 2 + .4); extra.push([new T.PlaneGeometry(tw, tw * .5).translate(cx + ww / 2 + pierW, .9 + R() * .5, .012), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1 + Math.floor(R() * 2)), transparent: true, roughness: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })]); }
         continue;
       }
       if (orielBays.includes(b) && f >= nobleF && f < lastF) continue;
-      travees[f].push({ position: cx, width: ww, allege: sill, height: wh, guardrail: style === 'modeste' ? f !== lastF : f === nobleF || f === lastF });
+      travees[f].push({ position: cx, width: ww, allege: sill, height: wh, guardrail: style === 'modeste' ? f !== lastF : f === nobleF || f === lastF, guardrailDepth: style === 'modeste' ? .03 : (f === nobleF ? .79 : .64) });
       windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen, pal: palF, floorDrop: sill + .05 });
       const cw = style === 'modeste' ? .09 : .13, cz = style === 'modeste' ? .025 : .045;
       G.moul.push(box(T, cw, wh + cw, cz, cx - ww / 2 - cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));

@@ -237,10 +237,8 @@ export function createApartment({ THREE, scene, renderer }) {
         guard.position.set(gp[0] - Math.cos(baseAngle) * totalW / 2, floorY + y0, gp[1] + Math.sin(baseAngle) * totalW / 2);
         guard.rotation.y = baseAngle; guard.scale.z = outward;
         group.add(guard);
-        addObstacle(P(o.s0), P(o.s1), .08);
-      } else if (o.guardrail) addObstacle(P(o.s0), P(o.s1), .08);
-      // appui intérieur
-      if (off) slab(P(o.s0 - 0.05), P(o.s1 + 0.05), 0.22, y0 - 0.04, y0, M.trim, off + Math.sign(off) * (t / 2 - 0.05));
+        addObstacle([P(o.s0)[0]-nrm[0]*inwardSign*.12,P(o.s0)[1]-nrm[1]*inwardSign*.12],[P(o.s1)[0]-nrm[0]*inwardSign*.12,P(o.s1)[1]-nrm[1]*inwardSign*.12],.08);
+      } else if (o.guardrail) { const gd=o.guardrailDepth ?? .12; addObstacle([P(o.s0)[0]-nrm[0]*inwardSign*gd,P(o.s0)[1]-nrm[1]*inwardSign*gd],[P(o.s1)[0]-nrm[0]*inwardSign*gd,P(o.s1)[1]-nrm[1]*inwardSign*gd],.08); }
       void nrm;
     }
     function buildDoor(w, e, off, t, o) {
