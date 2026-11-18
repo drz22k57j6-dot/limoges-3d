@@ -14,6 +14,13 @@ test('façade Est : le masque de 30° bloque tous les rayons sous 30°', () => {
   assert.ok(clear.hours>masked.hours);
 });
 
+test('21 décembre : façade Est et masque de 30° donnent exactement zéro heure', () => {
+  const samples=daySamples(new Date(Date.UTC(2026,11,21)),48.8566,2.3522,15);
+  const win={points:[[0,2,0],[0,2.5,0],[0,1.5,0],[0,2,0.3],[0,2,-0.3]],normal:[1,0,0]};
+  const masked=windowSunHours(win,samples,(_o,dir)=>Math.asin(Math.max(-1,Math.min(1,dir[1])))*180/Math.PI<30);
+  assert.equal(masked.hours,0);
+});
+
 test('sans obstacle : windowSunHours correspond exactement à isBlocked = () => false', () => {
   const samples=daySamples(new Date(Date.UTC(2026,5,21)),48.8566,2.3522,15);
   const win={points:[[0,2,0],[0,2.5,0],[0,1.5,0],[0,2,0.3],[0,2,-0.3]],normal:[1,0,0]};
