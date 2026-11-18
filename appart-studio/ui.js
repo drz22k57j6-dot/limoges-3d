@@ -5,6 +5,7 @@ import { createPlanEditor, ROOM_TYPES } from './planEditor.js';
 import { createApartment } from './buildApartment.js';
 import { createCam3d } from './cam3d.js';
 import { sunPosition, sunDirection } from './sun.js';
+import { calculateSolarReport } from './solarAnalysis.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -90,6 +91,9 @@ body.as-mode #as-launch{display:none!important}
 #as3-sun .sun-toggle{height:28px;border:0;background:transparent}
 #as3-sun button.on{background:#a45b26;border-color:#ffd58a}
 #as3-sun .sun-play{width:100%;height:35px;margin-top:6px;background:#8a5128;font-size:12px}
+#as3-sun .sun-analysis{width:100%;height:36px;margin-top:6px;background:#24536a;font-size:12px}
+#as3-sun .sun-report{display:none;margin-top:7px;padding:8px;border-radius:10px;background:#080d14;color:#d8e2ee;font-size:11px;white-space:pre-wrap;max-height:180px;overflow:auto}
+#as3-sun .sun-report.on{display:block}
 @media(min-width:760px){#as3-sun{max-width:520px;margin-left:auto;margin-right:auto}}
 
 #as3-joy{position:absolute;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
@@ -230,9 +234,25 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     let panel = document.getElementById('as3-sun');
     if (!panel) {
       panel = document.createElement('div'); panel.id = 'as3-sun';
-      panel.innerHTML = '<div class="sun-head"><button class="sun-toggle" id="as3-sun-toggle" aria-expanded="false">☀ <span class="sun-summary" id="as3-sun-summary">21 juin · --:--</span><span class="sun-caret" id="as3-sun-caret">▾</span></button></div><div class="sun-controls"><div id="as3-sun-date"></div><input id="as3-sun-date-range" aria-label="Date" type="range" min="0" max="365" step="1"><div class="sun-shortcuts"><button data-sundate="winter">21 déc.</button><button data-sundate="spring">21 mars</button><button data-sundate="summer">21 juin</button><button data-sundate="today">Aujourd’hui</button></div><input id="as3-sun-hour" aria-label="Heure entre lever et coucher" type="range" min="0" max="1000" step="1"><button class="sun-play" id="as3-sun-play">▶ Journée accélérée · 12 s</button></div>';
+      panel.innerHTML = '<div class="sun-head"><button class="sun-toggle" id="as3-sun-toggle" aria-expanded="false">☀ <span class="sun-summary" id="as3-sun-summary">21 juin · --:--</span><span class="sun-caret" id="as3-sun-caret">▾</span></button></div><div class="sun-controls"><div id="as3-sun-date"></div><input id="as3-sun-date-range" aria-label="Date" type="range" min="0" max="365" step="1"><div class="sun-shortcuts"><button data-sundate="winter">21 déc.</button><button data-sundate="spring">21 mars</button><button data-sundate="summer">21 juin</button><button data-sundate="today">Aujourd’hui</button></div><input id="as3-sun-hour" aria-label="Heure entre lever et coucher" type="range" min="0" max="1000" step="1"><button class="sun-play" id="as3-sun-play">▶ Journée accélérée · 12 s</button><button class="sun-analysis" id="as3-sun-analysis">Calculer le soleil par pièce</button><div class="sun-report" id="as3-sun-report"></div></div>';
       $('as3-bottom').insertBefore(panel, $('as3-modes'));
       $('as3-sun-toggle').onclick = () => { const open = panel.classList.toggle('expanded'); $('as3-sun-toggle').setAttribute('aria-expanded', String(open)); $('as3-sun-caret').textContent = open ? '▴' : '▾'; };
+      $('as3-sun-analysis').onclick = async () => {
+        const button=$('as3-sun-analysis'), report=$('as3-sun-report');
+        if (!state.plan3d || !apt.info) return;
+        button.disabled=true; button.textContent='Calcul en cours…'; report.classList.add('on'); report.textContent='Préparation du BVH et des arbres…';
+        try {
+          const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan:state.plan3d,fr:apt.info.fr,onProgress:p=>{
+            report.textContent=p.stage==='arbres'?'Chargement des arbres…':p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' · fenêtre '+p.window+' · '+p.date:'Finalisation…';
+          }});
+          state.solarReport=result; window.__appartStudioSolarReport=result;
+          const names={sejour:'Séjour',chambre:'Chambre',bureau:'Bureau',dressing:'Dressing',cuisine:'Cuisine',entree:'Entrée',sdb:'Salle de bain',wc:'WC'};
+          report.textContent='Arbres pris en compte : '+result.trees+'\n'+result.rooms.map(room=>{
+            const h=room.hours; return (names[room.type]||room.type||'Pièce')+' · '+room.windows.length+' fenêtre(s)\nHiver '+h.winter.toFixed(1)+' h · Printemps '+h.spring.toFixed(1)+' h\nÉté '+h.summer.toFixed(1)+' h · Aujourd’hui '+h.today.toFixed(1)+' h';
+          }).join('\n\n');
+        } catch(e) { report.textContent='Analyse indisponible : '+e.message; }
+        finally { button.disabled=false; button.textContent='Recalculer le soleil par pièce'; }
+      };
       panel.querySelectorAll('[data-sundate]').forEach(b => b.onclick = () => {
         const y = sunUI.date?.getUTCFullYear() || parisDay(new Date()).getUTCFullYear();
         const fixed = { winter: [11, 21], spring: [2, 21], summer: [5, 21] };
