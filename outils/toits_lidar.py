@@ -50,9 +50,14 @@ def collect_roof_samples(poly, mnh, xmin, ymax, building_height,
     c1 = min(w-1, int(math.ceil((maxx-xmin)/resolution)))
     r0 = max(0, int(math.floor((ymax-maxy)/resolution)))
     r1 = min(h-1, int(math.ceil((ymax-miny)/resolution)))
-    isolated = _isolated_high_mask(mnh, float(building_height)+3.0)
+    # Calculer le masque d'isolés uniquement sur la fenêtre du bâtiment (+1 pixel),
+    # jamais sur les 9 millions de pixels du raster pour chaque bâtiment.
+    lr0, lr1 = max(0,r0-1), min(h,r1+2)
+    lc0, lc1 = max(0,c0-1), min(w,c1+2)
+    isolated_local = _isolated_high_mask(mnh[lr0:lr1,lc0:lc1], float(building_height)+3.0)
+    facade_core = poly.buffer(-facade_band)
+    prepared_core = prep(facade_core) if not facade_core.is_empty else None
     values, edge_values = [], []
-    boundary = poly.boundary
     for row in range(r0, r1+1):
         y = ymax-(row+0.5)*resolution
         for col in range(c0, c1+1):
@@ -61,14 +66,14 @@ def collect_roof_samples(poly, mnh, xmin, ymax, building_height,
                 continue
             if tree_mask is not None and bool(tree_mask[row, col]):
                 continue
-            if isolated[row, col]:
+            if isolated_local[row-lr0, col-lc0]:
                 continue
             x = xmin+(col+0.5)*resolution
             point = Point(x, y)
             if not prepared.covers(point):
                 continue
             values.append(value)
-            if boundary.distance(point) <= facade_band:
+            if prepared_core is None or not prepared_core.covers(point):
                 edge_values.append(value)
     return np.asarray(values, dtype=float), np.asarray(edge_values, dtype=float)
 
