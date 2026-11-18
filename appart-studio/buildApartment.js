@@ -47,6 +47,10 @@ const texTiles = (THREE, key, c1, c2, n) => canvasTex(THREE, key, 512, (g, S) =>
 function materials(THREE) {
   const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
   const glow = c => new THREE.Color(c).multiplyScalar(0.16);   // lumière d'ambiance intérieure (évite d'ajouter des lampes → pas de recompilation de la ville)
+  // Matériaux de sol partagés : les pièces de même famille fusionnent en un seul draw call.
+  const solParquet = std({ map: texHerringbone(THREE), roughness: 0.58, emissive: glow(0x8a6040) });
+  const solLames = std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) });
+  const solSdb = std({ map: texTiles(THREE, 'sdb', '#f2f2ef', null, 6), roughness: 0.3, emissive: glow(0x888888) });
   return {
     wall: std({ color: 0xf1ede4, emissive: glow(0xf1ede4) }),
     facadeOut: std({ color: 0xd9ccb3, roughness: 0.95 }),
@@ -57,15 +61,11 @@ function materials(THREE) {
     door: std({ color: 0xece8de, emissive: glow(0xece8de), roughness: 0.55 }),
     knob: std({ color: 0xc9a54b, metalness: 0.9, roughness: 0.3 }),
     floor: {
-      sejour: std({ map: texHerringbone(THREE), roughness: 0.55, emissive: glow(0x8a6040) }),
-      chambre: std({ map: texHerringbone(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
-      bureau: std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
-      dressing: std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
+      sejour: solParquet, chambre: solParquet,
+      bureau: solLames, dressing: solLames,
       entree: std({ map: texTiles(THREE, 'ent', '#efece6', '#26272b', 8), roughness: 0.4, emissive: glow(0x777777) }),
       cuisine: std({ map: texTiles(THREE, 'cui', '#ecebe7', '#3a3b40', 8), roughness: 0.35, emissive: glow(0x777777) }),
-      sdb: std({ map: texTiles(THREE, 'sdb', '#f2f2ef', null, 6), roughness: 0.3, emissive: glow(0x888888) }),
-      wc: std({ map: texTiles(THREE, 'wc', '#f2f2ef', null, 6), roughness: 0.3, emissive: glow(0x888888) }),
-      _: std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
+      sdb: solSdb, wc: solSdb, _: solLames,
     },
   };
 }
