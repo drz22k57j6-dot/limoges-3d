@@ -7,6 +7,12 @@ Repo drz22k57j6-dot/limoges-3d, base : `feat/appart-studio-window-settings-floor
 ## Bug signalé sur iPhone
 **5 avenue de Choisy, 75013** : l'appartement 3D dépasse de l'immeuble.
 
+
+## 0. URGENT — Les paramètres ne répondent pas au toucher (iPhone)
+Signalé par l'utilisateur : certains boutons / champs des paramètres (fenêtres, épaisseur de mur, hauteur sous plafond, slider d'étage, − / +) ne sont pas cliquables sur iPhone.
+Causes probables à vérifier : un calque transparent par-dessus (ex. `#as3-touch`, `#as-3d` en `pointer-events:auto`, bandeau, panneau soleil), z-index, `pointer-events:none` hérité d'un parent, `touch-action`, `preventDefault()` sur `pointerdown`/`touchstart` dans les gestes de caméra, zones de toucher < 44 px, éléments hors écran sous la barre Safari.
+Correction : tous les contrôles des paramètres cliquables au doigt, zones ≥ 44 px, aucun calque invisible au-dessus, défilement possible si le panneau est plus haut que l'écran. Lister dans la PR chaque contrôle testé (même en simulation tactile Chrome mobile).
+
 ## 1. D'abord rendre le problème VISIBLE (mode Détails)
 En 3D, quand « Détails » est ouvert, dessiner au niveau du plancher :
 - en **vert** : le polygone de l'emprise IGN du bâtiment retenu (cleabs affiché) ;
