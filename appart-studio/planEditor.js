@@ -341,11 +341,11 @@ export function createPlanEditor({ onBack, onView3D }) {
     const name = op.type === 'fenetre' ? 'Fenêtre' : 'Porte';
     const leftDistance = Math.max(0, op.p[0] - P.o.u0);
     sheet.innerHTML = `<b>${name}</b>
-      <label>Largeur (m)<input id="ase-op-w" type="number" inputmode="decimal" min="0.5" max="4" step="0.05" value="${op.w}"></label>
+      <label>Largeur (m)<input id="ase-op-w" type="number" inputmode="decimal" inputmode="decimal" min="0.5" max="4" step="0.05" value="${op.w}"></label>
       ${op.type === 'fenetre' ? `<div class="ase-row"><button data-pos="left">Gauche</button><button data-pos="center">Centre</button><button data-pos="right">Droite</button></div>
-      <label>Distance depuis le bord gauche (m)<input id="ase-op-pos" type="number" min="0" max="${P.o.u1-P.o.u0}" step="0.05" value="${leftDistance}"></label>
-      <label>Hauteur (m)<input id="ase-op-h" type="number" min="0.5" max="3.5" step="0.05" value="${op.h || 2.1}"></label>
-      <label>Allège (m)<input id="ase-op-sill" type="number" min="0" max="2" step="0.05" value="${op.allege ?? 0.9}"></label>` : ''}
+      <label>Distance depuis le bord gauche (m)<input id="ase-op-pos" type="number" inputmode="decimal" min="0" max="${P.o.u1-P.o.u0}" step="0.05" value="${leftDistance}"></label>
+      <label>Hauteur (m)<input id="ase-op-h" type="number" inputmode="decimal" min="0.5" max="3.5" step="0.05" value="${op.h || 2.1}"></label>
+      <label>Allège (m)<input id="ase-op-sill" type="number" inputmode="decimal" min="0" max="2" step="0.05" value="${op.allege ?? 0.9}"></label>` : ''}
       <div class="ase-row"><button id="ase-del" class="ase-danger">Supprimer</button><button id="ase-ok">OK</button></div>`;
     sheet.classList.add('on');
     const apply = (key,value,min,max) => { op[key]=Math.max(min,Math.min(max,Number(value)||min)); commit(); };
@@ -366,8 +366,8 @@ export function createPlanEditor({ onBack, onView3D }) {
     P.settings ||= {};
     P.settings.facadeThickness ??= 0.35; P.settings.ceilingHeight ??= 2.8;
     sheet.innerHTML = `<b>Réglages appartement</b>
-      <label>Épaisseur du mur de façade (m)<input id="ase-thickness" type="number" min="0.15" max="1.2" step="0.05" value="${P.settings.facadeThickness}"></label>
-      <label>Hauteur sous plafond (m)<input id="ase-ceiling" type="number" min="2.2" max="4" step="0.05" value="${P.settings.ceilingHeight}"></label>
+      <label>Épaisseur du mur de façade (m)<input id="ase-thickness" type="number" inputmode="decimal" min="0.15" max="1.2" step="0.05" value="${P.settings.facadeThickness}"></label>
+      <label>Hauteur sous plafond (m)<input id="ase-ceiling" type="number" inputmode="decimal" min="2.2" max="4" step="0.05" value="${P.settings.ceilingHeight}"></label>
       <div class="ase-row"><button id="ase-settings-ok">Fermer</button></div>`;
     sheet.classList.add('on');
     sheet.querySelector('#ase-thickness').onchange=e=>{P.settings.facadeThickness=Math.max(0.15,Math.min(1.2,Number(e.target.value)||0.35));commit();};
