@@ -66,7 +66,7 @@ function queryBvh(THREE, node, ray, out) {
   if (node.items) { for (const e of node.items) if (ray.intersectsBox(e.box)) out.push(e.mesh); return; }
   queryBvh(THREE,node.left,ray,out); queryBvh(THREE,node.right,ray,out);
 }
-function makeBlocker(THREE, bvh) {
+export function makeBlocker(THREE, bvh) {
   const raycaster = new THREE.Raycaster(), ray = new THREE.Ray(new THREE.Vector3(), new THREE.Vector3());
   return (origin, dir) => {
     ray.origin.set(origin[0],origin[1],origin[2]); ray.direction.set(dir[0],dir[1],dir[2]).normalize();
