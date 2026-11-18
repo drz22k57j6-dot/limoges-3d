@@ -113,7 +113,7 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   const isBlocked=makeBlocker(THREE,bvh);
   const treeTransmission=(origin,dir,date)=>{
     let transmission=1;
-    for(const t of trees) if(rayHitsCrown(origin,dir,t.c,t.r)) transmission=Math.min(transmission,leafTransmission(t,date));
+    for(const t of trees) if(rayHitsCrown(origin,dir,t.c,t.r)) transmission*=leafTransmission(t,date);
     return transmission;
   };
   const samples=Object.fromEntries(Object.entries(dates).map(([k,d])=>[k,daySamples(d,res.lat,res.lon,15)]));
