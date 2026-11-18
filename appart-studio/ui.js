@@ -191,6 +191,12 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     return false;
   }
   const sunUI = { date: null, fraction: 0.5, bounds: null, timer: 0, target: null };
+  function disposeSolarTrees() {
+    if (!state.solarTreeGroup) return;
+    scene.remove(state.solarTreeGroup);
+    state.solarTreeGroup.traverse(o => { o.geometry?.dispose?.(); if (o.material) for (const m of [].concat(o.material)) m.dispose?.(); });
+    state.solarTreeGroup = null;
+  }
   const parisParts = d => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d).filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
   const parisDay = d => { const p = parisParts(d); return new Date(Date.UTC(+p.year, +p.month - 1, +p.day)); };
   function dayBounds(day, lat, lon) {
@@ -240,7 +246,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       $('as3-sun-analysis').onclick = async () => {
         const button=$('as3-sun-analysis'), report=$('as3-sun-report');
         if (!state.plan3d || !apt.info) return;
-        button.disabled=true; button.textContent='Calcul en cours…'; report.classList.add('on'); report.textContent='Préparation du BVH et des arbres…';
+        disposeSolarTrees(); button.disabled=true; button.textContent='Calcul en cours…'; report.classList.add('on'); report.textContent='Préparation du BVH et des arbres…';
         try {
           const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan:state.plan3d,fr:apt.info.fr,onProgress:p=>{
             report.textContent=p.stage==='arbres'?'Chargement des arbres…':p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' · fenêtre '+p.window+' · '+p.date:'Finalisation…';
@@ -291,7 +297,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     cam3.start(apt.info, plan, 'maquette'); setMode3d('maquette');
     mountSunControls(r, sunUI.target);
   }
-  function close3d() { stopSunDay(); drone.setSun(null); cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
+  function close3d() { stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
   document.querySelectorAll('#as3-modes button').forEach(b => b.onclick = () => setMode3d(b.dataset.m));
   $('as3-wp').onclick = () => { cam3.nextWindow(-1); winLabel(); };
   $('as3-wn').onclick = () => { cam3.nextWindow(1); winLabel(); };
@@ -338,7 +344,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   // ouverture / fermeture
   const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
   function quit() {
-    stopSunDay(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
+    stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
     for (const id of ['as-start', 'as-loading', 'as-bar', 'as-3d']) $(id).classList.remove('on');
     document.body.classList.remove('as-mode'); state.res = null;
   }
