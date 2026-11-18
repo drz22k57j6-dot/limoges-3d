@@ -155,7 +155,7 @@ export function createApartment({ THREE, scene, renderer }) {
 
     for (const w of walls) {
       const d = [w.b[0] - w.a[0], w.b[1] - w.a[1]], L = Math.hypot(...d), e = [d[0] / L, d[1] / L];
-      const off = inwardOffset(w), t = Math.max(0.15, Number(w.epaisseur) || 0.15);
+      const off = inwardOffset(w), t = Math.max(0.15, Number(w.epaisseur) || (w.facade ? plan.settings?.facadeThickness : 0.15) || 0.15);
       const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
       const ops = plan.ouvertures.filter(o => o.murId === w.id && o.centre).map(o => {
         const s = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];

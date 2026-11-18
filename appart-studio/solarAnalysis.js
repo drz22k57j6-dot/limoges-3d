@@ -4,6 +4,20 @@ import { daySamples, windowSunHours, fetchTrees, leafTransmission, rayHitsCrown,
 
 const DAY_KEYS = ['winter', 'spring', 'summer', 'today'];
 
+export function makeApertureBlocker(win, thickness = win.aperture?.thickness ?? 0.35) {
+  const a = win.aperture;
+  if (!a) return () => false;
+  const tWall = Math.max(0, Number(thickness) || 0);
+  return (origin, dir) => {
+    const facing = dir[0] * a.normal[0] + dir[2] * a.normal[1];
+    if (facing <= 1e-6) return true;
+    const t = tWall / facing;
+    const x = origin[0] + dir[0] * t, y = origin[1] + dir[1] * t, z = origin[2] + dir[2] * t;
+    const along = (x - a.center[0]) * a.axis[0] + (z - a.center[1]) * a.axis[1];
+    return Math.abs(along) > a.width / 2 + 1e-6 || y < a.bottom - 1e-6 || y > a.top + 1e-6;
+  };
+}
+
 function makeWindows(plan, fr) {
   const walls = plan.murs, center = walls.reduce((s, w) => [s[0] + w.a[0] + w.b[0], s[1] + w.a[1] + w.b[1]], [0, 0]).map(v => v / Math.max(1, walls.length * 2));
   const W = (u, v) => [fr.F[0] + fr.u[0] * u + fr.v[0] * v, fr.F[1] + fr.u[1] * u + fr.v[1] * v];
@@ -13,15 +27,20 @@ function makeWindows(plan, fr) {
     let n = [-e[1], e[0]];
     const mid = [(w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2];
     if ((center[0] - mid[0]) * n[0] + (center[1] - mid[1]) * n[1] > 0) n = [-n[0], -n[1]];
-    const width = o.largeur || 1.2, along = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
-    const y = fr.floorY + (o.allege || 0.9) + (o.hauteur || 1.3) * 0.55;
-    const points2 = [[0,0],[-.38,-.32],[.38,-.32],[-.38,.32],[.38,.32]].map(([a,b]) => {
-      const p = [w.a[0] + e[0] * (along + a * width) + n[0] * 0.05, w.a[1] + e[1] * (along + a * width) + n[1] * 0.05];
-      const q = W(p[0], p[1]); return [q[0], y + b * Math.min(0.35, (o.hauteur || 1.3) * 0.22), q[1]];
-    });
-    const normal2 = [n[0] * fr.u[0] + n[1] * fr.v[0], n[0] * fr.u[1] + n[1] * fr.v[1]];
+    const width = Number(o.largeur) || 1.2, sill = Number(o.allege ?? 0.9), requestedHeight = Number(o.hauteur) || 2.1;
+    const height = Math.max(0.1, Math.min(requestedHeight, (Number(plan.settings?.ceilingHeight) || fr.H) - sill - 0.18));
+    const thickness = Math.max(0.15, Number(plan.settings?.facadeThickness ?? w.epaisseur) || 0.35);
+    const along = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
+    // Les points de départ sont sur le nu intérieur ; chaque rayon doit traverser toute l'embrasure.
+    const base = [w.a[0] + e[0] * along - n[0] * thickness, w.a[1] + e[1] * along - n[1] * thickness];
+    const q = W(base[0], base[1]), axis = [e[0] * fr.u[0] + e[1] * fr.v[0], e[0] * fr.u[1] + e[1] * fr.v[1]];
+    const normal = [n[0] * fr.u[0] + n[1] * fr.v[0], n[0] * fr.u[1] + n[1] * fr.v[1]];
+    const bottom = fr.floorY + sill, top = bottom + height, y = (bottom + top) / 2;
+    const points = [[0,0],[-.36,-.3],[.36,-.3],[-.36,.3],[.36,.3]].map(([a,b]) =>
+      [q[0] + axis[0] * a * width, y + b * height, q[1] + axis[1] * a * width]);
     const room = plan.pieces.find(p => p.polygone && pointInPoly(o.centre, p.polygone));
-    return { id: o.id || 'window-' + index, index, points: points2, normal: [normal2[0], 0, normal2[1]], roomId: room?.id || null, roomType: room?.type || 'inconnue' };
+    return { id:o.id || 'window-'+index, index, points, normal:[normal[0],0,normal[1]],
+      aperture:{center:q,axis,normal,width,bottom,top,thickness}, roomId:room?.id||null, roomType:room?.type||'inconnue' };
   }).filter(Boolean);
 }
 function pointInPoly(p, poly) {
@@ -113,7 +132,7 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   const treeGroup=makeTreeVisuals(THREE,trees);
   const bvh=makeBvh(THREE,scene,[fr.F[0],fr.floorY+fr.H/2,fr.F[1]],250);
   scene.add(treeGroup);
-  const isBlocked=makeBlocker(THREE,bvh);
+  const baseBlocked=makeBlocker(THREE,bvh);
   const treeTransmission=(origin,dir,date)=>{
     let transmission=1;
     for(const t of trees) if(rayHitsCrown(origin,dir,t.c,t.r)) transmission*=leafTransmission(t,date);
@@ -125,7 +144,8 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   for(const win of windows){
     const byDate={};
     for(const key of DAY_KEYS){
-      const r=windowSunHours(win,samples[key],isBlocked,treeTransmission,15);
+      const apertureBlocked=makeApertureBlocker(win);
+      const r=windowSunHours(win,samples[key],(origin,dir)=>apertureBlocked(origin,dir)||baseBlocked(origin,dir),treeTransmission,15);
       byDate[key]={hours:r.hours,first:r.first?.toISOString()||null,last:r.last?.toISOString()||null,minutes:r.minutes};
       done++; onProgress({stage:'calcul',done,total,window:win.id,date:key});
       if(performance.now()-sliceStart>=30){ await new Promise(resolve=>('requestIdleCallback' in window)?requestIdleCallback(()=>resolve(),{timeout:50}):setTimeout(resolve,0)); sliceStart=performance.now(); }
@@ -159,7 +179,7 @@ export async function verifySolarAt({ THREE, scene, drone, ground, res, plan, fr
   const treeGroup = makeTreeVisuals(THREE, trees);
   const bvh = makeBvh(THREE, scene, [fr.F[0], fr.floorY + fr.H / 2, fr.F[1]], 250);
   scene.add(treeGroup);
-  const isBlocked = makeBlocker(THREE, bvh);
+  const baseBlocked = makeBlocker(THREE, bvh);
   const treeTransmission = (origin, dir, when) => {
     let transmission = 1;
     for (const t of trees) if (rayHitsCrown(origin, dir, t.c, t.r)) transmission *= leafTransmission(t, when);
@@ -167,7 +187,8 @@ export async function verifySolarAt({ THREE, scene, drone, ground, res, plan, fr
   };
   const sample = { date, ...position, dir: sunDirection(position.az, position.el) };
   const results = windows.map(win => {
-    const fraction = windowSunHours(win, [sample], isBlocked, treeTransmission, 15).minutes[0]?.frac || 0;
+    const apertureBlocked = makeApertureBlocker(win);
+    const fraction = windowSunHours(win, [sample], (origin,dir)=>apertureBlocked(origin,dir)||baseBlocked(origin,dir), treeTransmission, 15).minutes[0]?.frac || 0;
     return { id: win.id, index: win.index, fraction, sun: fraction > 0.2 };
   });
   return { windows: results, trees: trees.length, treeGroup };

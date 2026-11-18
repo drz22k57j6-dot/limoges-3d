@@ -164,3 +164,37 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
   2. Ouvrir **Détails**, appuyer sur **Vérifier à l'heure affichée**.
   3. Comparer chaque « soleil : oui/non » aux taches visibles sur le sol à la même heure ; déplacer l'heure et relancer Vérifier.
 - **Limites connues / non testé** : aucune comparaison iPhone n'a été exécutée. Le calcul est une estimation à cinq points par vitre ; les taches peuvent être plus fines que l'échantillonnage. Les données d'arbres peuvent manquer si le réseau Open Data est indisponible. La cohérence visuelle finale doit être validée sur Safari iOS.
+
+
+## Retour iPhone — slider d'étage et fenêtres paramétriques
+
+- Avant validation de l'adresse, le slider d'étage reste borné à 0–15. Après identification de l'immeuble, son maximum devient `niveaux IGN - 1` (RDC = 0). Le même slider du bandeau déplace la bande de façade sans rappeler le géocodage ni recharger le quartier.
+- Le mode « toucher les fenêtres de façade » est supprimé. Les fenêtres côté rue sont générées depuis les paramètres utilisateur, pas depuis les baies décoratives du moteur de façades.
+- Valeurs proposées : fenêtre 1,20 × 2,10 m, allège 0,90 m, mur de façade 0,35 m, plafond 2,80 m ; immeuble haussmannien : 2,40 m, allège 0,50 m, mur 0,50 m, plafond 3,00 m.
+- Le formulaire accepte 1 à 8 fenêtres. Les paramètres communs sont appliqués à toutes ; **Personnaliser** ouvre des fiches repliées avec largeur, hauteur, allège et position (gauche, centre, droite ou distance depuis le bord gauche).
+- Les réglages du mur de façade et du plafond sont aussi disponibles dans l'éditeur de plan. La feuille de chaque fenêtre permet de modifier largeur, hauteur, allège et position.
+- Le calcul 4B commence sur le nu intérieur de la façade et vérifie que chaque rayon traverse l'embrasure complète. La hauteur effective d'une fenêtre est limitée à la hauteur sous plafond avec une garde de 18 cm ; un avertissement apparaît si les valeurs saisies dépassent cette limite.
+
+### Comment tester sur iPhone
+
+1. Saisir **38 rue Cler, Paris**, puis **Voir mon immeuble**. Vérifier que le slider passe de son maximum provisoire 15 au maximum `niveaux IGN - 1` et qu'il s'arrête au dernier étage publié par l'IGN. Dans le bandeau, faire glisser le slider : la bande d'étage doit se déplacer en direct, sans rechargement.
+2. Garder une fenêtre identique, lancer **Calculer** avec un mur de façade de **0,30 m**, noter ses heures de soleil, puis passer à **0,70 m** et recalculer. Le résultat à 0,70 m doit être inférieur ou égal à celui à 0,30 m.
+3. Ouvrir l'éditeur, sélectionner une fenêtre pour modifier ses dimensions/position, ouvrir **Réglages appartement** pour modifier l'épaisseur et la hauteur sous plafond, puis passer en 3D. Vérifier que les paramètres sont repris par la géométrie et le calcul.
+
+### Test Node hors réseau
+
+```sh
+node --test appart-studio/phase4b.test.mjs
+```
+
+Le test ajouté compare la même ouverture et les mêmes échantillons solaires avec des embrasures de 0,30 m et 0,70 m ; il échoue si le mur de 0,70 m transmet davantage d'heures de soleil.
+
+### Limites et validations restantes
+
+- Le test Node est ajouté mais **n'a pas été exécuté dans cette session**.
+- Le scénario iPhone du 38 rue Cler n'a pas été exécuté ici ; le nombre exact d'étages et le maximum affiché doivent être confirmés sur les données IGN effectivement renvoyées à l'adresse.
+- Aucune capture d'écran ni résultat de calcul n'est revendiqué.
+- Les données de nombre d'étages peuvent être estimées par `floorModel` si la donnée IGN est absente ; dans ce cas, le maximum n'est pas une valeur IGN garantie.
+- Si la somme allège + hauteur dépasse le plafond moins 18 cm, la hauteur effective de l'ouverture est réduite pour que le calcul solaire et la 3D restent cohérents.
+- Les résultats de soleil restent une simulation géométrique, hors météo et hors incertitudes des bâtiments voisins/arbres chargés.
+- `sun.js`, `sun.test.mjs` et le mode drone restent hors modification.

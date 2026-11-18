@@ -56,7 +56,7 @@ export function createFacadeView({ THREE, scene, camera, drone, ground }) {
     for (const m of [band, edge]) { m.renderOrder = 10; g.add(m); }
     g.position.set(cx, y0 + h / 2, cz);
     g.rotation.y = Math.atan2(n[0], n[1]);           // le plan regarde la rue
-    scene.add(g); st.group = g; st.band = band;
+    scene.add(g); st.group = g; st.band = band; st.baseBandHeight = h;
 
     // caméra : dans la rue, à hauteur de l'étage, légèrement de biais
     const gap = freeDistance(F, n, y0 + 1.5);
@@ -97,6 +97,14 @@ export function createFacadeView({ THREE, scene, camera, drone, ground }) {
       return { gap: st.cam.gap };
     },
     refresh() { if (st.res) { build(st.res); st.t0 -= 3; } },
+    setFloor(floorData) {
+      if (!st.res || !st.group) return;
+      st.res.floorData = floorData;
+      st.res.snap = snapFromFacades(st.res);
+      const y = floorY(st.res), h = floorH(st.res);
+      st.group.scale.y = h / Math.max(0.1, st.baseBandHeight || h);
+      st.group.position.y = y + h / 2;
+    },
     onSnap(f) { st.onSnap = f; },
     suspend() { if (st.group) st.group.visible = false; if (window.__camOverride === hook) window.__camOverride = null; },
     resume() { if (st.group) st.group.visible = true; if (st.cam) { window.__camOverride = hook; st.t0 = performance.now() / 1000 - 3; } },
