@@ -112,30 +112,73 @@ export function createApartment({ THREE, scene, renderer }) {
     const world = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
     return world.intersectsBox(bounds);
   }
+  function clippedMaterial(material) {
+    const one = m => { const c = m.clone(); c.clippingPlanes = clip; c.clipIntersection = true; c.clipShadows = false; c.needsUpdate = true; return c; };
+    return Array.isArray(material) ? material.map(one) : one(material);
+  }
+  function isolateBatch(o, id) {
+    const g = o.geometry, ids = o.userData?.ids, ba = g.getAttribute('_batchid') || g.getAttribute('_BATCHID');
+    const batch = Array.isArray(ids) ? ids.indexOf(id) : -1;
+    if (!ba || batch < 0 || Array.isArray(o.material)) return null;
+    const ix = g.index, count = ix ? ix.count : g.getAttribute('position').count, at = n => ix ? ix.getX(n) : n;
+    const target = [], rest = [];
+    for (let i = 0; i + 2 < count; i += 3) {
+      const a=at(i), b=at(i+1), c=at(i+2);
+      const hit=Math.round(ba.getX(a))===batch && Math.round(ba.getX(b))===batch && Math.round(ba.getX(c))===batch;
+      (hit ? target : rest).push(a,b,c);
+    }
+    if (!target.length) return null;
+    const originalGeometry = g, restGeometry = g.clone(), targetGeometry = g.clone();
+    restGeometry.setIndex(rest); targetGeometry.setIndex(target);
+    restGeometry.clearGroups(); targetGeometry.clearGroups();
+    restGeometry.computeBoundingBox(); restGeometry.computeBoundingSphere();
+    // Le moteur de façades masque déjà parfois le volume IGN en déplaçant ses sommets.
+    // On rétablit les positions d'origine dans le sous-maillage cible isolé.
+    const vertices=o.userData?.idVerts?.get(id), saved=o.userData?.orig?.get(id), pos=targetGeometry.getAttribute('position');
+    if (vertices && saved) {
+      for (let i=0;i<vertices.length;i++) { const v=vertices[i]; pos.setXYZ(v,saved[i*3],saved[i*3+1],saved[i*3+2]); }
+      pos.needsUpdate=true;
+    }
+    targetGeometry.computeBoundingBox(); targetGeometry.computeBoundingSphere();
+    o.updateMatrix();
+    const targetMesh = new THREE.Mesh(targetGeometry, clippedMaterial(o.material));
+    targetMesh.name = 'appart-clip-target:' + id;
+    targetMesh.position.copy(o.position); targetMesh.quaternion.copy(o.quaternion); targetMesh.scale.copy(o.scale);
+    targetMesh.matrixAutoUpdate = o.matrixAutoUpdate; targetMesh.updateMatrix();
+    targetMesh.castShadow = false; targetMesh.receiveShadow = o.receiveShadow; targetMesh.renderOrder = o.renderOrder;
+    o.geometry = restGeometry; o.parent?.add(targetMesh);
+    return { isolated:true, originalGeometry, targetMesh };
+  }
   function applyClip() {
     if (!clip || !group || !info) return;
-    const bounds = clipBounds();
+    const bounds = clipBounds(), id = info.fr?.buildingId;
     scene.updateMatrixWorld(true);
     scene.traverse(o => {
       if (!o.isMesh || !o.material || clipped.has(o) || !isTargetMesh(o, bounds)) return;
+      const ids = o.userData?.ids;
+      if (Array.isArray(ids) && ids.includes(id)) {
+        const isolated = isolateBatch(o, id);
+        if (isolated) { clipped.set(o, isolated); return; }
+      }
       const original = o.material;
-      const cloneOne = m => {
-        const c = m.clone();
-        c.clippingPlanes = clip; c.clipIntersection = true; c.clipShadows = false;
-        c.needsUpdate = true; // compilation isolée au matériau cloné de la cible, une seule fois
-        return c;
-      };
-      o.material = Array.isArray(original) ? original.map(cloneOne) : cloneOne(original);
+      o.material = clippedMaterial(original);
       clipped.set(o, { material: original, castShadow: o.castShadow });
-      // Le bâtiment cible ne projette plus son ombre sur l'appartement ; les rayons solaires restent actifs.
+      // Pour les meshes agrégés sans identifiant, la boîte locale sert de repli.
       o.castShadow = false;
     });
   }
   function unclip() {
     for (const [o, saved] of clipped) {
-      const current = Array.isArray(o.material) ? o.material : [o.material];
-      current.forEach(m => m.dispose());
-      o.material = saved.material; o.castShadow = saved.castShadow;
+      if (saved.isolated) {
+        saved.targetMesh.parent?.remove(saved.targetMesh);
+        saved.targetMesh.geometry.dispose();
+        (Array.isArray(saved.targetMesh.material) ? saved.targetMesh.material : [saved.targetMesh.material]).forEach(m => m.dispose());
+        o.geometry.dispose(); o.geometry = saved.originalGeometry;
+      } else {
+        const current = Array.isArray(o.material) ? o.material : [o.material];
+        current.forEach(m => m.dispose());
+        o.material = saved.material; o.castShadow = saved.castShadow;
+      }
     }
     clipped.clear(); clip = null;
   }
