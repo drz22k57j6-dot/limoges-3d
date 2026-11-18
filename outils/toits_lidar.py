@@ -151,6 +151,10 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
                     tri = np.asarray(earcut.triangulate_float64(verts, ends), dtype=np.uint32).reshape(-1, 3)
                     if not len(tri):
                         continue
+                    # Normales orientées vers le haut dans le repère du jeu (Y = altitude).
+                    aa, bb, cc = verts[tri[:,0]], verts[tri[:,1]], verts[tri[:,2]]
+                    cross = (bb[:,0]-aa[:,0])*(cc[:,1]-aa[:,1])-(bb[:,1]-aa[:,1])*(cc[:,0]-aa[:,0])
+                    tri[cross < 0] = tri[cross < 0][:,[0,2,1]]
                     zrel = sample_raster(mnh, verts[:,0], verts[:,1], xmin, ymax, resolution)
                     zrel = np.clip(zrel, max(0.0, eave-0.2), mesh_max)
                     ground = np.asarray(ground_sampler(verts[:,0], verts[:,1]), dtype=float)
