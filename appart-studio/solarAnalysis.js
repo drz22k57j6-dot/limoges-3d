@@ -25,12 +25,15 @@ function makeWindows(plan, fr) {
   }).filter(Boolean);
 }
 function pointInPoly(p, poly) {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const a = poly[i], b = poly[j];
-    if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+  for (const [du,dv] of [[0,0.45],[0,-0.45],[0.45,0],[-0.45,0]]) {
+    const q=[p[0]+du,p[1]+dv]; let inside=false;
+    for (let i=0,j=poly.length-1;i<poly.length;j=i++) {
+      const a=poly[i],b=poly[j];
+      if ((a[1]>q[1])!==(b[1]>q[1]) && q[0]<(b[0]-a[0])*(q[1]-a[1])/(b[1]-a[1])+a[0]) inside=!inside;
+    }
+    if(inside) return true;
   }
-  return inside;
+  return false;
 }
 function makeBvh(THREE, scene, center, radius = 250) {
   const entries = [];
