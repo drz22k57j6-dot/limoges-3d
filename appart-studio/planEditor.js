@@ -341,7 +341,7 @@ export function createPlanEditor({ onBack, onView3D }) {
     const name = op.type === 'fenetre' ? 'Fenêtre' : 'Porte';
     const leftDistance = Math.max(0, op.p[0] - P.o.u0);
     sheet.innerHTML = `<b>${name}</b>
-      <label>Largeur (m)<input id="ase-op-w" type="number" min="0.5" max="4" step="0.05" value="${op.w}"></label>
+      <label>Largeur (m)<input id="ase-op-w" type="number" inputmode="decimal" min="0.5" max="4" step="0.05" value="${op.w}"></label>
       ${op.type === 'fenetre' ? `<div class="ase-row"><button data-pos="left">Gauche</button><button data-pos="center">Centre</button><button data-pos="right">Droite</button></div>
       <label>Distance depuis le bord gauche (m)<input id="ase-op-pos" type="number" min="0" max="${P.o.u1-P.o.u0}" step="0.05" value="${leftDistance}"></label>
       <label>Hauteur (m)<input id="ase-op-h" type="number" min="0.5" max="3.5" step="0.05" value="${op.h || 2.1}"></label>
