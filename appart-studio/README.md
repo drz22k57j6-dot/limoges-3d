@@ -112,3 +112,17 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
   2. Passer dix fois de suite Maquette → Visite → Fenêtres → Maquette.
   3. Ouvrir **Détails** avant et après : comparer « Programmes WebGL » et vérifier l'absence de fermeture Safari.
 - **Limites connues / non testé** : les dix allers-retours et la stabilité mémoire n'ont pas été exécutés sur iPhone ; aucun nombre de programmes ni capture n'est revendiqué. Le ciblage de la découpe dépend du maintien de l'identifiant IGN par le moteur de façades. La stabilité devra être vérifiée sur une adresse dont les façades sont effectivement chargées.
+
+
+## Phase 5.2 — ombres cohérentes dans l'appartement
+
+- Les murs de l'appartement ont une épaisseur minimale de 15 cm.
+- Les sols et plafonds sont des dalles extrudées de 15 cm ; ils projettent et reçoivent les ombres.
+- Le plafond reste masqué en Maquette et redevient visible en Visite : sa dalle bloque donc le soleil venant du dessus.
+- Les meshes du bâtiment cible hors volume découpé conservent leur capacité à projeter des ombres. Le clipping d'ombre reste actif sur les matériaux clonés du bâtiment cible.
+- Le bias et le normalBias du soleil sont ajustés pendant l'override Appart Studio puis restaurés à la sortie.
+- **Comment tester sur iPhone (3 étapes)** :
+  1. Ouvrir le 38 rue Cler, choisir le 2e étage, dessiner le plan puis entrer en **Visite**.
+  2. Régler le panneau solaire sur **21 juin**, puis placer l'heure à **13:00** (heure de Paris).
+  3. Regarder le sol : seules les taches de lumière passant par les fenêtres doivent être visibles ; le plafond doit empêcher la lumière zénithale.
+- **Limites connues / non testé** : le scénario du 21 juin à 13:00 n'a pas été exécuté sur iPhone ; la concordance visuelle des ombres, le bias réel sur le GPU mobile et la géométrie d'extrusion doivent être vérifiés dans Safari. Aucun résultat ni capture n'est revendiqué.
