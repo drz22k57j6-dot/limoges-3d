@@ -21,11 +21,13 @@ const CSS = `
 body.as-mode > :not(#c):not(.as-ui):not(script):not(style){display:none!important}
 body.as-mode #as-launch{display:none!important}
 .as-ui{font:15px/1.35 -apple-system,BlinkMacSystemFont,'SF Pro Text',Arial;color:#fff;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-.as-ui button{font:inherit;color:#fff;cursor:pointer;touch-action:manipulation}
+.as-ui button{font:inherit;color:#fff;cursor:pointer;touch-action:manipulation;min-width:44px;min-height:44px}
+.as-ui input,.as-ui select{font:inherit;min-height:44px;box-sizing:border-box;-webkit-user-select:text;user-select:text}
+.as-ui input[type=range]{min-height:44px;touch-action:pan-y}
 #as-launch{position:fixed;z-index:80;left:calc(14px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#e2364d,#b51f32);border:1px solid #ffffff40;border-radius:16px;padding:13px 18px;font-weight:800;letter-spacing:.04em;box-shadow:0 8px 28px #0009}
 #as-start,#as-loading{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#05080dcc;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:18px}
 #as-start.on,#as-loading.on{display:flex}
-#as-card{width:min(440px,100%);background:#121822f2;border:1px solid #ffffff22;border-radius:24px;padding:24px 20px 20px;box-shadow:0 20px 60px #000a;position:relative}
+#as-card{width:min(440px,100%);max-height:calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#121822f2;border:1px solid #ffffff22;border-radius:24px;padding:24px 20px 20px;box-shadow:0 20px 60px #000a;position:relative}
 #as-card h1{margin:0;font-size:26px;letter-spacing:-.02em}#as-card h1 em{font-style:normal;color:#ff4d63}
 #as-card p{margin:6px 0 18px;color:#aeb8c7;font-size:14px}
 #as-x{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:0;background:#ffffff14}
@@ -36,7 +38,7 @@ body.as-mode #as-launch{display:none!important}
 #as-sug.on{display:block}#as-sug button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #ffffff10;background:none;padding:12px 14px}
 #as-sug button small{display:block;color:#8b97a8;font-size:12px}
 #as-floor-control{display:flex;align-items:center;gap:14px;margin:12px 0 4px}
-#as-floor-control input,#as-floor-live input{flex:1;min-width:0;width:100%;accent-color:#ff4d63;height:34px;touch-action:pan-y}
+#as-floor-control input,#as-floor-live input{flex:1;min-width:0;width:100%;accent-color:#ff4d63;height:44px;touch-action:pan-y}
 #as-floor-value,#as-floor-live-value{min-width:112px;text-align:right;font-size:20px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
 #as-floor-live{display:none;align-items:center;gap:10px;margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:#1b2330}
 #as-floor-live.on{display:flex}
@@ -50,7 +52,7 @@ body.as-mode #as-launch{display:none!important}
 #as-spin{width:54px;height:54px;border-radius:50%;border:4px solid #ffffff22;border-top-color:#ff4d63;animation:asr 0.9s linear infinite;margin:0 auto 18px}
 @keyframes asr{to{transform:rotate(360deg)}}
 #as-loading .box{text-align:center}#as-loading b{font-size:20px;display:block}#as-loading span{color:#aeb8c7;font-size:14px;display:block;margin-top:6px}
-#as-bar{position:fixed;z-index:85;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-height:calc(100dvh - 20px - env(safe-area-inset-top));overflow-y:auto;overscroll-behavior:contain;display:none;background:#10161ff0;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid #ffffff22;border-radius:22px;padding:14px;box-shadow:0 12px 40px #000a}
+#as-bar{position:fixed;z-index:85;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-height:calc(100dvh - 20px - env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:none;background:#10161ff0;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid #ffffff22;border-radius:22px;padding:14px;box-shadow:0 12px 40px #000a}
 #as-bar.on{display:block}
 #as-bar .t{font-weight:800;font-size:17px}#as-bar .s{color:#aeb8c7;font-size:13px;margin-top:2px}
 #as-bar .warn{color:#ffb86b;font-size:12px;margin-top:6px}
@@ -63,7 +65,7 @@ body.as-mode #as-launch{display:none!important}
 #as-window-settings .row{display:flex;align-items:center;gap:7px;margin:7px 0}
 #as-window-settings .row>label{flex:1;min-width:0;font-size:11px;color:#aeb8c7}
 #as-window-settings input,#as-window-settings select{box-sizing:border-box;width:100%;margin-top:4px;padding:8px;border:1px solid #ffffff22;border-radius:9px;background:#1b2330;color:#fff;font:14px -apple-system,Arial}
-#as-window-settings .count-btn,#as-personalize{min-width:38px;height:38px;border-radius:10px;border:1px solid #ffffff22;background:#202a38;font-weight:800}
+#as-window-settings .count-btn,#as-personalize{min-width:44px;height:44px;border-radius:10px;border:1px solid #ffffff22;background:#202a38;font-weight:800}
 #as-personalize{padding:0 10px;font-size:12px}
 #as-window-warning{font-size:11px;color:#ffc17a;line-height:1.4;margin-top:5px}#as-win-custom{display:none;margin-top:8px}
 #as-win-custom.on{display:block}
@@ -83,14 +85,16 @@ body.as-mode #as-launch{display:none!important}
 @media(min-width:760px){#as-bar{left:50%;right:auto;width:460px;transform:translateX(-50%)}}
 
 /* vue 3D */
-#as-3d{position:fixed;inset:0;z-index:88;display:none;pointer-events:none}
+#as-3d{position:fixed;inset:0;z-index:88;display:none;pointer-events:none;isolation:isolate}
 #as-3d.on{display:block}
-#as3-touch{position:absolute;inset:0;pointer-events:auto;touch-action:none}
-#as3-top{position:absolute;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:8px;align-items:center;pointer-events:auto}
+#as3-touch{position:absolute;inset:0;z-index:0;pointer-events:auto;touch-action:none}
+#as3-top{position:absolute;z-index:2;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:8px;align-items:center;pointer-events:none}
+#as3-top button{pointer-events:auto}#as3-title{pointer-events:none}
 #as3-top button{width:46px;height:46px;border-radius:14px;border:1px solid #ffffff2a;background:#10161fe0;font-size:19px;flex:0 0 auto;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 #as3-title{flex:1;min-width:0;background:#10161fe0;border:1px solid #ffffff22;border-radius:14px;padding:6px 12px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 #as3-title b{display:block;font-size:14px}#as3-title span{display:block;font-size:11px;color:#aeb8c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#as3-bottom{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));pointer-events:auto}
+#as3-bottom{position:absolute;z-index:2;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));pointer-events:none}
+#as3-bottom>*{pointer-events:auto}#as3-help{pointer-events:none}
 #as3-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#10161fe8;border:1px solid #ffffff22;border-radius:18px;padding:6px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 #as3-modes button{height:52px;border-radius:13px;border:0;background:none;font-weight:800;font-size:14px}
 #as3-modes button.on{background:#ff4d63}
@@ -102,43 +106,43 @@ body.as-mode #as-launch{display:none!important}
 #as3-help.hidden{display:none}
 #as3-sun{background:#10161fe8;border:1px solid #ffffff22;border-radius:14px;padding:5px 9px;margin-bottom:8px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 #as3-sun .sun-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800}
-#as3-sun .sun-toggle{width:100%;height:28px;border:0;background:transparent;text-align:left;padding:0;font-size:12px;font-weight:800}
+#as3-sun .sun-toggle{width:100%;height:44px;border:0;background:transparent;text-align:left;padding:0;font-size:12px;font-weight:800}
 #as3-sun .sun-summary{color:#ffd58a;font-variant-numeric:tabular-nums}
 #as3-sun .sun-caret{margin-left:auto;color:#aeb8c7}
 #as3-sun .sun-controls{display:none;padding-top:5px}
 #as3-sun.expanded .sun-controls{display:block}
-#as3-sun input[type=range]{width:100%;height:24px;accent-color:#ffbf65;display:block;margin:2px 0}
+#as3-sun input[type=range]{width:100%;height:44px;accent-color:#ffbf65;display:block;margin:2px 0}
 #as3-sun .sun-shortcuts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-#as3-sun button{min-width:0;height:31px;border-radius:9px;border:1px solid #ffffff20;background:#202a38;font-size:10px;font-weight:700;padding:0 3px}
-#as3-sun .sun-toggle{height:28px;border:0;background:transparent}
+#as3-sun button{min-width:44px;min-height:44px;height:44px;border-radius:9px;border:1px solid #ffffff20;background:#202a38;font-size:10px;font-weight:700;padding:0 3px}
+#as3-sun .sun-toggle{height:44px;border:0;background:transparent}
 #as3-sun button.on{background:#a45b26;border-color:#ffd58a}
-#as3-sun .sun-play{width:100%;height:35px;margin-top:6px;background:#8a5128;font-size:12px}
-#as3-sun .sun-analysis{width:100%;height:36px;margin-top:6px;background:#24536a;font-size:12px}
-#as3-sun .sun-report{display:none;margin-top:7px;padding:8px;border-radius:10px;background:#080d14;color:#d8e2ee;font-size:11px;white-space:pre-wrap;max-height:180px;overflow:auto}
+#as3-sun .sun-play{width:100%;height:44px;margin-top:6px;background:#8a5128;font-size:12px}
+#as3-sun .sun-analysis{width:100%;height:44px;margin-top:6px;background:#24536a;font-size:12px}
+#as3-sun .sun-report{display:none;margin-top:7px;padding:8px;-webkit-overflow-scrolling:touch;border-radius:10px;background:#080d14;color:#d8e2ee;font-size:11px;white-space:pre-wrap;max-height:180px;overflow:auto}
 #as3-sun .sun-report.on{display:block}
 #as3-sun .sun-progress{height:4px;background:#ffffff20;border-radius:9px;overflow:hidden;margin-top:6px;display:none}
 #as3-sun .sun-progress.on{display:block}
 #as3-sun .sun-progress span{display:block;height:100%;width:0;background:#ffd58a;transition:width .12s}
 @media(min-width:760px){#as3-sun{max-width:520px;margin-left:auto;margin-right:auto}}
 
-#as3-joy{position:absolute;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
+#as3-joy{position:absolute;z-index:3;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
 #as3-joy.on{display:block}
 #as3-joy div{position:absolute;left:33px;top:33px;width:46px;height:46px;border-radius:50%;background:#ffffffd0;box-shadow:0 2px 10px #0008}
 /* éditeur */
-#as-editor{position:fixed;inset:0;z-index:95;background:#0d121a;display:none;flex-direction:column}
+#as-editor{position:fixed;inset:0;z-index:95;background:#0d121a;display:none;flex-direction:column;isolation:isolate}
 #as-editor.on{display:flex}
-#ase-top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;border-bottom:1px solid #ffffff14}
+#ase-top{position:relative;z-index:4;display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;border-bottom:1px solid #ffffff14}
 #ase-top button{width:44px;height:44px;border-radius:12px;border:1px solid #ffffff1f;background:#1b2330;font-size:20px;flex:0 0 auto}
 #ase-title{flex:1;min-width:0}#ase-title b{display:block;font-size:16px}#ase-title span{display:block;font-size:12px;color:#8b97a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#ase-cv{flex:1;width:100%;min-height:0;touch-action:none;display:block}
-#ase-hint{position:absolute;left:12px;right:12px;bottom:calc(150px + env(safe-area-inset-bottom));text-align:center;font-size:12px;color:#aeb8c7;pointer-events:none;transition:.2s}
+#ase-cv{position:relative;z-index:0;flex:1;width:100%;min-height:0;touch-action:none;display:block}
+#ase-hint{position:absolute;z-index:1;left:12px;right:12px;bottom:calc(150px + env(safe-area-inset-bottom));text-align:center;font-size:12px;color:#aeb8c7;pointer-events:none;transition:.2s}
 #ase-hint.flash{color:#fff;font-weight:700;font-size:14px}
-#ase-sheet{position:absolute;left:10px;right:10px;bottom:calc(150px + env(safe-area-inset-bottom));background:#161e2af5;border:1px solid #ffffff22;border-radius:18px;padding:14px;display:none;box-shadow:0 10px 40px #000b}
+#ase-sheet{position:absolute;z-index:5;left:10px;right:10px;bottom:calc(150px + env(safe-area-inset-bottom));max-height:calc(100dvh - 230px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;background:#161e2af5;border:1px solid #ffffff22;border-radius:18px;padding:14px;display:none;box-shadow:0 10px 40px #000b}
 #ase-sheet.on{display:block}#ase-sheet b{display:block;margin-bottom:10px}
 .ase-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.ase-grid button{height:46px;border-radius:12px;border:2px solid;background:#1b2330;font-size:12px;font-weight:700;padding:0 2px}
 .ase-row{display:flex;gap:6px;flex-wrap:wrap}.ase-row button{flex:1;height:46px;border-radius:12px;border:1px solid #ffffff22;background:#1b2330;font-weight:700;min-width:70px}
 .ase-danger{background:#5a1d27!important;border-color:#ff4d6366!important}
-#ase-bottom{padding:8px 10px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ffffff14;background:#0d121a}
+#ase-bottom{position:relative;z-index:4;padding:8px 10px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ffffff14;background:#0d121a}
 #ase-3d{width:100%;height:44px;border-radius:12px;border:1px dashed #ffffff33;background:none;color:#8b97a8;font-weight:700;margin-bottom:8px}#ase-3d small{font-weight:500;opacity:.7}
 #ase-tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 #ase-tools button{height:64px;border-radius:16px;border:1px solid #ffffff1f;background:#1b2330;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
@@ -183,13 +187,13 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     <div id="as-window-settings">
       <div class="row"><b style="flex:1">Fenêtres côté rue</b><button class="count-btn" id="as-count-minus">−</button><b id="as-window-count">1</b><button class="count-btn" id="as-count-plus">+</button><button id="as-personalize">Personnaliser</button></div>
       <div class="row">
-        <label>Largeur (m)<input id="as-win-width" type="number" min="0.5" max="4" step="0.05" value="1.20"></label>
-        <label>Hauteur (m)<input id="as-win-height" type="number" min="0.5" max="3.5" step="0.05" value="2.10"></label>
+        <label>Largeur (m)<input id="as-win-width" type="number" inputmode="decimal" inputmode="decimal" min="0.5" max="4" step="0.05" value="1.20"></label>
+        <label>Hauteur (m)<input id="as-win-height" type="number" inputmode="decimal" min="0.5" max="3.5" step="0.05" value="2.10"></label>
       </div>
       <div class="row">
-        <label>Allège (m)<input id="as-win-sill" type="number" min="0" max="2" step="0.05" value="0.90"></label>
-        <label>Mur façade (m)<input id="as-win-thickness" type="number" min="0.15" max="1.2" step="0.05" value="0.35"></label>
-        <label>Plafond (m)<input id="as-win-ceiling" type="number" min="2.2" max="4" step="0.05" value="2.80"></label>
+        <label>Allège (m)<input id="as-win-sill" type="number" inputmode="decimal" min="0" max="2" step="0.05" value="0.90"></label>
+        <label>Mur façade (m)<input id="as-win-thickness" type="number" inputmode="decimal" min="0.15" max="1.2" step="0.05" value="0.35"></label>
+        <label>Plafond (m)<input id="as-win-ceiling" type="number" inputmode="decimal" min="2.2" max="4" step="0.05" value="2.80"></label>
       </div>
       <div id="as-window-warning"></div><div id="as-win-custom"></div><div id="as-window-results"></div>
     </div>
@@ -218,11 +222,11 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const tooTall=s.customize?s.windows.some(w=>Number(w.sill??s.sill)+Number(w.height??s.height)>s.ceilingHeight-0.18):Number(s.sill)+Number(s.height)>s.ceilingHeight-0.18;
     $('as-window-warning').textContent=tooTall?'Attention : la fenêtre dépasse la hauteur sous plafond. Sa hauteur réelle sera réduite dans la 3D et le calcul.':'';
     custom.innerHTML=s.customize?s.windows.map((w,i)=>`<details><summary>Fenêtre ${i+1}</summary><div class="fields">
-      <label>Largeur (m)<input type="number" min="0.5" max="4" step="0.05" data-wi="${i}" data-wf="width" value="${w.width}"></label>
-      <label>Hauteur (m)<input type="number" min="0.5" max="3.5" step="0.05" data-wi="${i}" data-wf="height" value="${w.height}"></label>
-      <label>Allège (m)<input type="number" min="0" max="2" step="0.05" data-wi="${i}" data-wf="sill" value="${w.sill}"></label>
+      <label>Largeur (m)<input type="number" inputmode="decimal" min="0.5" max="4" step="0.05" data-wi="${i}" data-wf="width" value="${w.width}"></label>
+      <label>Hauteur (m)<input type="number" inputmode="decimal" min="0.5" max="3.5" step="0.05" data-wi="${i}" data-wf="height" value="${w.height}"></label>
+      <label>Allège (m)<input type="number" inputmode="decimal" min="0" max="2" step="0.05" data-wi="${i}" data-wf="sill" value="${w.sill}"></label>
       <label>Position<select data-wi="${i}" data-wf="positionMode"><option value="left" ${w.positionMode==='left'?'selected':''}>Gauche</option><option value="center" ${w.positionMode==='center'?'selected':''}>Centre</option><option value="right" ${w.positionMode==='right'?'selected':''}>Droite</option><option value="distance" ${w.positionMode==='distance'?'selected':''}>Distance depuis gauche</option></select></label>
-      <label>Distance (m)<input type="number" min="0" max="20" step="0.05" data-wi="${i}" data-wf="distance" value="${w.distance}"></label>
+      <label>Distance (m)<input type="number" inputmode="decimal" min="0" max="20" step="0.05" data-wi="${i}" data-wf="distance" value="${w.distance}"></label>
     </div></details>`).join(''):'';
   }
   function floorText(f,max){return f===0?'RDC / '+max:floorName(f)+' / '+max;}

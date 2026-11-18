@@ -198,3 +198,41 @@ Le test ajouté compare la même ouverture et les mêmes échantillons solaires 
 - Si la somme allège + hauteur dépasse le plafond moins 18 cm, la hauteur effective de l'ouverture est réduite pour que le calcul solaire et la 3D restent cohérents.
 - Les résultats de soleil restent une simulation géométrique, hors météo et hors incertitudes des bâtiments voisins/arbres chargés.
 - `sun.js`, `sun.test.mjs` et le mode drone restent hors modification.
+
+
+## Lot 0 — fiabilité des contrôles tactiles iPhone
+
+### Diagnostic du code
+
+- **Calque caméra 3D** : `cam3.js` insère `#as3-touch` en plein écran avec `pointer-events:auto` et capture le pointeur sur ce calque. Avant ce correctif, sa priorité de peinture par rapport aux contrôles reposait sur l'ordre DOM, sans `z-index` explicite. La barre basse 3D était elle-même une grande zone `pointer-events:auto`. C'était le principal risque de capture d'un toucher destiné à un contrôle.
+- **Écran de l'appartement** : `#as3-touch` est maintenant au niveau 0 ; les blocs d'interface haut et bas sont au niveau 2, le joystick au niveau 3 et les détails au niveau 4. Les conteneurs haut/bas ne capturent plus les gestes dans leurs espaces vides ; seuls leurs contrôles enfants reçoivent les événements.
+- **Éditeur** : le pointeur est capturé uniquement par le canvas de dessin. La feuille de réglages passe au-dessus du canvas, avec son propre défilement et une hauteur maximale tenant compte des zones sûres. Les champs et boutons de la feuille ne sont donc pas sous le canvas.
+- **Événements** : aucun `preventDefault()` global ni capture de pointeur sur un parent de formulaire n'a été trouvé. Le `preventDefault()` de l'éditeur est limité au canvas pendant le dessin ; `setPointerCapture()` est limité au canvas, au calque de caméra et au joystick.
+- **Cibles tactiles** : boutons et champs ont une hauteur minimale de 44 px ; les sliders ont 44 px de hauteur. Les champs numériques demandent le clavier décimal iOS (`inputmode="decimal"`).
+- **Défilement / safe area** : écran adresse, bandeau de paramètres et feuille d'éditeur ont un défilement tactile natif ; le bandeau et la feuille ont des limites de hauteur. Les positions haut/bas conservent les marges `safe-area-inset`.
+
+### Test de hit-testing mobile
+
+Le dépôt ne contient pas de dépendance Playwright, de configuration Playwright ou de manifeste npm à la racine. Un script navigateur de remplacement est ajouté : `appart-studio/touch-qa.js`.
+
+1. Ouvrir la démo et afficher les contrôles de l'écran à tester.
+2. Dans Chrome DevTools, activer l'émulation mobile **390 × 844** avec **hasTouch** activé ; ouvrir la console et exécuter le contenu de `appart-studio/touch-qa.js`.
+3. Lire `[Appart Studio Touch QA]` : pour chaque contrôle visible, le script enregistre le centre, le résultat de `document.elementFromPoint(x, y)` et les cinq éléments de la pile. Il vérifie aussi les changements de valeur des sliders et champs numériques, des boutons − / + et de Personnaliser ; les valeurs modifiées sont restaurées.
+
+**Résultat du test dans cette session : non exécuté.** Le script est livré, mais aucune mesure réelle `elementFromPoint` en viewport 390 × 844 n'est revendiquée. Le script utilise des événements DOM synthétiques pour les valeurs ; il ne remplace pas les vrais appuis du doigt sur Safari iOS.
+
+### Contrôles inclus dans le diagnostic
+
+- Sliders d'étage de l'écran adresse et du bandeau.
+- Nombre de fenêtres (− / +), personnalisation.
+- Largeur, hauteur, allège, épaisseur du mur, hauteur sous plafond et champs individuels des fenêtres.
+- Boutons et champs visibles de l'éditeur (dont réglages appartement et feuille de fenêtre).
+- Contrôles visibles de la vue 3D et du panneau soleil.
+
+### Limites / non testé
+
+- Pas de test manuel sur iPhone physique ni de capture d'écran.
+- Pas de résultat de hit-test 390 × 844 disponible tant que le script n'a pas été exécuté dans un navigateur avec émulation tactile.
+- Les événements synthétiques ne reproduisent pas toutes les particularités du moteur tactile de Safari iOS.
+- Aucun changement de logique caméra ou du mode drone ; le correctif porte sur la superposition CSS et l'accessibilité des contrôles.
+- `sun.js` et `sun.test.mjs` restent inchangés.
