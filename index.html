@@ -1658,6 +1658,35 @@ const raycaster=new THREE.Raycaster();
 function readCesiumIonToken(){try{return tokenFromSettingsJSON(localStorage.getItem('reglages-dev-v1'));}catch(e){return '';}}
 function updatePhotoAttribution(){const el=$('photoAttribution');if(!el)return;let values=[];try{values=tiles?.getAttributions?.([])||[];}catch(e){console.warn('attributions photoréalistes',e);}const sources=formatPhotoAttributions(values);el.textContent=sources?'Google Maps · '+sources:'Google Maps · attribution des fournisseurs en chargement';}
 function fallbackPhotoCity(message){try{tiles?.dispose?.();}catch(e){}if(tilesRoot)scene.remove(tilesRoot);tiles=null;tilesRoot=null;tilesLoading=false;photoModelLoaded=false;WORLD.mode='3d';try{localStorage.setItem('monde','3d');}catch(e){}for(const b of document.querySelectorAll('[data-world]'))b.classList.toggle('on',b.dataset.world==='3d');setCity('ign');if(message)toast(message);}
+// ---------- buildings streamed as 3D Tiles (data/tuiles, outils/tuiles.py): detailed 250 m tiles near the camera, simple 1 km tiles far away ----------
+async function startCityTiles() {
+  await modelledReady;
+  try {
+    const [{ TilesRenderer }, P] = await Promise.all([
+      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),
+      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
+    const t = new TilesRenderer(CITY.data + 'tuiles/tileset.json' + V);
+    t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
+    t.errorTarget = [3, 6, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
+    // téléphone : cache des tuiles d'immeubles plafonné en mémoire (le navigateur iOS ferme l'onglet vers 1,5 Go)
+    if (isTouch) { t.lruCache.minSize = 150; t.lruCache.maxSize = 450; t.lruCache.minBytesSize = 120 * 2 ** 20; t.lruCache.maxBytesSize = 200 * 2 ** 20; }
+    const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 }); MT.appliquer(far, MT.PROFILS.facade);
+    t.addEventListener('load-model', ({ scene: sc, tile }) => { if (BN) BN.ponctuel('tuiles', 'chargement', tile && tile.content && tile.content.uri || '');
+      alleger(sc, 512);
+      sc.traverse(o => {
+        if (!o.isMesh) return;
+        const n = o.material.name, m = n === 'lointain' ? far : BMAT[n];
+        if (m) { o.material.dispose(); o.material = m; }
+        let p = o; while (p && !p.userData.ids) p = p.parent; if (p) o.userData.ids = p.userData.ids;
+        o.castShadow = o.receiveShadow = true; try { hideModelled(o); didPrep(o); idxTile(o); } catch (e) { console.warn('identifiants', e); }
+      });
+    });
+    t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
+    t.addEventListener('dispose-model', ({ tile }) => { if (BN) BN.ponctuel('tuiles', 'déchargement', tile && tile.content && tile.content.uri || ''); });
+    t.group.userData.bnNom = 'tuiles'; scene.add(t.group); cityTiles = t; window.__cityTiles = t;
+    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, solPret: (x, z) => Array.isArray(relief) && relief.some(t => x >= t.x0 && x <= t.x0 + 2000 && -z >= t.y0 && -z <= t.y0 + 2000), masquer: masquerBatiments, bn: () => BN, rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
+  } catch (e) { console.warn('tuiles ville', e); }
+}
 async function startGoogleCity(){
   if(tiles||tilesLoading)return;const token=readCesiumIonToken();
   if(!token){fallbackPhotoCity('Clé Cesium ion absente — vue IGN conservée. Ajoute-la dans Réglages > Monde.');return;}
