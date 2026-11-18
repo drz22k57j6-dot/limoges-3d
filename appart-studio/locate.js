@@ -26,31 +26,15 @@ function nearestOnSegment(p,a,b) {
   const q=[a[0]+dx*t,a[1]+dy*t];
   return {q,d:distance(p,q)};
 }
-function ringsOf(feature) {
-  const g=feature.geometry;
-  if(!g) return [];
-  if(g.type==='Polygon') return [g.coordinates[0]];
-  if(g.type==='MultiPolygon') return g.coordinates.map(p=>p[0]);
-  return [];
-}
-function facadeFor(point, rings) {
-  let best=null;
-  for(const ring of rings) for(let i=0;i<ring.length-1;i++){
-    const hit=nearestOnSegment(point,ring[i],ring[i+1]);
-    if(!best || hit.d<best.d) best={...hit,a:ring[i],b:ring[i+1],ring};
-  }
-  if(!best) throw new Error('Emprise IGN sans arête exploitable.');
-  const inside=rings.some(r=>pointInRing(point[0],point[1],r));
-  let outward;
-  if(inside){
-    const c=best.ring.reduce((s,p)=>[s[0]+p[0]/best.ring.length,s[1]+p[1]/best.ring.length],[0,0]);
-    outward=[best.q[0]-c[0],best.q[1]-c[1]];
-  } else outward=[point[0]-best.q[0],point[1]-best.q[1]];
-  let L=Math.hypot(...outward);
-  if(L<0.01){outward=[best.b[1]-best.a[1],best.a[0]-best.b[0]];L=Math.hypot(...outward)||1;}
-  outward=outward.map(v=>v/L);
-  const edgeAngle=Math.atan2(best.b[1]-best.a[1],best.b[0]-best.a[0]);
-  return {point:best.q,a:best.a,b:best.b,outward,edgeAngle,distance:best.d,inside};
+function polygonsOf(feature){const g=feature.geometry;if(!g)return [];if(g.type==='Polygon')return [g.coordinates];if(g.type==='MultiPolygon')return g.coordinates;return [];}
+function ringsOf(feature){return polygonsOf(feature).flat();}
+function insideGeometry(p,polys){return polys.some(poly=>poly.length&&pointInRing(p[0],p[1],poly[0])&&!poly.slice(1).some(r=>pointInRing(p[0],p[1],r)));}
+function facadeFor(point,polygons){
+  let best=null;for(let pi=0;pi<polygons.length;pi++)for(let ri=0;ri<polygons[pi].length;ri++){const ring=polygons[pi][ri];for(let i=0;i<ring.length-1;i++){const h=nearestOnSegment(point,ring[i],ring[i+1]);if(!best||h.d<best.d)best={...h,a:ring[i],b:ring[i+1],ring,polygonIndex:pi,ringIndex:ri};}}
+  if(!best)throw new Error('Emprise IGN sans arête exploitable.');const inside=insideGeometry(point,polygons);let outward;
+  if(!inside)outward=[point[0]-best.q[0],point[1]-best.q[1]];else{const c=best.ring.reduce((s,p)=>[s[0]+p[0]/best.ring.length,s[1]+p[1]/best.ring.length],[0,0]);outward=[best.q[0]-c[0],best.q[1]-c[1]];}
+  let L=Math.hypot(...outward);if(L<0.01){outward=[best.b[1]-best.a[1],best.a[0]-best.b[0]];L=Math.hypot(...outward)||1;}outward=outward.map(v=>v/L);
+  return {point:best.q,a:best.a,b:best.b,outward,edgeAngle:Math.atan2(best.b[1]-best.a[1],best.b[0]-best.a[0]),distance:best.d,inside,ringIndex:best.ringIndex,polygonIndex:best.polygonIndex};
 }
 async function identityCell(i,j) {
   const key=i+'_'+j;
@@ -86,13 +70,7 @@ async function fetchFeatureById(id) {
   const r=await fetch(u); if(!r.ok) throw new Error('WFS IGN : HTTP '+r.status);
   const d=await r.json(); return d.features?.[0] || null;
 }
-function distToFeature(point,f){
-  const rs=ringsOf(f); if(!rs.length) return Infinity;
-  if(rs.some(r=>pointInRing(point[0],point[1],r))) return 0;
-  let dd=Infinity;
-  for(const ring of rs) for(let i=0;i<ring.length-1;i++) dd=Math.min(dd,nearestOnSegment(point,ring[i],ring[i+1]).d);
-  return dd;
-}
+function distToFeature(point,f){const polys=polygonsOf(f);if(!polys.length)return Infinity;if(insideGeometry(point,polys))return 0;let dd=Infinity;for(const poly of polys)for(const ring of poly)for(let i=0;i<ring.length-1;i++)dd=Math.min(dd,nearestOnSegment(point,ring[i],ring[i+1]).d);return dd;}
 async function fetchNearby(point,pad=35) {
   const u=wfsUrl({BBOX:[point[0]-pad,point[1]-pad,point[0]+pad,point[1]+pad,'EPSG:2154'].join(',')});
   const r=await fetch(u); if(!r.ok) throw new Error('WFS IGN : HTTP '+r.status);
@@ -164,10 +142,12 @@ export async function locateApartment(address, floor, ctx, picked=null) {
     feature=near[0].feature; fallbackDistance=near[0].distance; exact=null;
   }
   const props=feature.properties||{};
-  const rings=ringsOf(feature);
-  if(!rings.length) throw new Error('Le bâtiment IGN ne contient pas de polygone exploitable.');
-  const facade=facadeFor(point,rings);
+  const polygons=polygonsOf(feature);
+  if(!polygons.length) throw new Error('Le bâtiment IGN ne contient pas de polygone exploitable.');
+  const facade=facadeFor(point,polygons);
   const identity=exact?.record||{};
+  const candidateIds=new Set(exacts.map(e=>e.id));for(const item of near)if(item.distance<15)candidateIds.add(item.feature.properties?.cleabs);
+  const candidateCount=[...candidateIds].filter(Boolean).length;
   const floorData=floorModel(props,identity,floor);
   // repère local du jeu : x = Est, z = -Nord
   const toLocal=P=>[P[0]-CITY.X0,-(P[1]-CITY.Y0)];
@@ -176,7 +156,7 @@ export async function locateApartment(address, floor, ctx, picked=null) {
   const bearing=((Math.atan2(facade.outward[0],facade.outward[1])*180/Math.PI)+360)%360;
   return {address:label,street:hit.properties?.street||'',housenumber:hit.properties?.housenumber||'',lon,lat,point,
     feature,identity,exact,matchMode,fallbackDistance,facade,floorData,adjust:0,
-    local:{F,A,B,n,bearing,ring:rings[0].map(toLocal)}};
+    local:{F,A,B,n,bearing,ring:polygons[0][0].map(toLocal),footprints:polygons.map(poly=>poly.map(ring=>ring.map(toLocal)))},candidateCount};
 }
 export function orientationName(b){
   return ['Nord','Nord-Est','Est','Sud-Est','Sud','Sud-Ouest','Ouest','Nord-Ouest'][Math.round(b/45)%8];

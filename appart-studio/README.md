@@ -236,3 +236,24 @@ Le dépôt ne contient pas de dépendance Playwright, de configuration Playwrigh
 - Les événements synthétiques ne reproduisent pas toutes les particularités du moteur tactile de Safari iOS.
 - Aucun changement de logique caméra ou du mode drone ; le correctif porte sur la superposition CSS et l'accessibilité des contrôles.
 - `sun.js` et `sun.test.mjs` restent inchangés.
+
+ 
+## Lot 1 — emprise IGN (première tranche générique)
+
+- `locate.js` conserve les anneaux intérieurs et les composants multiples des Polygon/MultiPolygon. Les points situés dans une cour ne sont plus assimilés à l'intérieur du bâtiment ; la distance aux emprises inclut les limites de cour.
+- `footprint.js` fournit une géométrie sans dépendance : inclusion avec trous, découpe de segments, contrôle d'un rectangle entièrement contenu dans un seul composant, surface et garde-fou de hauteur.
+- L'éditeur reçoit une enveloppe rectangulaire conservatrice calculée sur la géométrie complète ; les concavités, trous et multipolygones ne sont plus ignorés.
+- Dernier rempart 3D : les murs sont recoupés à l'emprise ; un mur traversant une cour, une ouverture coupée ou une pièce hors emprise bloque la construction avec un message explicite.
+- L'entrée en 3D est refusée si plancher + hauteur sous plafond dépassent la hauteur IGN (marge de 15 cm).
+- Détails indique surface IGN, profondeur sûre, mode de correspondance, nombre d'emprises crédibles et limite de comparaison WFS/tuiles.
+
+### Test hors réseau ajouté
+
+`node --test appart-studio/footprint.test.mjs` couvre rectangle, L, U, cour intérieure, multipolygone, mur trop long, mur traversant une cour, surface et garde-fou du toit. Il n'a pas été exécuté dans cette session.
+
+### Limites et non testé
+
+- Le sélecteur interactif « Votre immeuble » avec surbrillance de tous les candidats n'est pas encore implémenté. Plusieurs emprises sont signalées ; le choix actuel par distance BAN est explicitement provisoire.
+- La façade reste l'arête géométriquement la plus proche. La sélection garantie par nom de voie via tronçons BD TOPO / géocodage inverse n'est pas encore raccordée.
+- L'écart métrique WFS / volume des tuiles 3D n'est pas mesuré ; aucune correspondance vérifiée n'est disponible dans ce parcours.
+- Pas de résultats réseau pour les adresses de recette, pas de capture et pas d'essai iPhone revendiqués.

@@ -59,6 +59,6 @@ Pour chacune : `cleabs`, nb de candidats, façade retenue, profondeur disponible
 
 ## Statut
 - [x] Lot 0 — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/21 · contrôles corrigés : calque caméra sous l’UI, zones pointer-events limitées aux blocs UI, cibles ≥ 44 px, champs décimaux, feuilles/panneaux défilables, script touch-qa.js ajouté (exécution navigateur/iPhone encore à faire)
-- [ ] Lot 1 — PR : (lien) · cause réelle au 5 av. de Choisy : (…)
-- [ ] Lot 2 — tests : (résultat)
-- [ ] Non testé : (liste)
+- [ ] Lot 1 — PR : en cours · anneaux Polygon/MultiPolygon, enveloppe sûre et garde-fou 3D ajoutés ; sélection interactive multi-bâtiments, façade garantie côté voie et comparaison WFS/tuiles restent à compléter.
+- [ ] Lot 2 — tests : non lancé.
+- [ ] Non testé : node --test, recette réelle 5 av. de Choisy / tour Olympiades / angle 11e / fond de cour Marais, Safari iPhone, correspondance WFS–tuiles.

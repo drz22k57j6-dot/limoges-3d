@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {pointInFootprint,rectangleInsideFootprint,findSafeRectangle,constrainToFootprint,footprintArea,floorFitsBuilding} from './footprint.js';
+const rect=[[[[0,0],[10,0],[10,10],[0,10],[0,0]]]],L=[[[[0,0],[10,0],[10,4],[4,4],[4,10],[0,10],[0,0]]]],U=[[[[0,0],[12,0],[12,10],[9,10],[9,3],[3,3],[3,10],[0,10],[0,0]]]],courtyard=[[[[0,0],[12,0],[12,12],[0,12],[0,0]],[[4,4],[8,4],[8,8],[4,8],[4,4]]]],multi=[[[[0,0],[5,0],[5,5],[0,5],[0,0]]],[[[10,0],[15,0],[15,5],[10,5],[10,0]]]];
+test('rectangle and L',()=>{assert.equal(rectangleInsideFootprint({u0:1,u1:9,v0:1,v1:9},rect),true);assert.equal(rectangleInsideFootprint({u0:1,u1:9,v0:1,v1:9},L),false);assert.equal(pointInFootprint([8,8],L),false);});
+test('U and courtyard holes',()=>{assert.equal(pointInFootprint([6,7],U),false);assert.equal(pointInFootprint([6,6],courtyard),false);assert.equal(rectangleInsideFootprint({u0:2,u1:10,v0:2,v1:10},courtyard),false);});
+test('MultiPolygon components',()=>{assert.equal(pointInFootprint([2,2],multi),true);assert.equal(pointInFootprint([7,2],multi),false);assert.equal(rectangleInsideFootprint({u0:1,u1:14,v0:1,v1:4},multi),false);});
+test('safe rectangle in L',()=>{const r=findSafeRectangle(L,[0,10],{step:0.1,maxDepth:9});assert.ok(r);assert.equal(rectangleInsideFootprint(r,L),true);});
+test('oversized wall clipped',()=>{const r=constrainToFootprint({murs:[{id:'m',a:[-2,5],b:[12,5]}],ouvertures:[],pieces:[]},rect);assert.deepEqual(r.murs[0].a,[0,5]);assert.deepEqual(r.murs[0].b,[10,5]);for(let i=0;i<=100;i++)assert.equal(pointInFootprint([i/10,5],rect),true);});
+test('wall crossing courtyard rejected',()=>assert.throws(()=>constrainToFootprint({murs:[{id:'m',a:[2,6],b:[10,6]}],ouvertures:[],pieces:[]},courtyard),/cour/));
+test('area and roof guard',()=>{assert.equal(footprintArea(rect),100);assert.equal(floorFitsBuilding({offset:6,height:18},3),true);assert.equal(floorFitsBuilding({offset:16,height:18},2),false);});
