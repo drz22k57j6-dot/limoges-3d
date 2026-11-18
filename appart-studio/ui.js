@@ -72,7 +72,7 @@ body.as-mode #as-launch{display:none!important}
 #as3-modes button.on{background:#ff4d63}
 #as3-win{display:none;align-items:center;gap:8px;margin-bottom:8px}
 #as3-win.on{display:flex}
-#as3-win button{width:52px;height:46px;border-radius:14px;border:1px solid #ffffff2a;background:#10161fe8;font-size:20px;font-weight:800}
+#as3-win button{width:52px;height:46px;border-radius:14px;border:1px solid #ffffff2a;background:#10161fe8;font-size:20px;font-weight:800}#as3-wo{width:auto!important;padding:0 12px;font-size:13px!important;white-space:nowrap}
 #as3-win span{flex:1;text-align:center;background:#10161fe8;border:1px solid #ffffff22;border-radius:14px;height:46px;line-height:46px;font-weight:700;font-size:14px}
 #as3-help{text-align:center;font-size:12px;color:#e8edf5;text-shadow:0 1px 3px #000;margin-bottom:8px}
 #as3-joy{position:absolute;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
@@ -126,7 +126,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   <section id="as-3d" class="as-ui">
     <div id="as3-top"><button id="as3-back" aria-label="Retour au plan">←</button><div id="as3-title"><b>Mon appartement</b><span></span></div><button id="as3-quit" aria-label="Quitter">✕</button></div>
     <div id="as3-bottom"><div id="as3-help"></div>
-      <div id="as3-win"><button id="as3-wp">‹</button><span id="as3-wl"></span><button id="as3-wn">›</button></div>
+      <div id="as3-win"><button id="as3-wp">‹</button><span id="as3-wl"></span><button id="as3-wn">›</button><button id="as3-wo">Ouvrir</button></div>
       <div id="as3-modes"><button data-m="maquette">Maquette</button><button data-m="visite">Visite</button><button data-m="fenetre">Fenêtres</button></div></div>
   </section>
   <section id="as-loading" class="as-ui"><div class="box"><div id="as-spin"></div><b>On trouve votre immeuble…</b><span id="as-step">Recherche de l'adresse</span></div></section>
@@ -154,6 +154,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const ws = cam3.windows(), plan = state.plan3d, w = ws[cam3.win];
     const room = w && plan.pieces.find(r => r.polygone && pointIn(w.centre, r.polygone, 0.45));
     $('as3-wl').textContent = 'Fenêtre ' + (cam3.win + 1) + '/' + ws.length + (room?.type ? ' · ' + TYPE_N[room.type] : '');
+    $('as3-wo').textContent = cam3.windowOpen(cam3.win) ? 'Fermer' : 'Ouvrir';
   }
   function pointIn(c, poly, tol) {   // la fenêtre est sur le bord : on teste un point légèrement à l'intérieur de chaque côté
     for (const [dx, dy] of [[0, tol], [0, -tol], [tol, 0], [-tol, 0]]) { const p = [c[0] + dx, c[1] + dy]; let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) ins = !ins; } if (ins) return true; }
@@ -176,7 +177,28 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const H = Math.max(2.4, Math.min(3.6, lvl - 0.25));
     const facadeList = window.__facadeEtages?.get(r.feature.properties?.cleabs) || [];
     const facadeMeta = facadeList.reduce((best,e) => { const dx=e.b[0]-e.a[0],dz=e.b[1]-e.a[1],l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2)),d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t); return !best || d<best.d ? {e,d} : best; },null)?.e;
-    const fr = { F, u, v, floorY: view.floorY(r), H, buildingId: r.feature.properties?.cleabs, facadeDepth: facadeMeta?.facadeDepth ?? 0.34 };
+    const floorY = view.floorY(r);
+    const facadeIndex = facadeMeta?.ent && r.floorData.floor >= 1 ? r.floorData.floor + 1 : r.floorData.floor;
+    const edgeA = facadeMeta?.a, edgeB = facadeMeta?.b;
+    const edgeDx = edgeB ? edgeB[0] - edgeA[0] : 0, edgeDz = edgeB ? edgeB[1] - edgeA[1] : 0, edgeLen = Math.hypot(edgeDx, edgeDz) || 1;
+    const facadeWindows = (facadeMeta?.travees?.[facadeIndex] || []).map((w,i) => {
+      const wx=edgeA[0]+edgeDx/edgeLen*w.position, wz=edgeA[1]+edgeDz/edgeLen*w.position;
+      return { id: facadeMeta.k+':'+facadeIndex+':'+i, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, allege:w.allege, height:w.height, guardrail:!!w.guardrail };
+    });
+    plan.ouvertures = plan.ouvertures.map(o => {
+      if (o.type !== 'fenetre' || !o.centre || !facadeWindows.length) return o;
+      const bay=facadeWindows.reduce((best,x)=>!best||Math.abs(x.u-o.centre[0])<Math.abs(best.u-o.centre[0])?x:best,null);
+      return { ...o, guardrail: !!bay?.guardrail };
+    });
+    let facadeProxy = null;
+    if (facadeMeta && edgeA && edgeB) {
+      const depth=facadeMeta.facadeDepth ?? .34, midX=(edgeA[0]+edgeB[0])/2+v[0]*depth, midZ=(edgeA[1]+edgeB[1])/2+v[1]*depth;
+      facadeProxy = new THREE.Mesh(new THREE.PlaneGeometry(edgeLen,H),new THREE.MeshBasicMaterial({ side:THREE.DoubleSide, colorWrite:false }));
+      facadeProxy.position.set(midX,floorY+H/2,midZ);
+      facadeProxy.rotation.y=Math.atan2(-edgeDz,edgeDx);
+      facadeProxy.updateMatrixWorld(true);
+    }
+    const fr = { F, u, v, floorY, H, buildingId: r.feature.properties?.cleabs, facadeDepth: facadeMeta?.facadeDepth ?? 0.34, facadeProxy, makeGuardrail: facadeMeta?.makeGuardrail, facadeWindows };
     view.suspend();
     apt.build(plan, fr, { dollhouse: true });
     $('as3-title').querySelector('span').textContent = (r.housenumber ? r.housenumber + ' ' : '') + (r.street || r.address) + ' · ' + floorName(r.floorData.floor) + ' · ' + plan.pieces.reduce((s, p) => s + p.surface, 0).toFixed(1).replace('.', ',') + ' m²';
@@ -187,6 +209,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   document.querySelectorAll('#as3-modes button').forEach(b => b.onclick = () => setMode3d(b.dataset.m));
   $('as3-wp').onclick = () => { cam3.nextWindow(-1); winLabel(); };
   $('as3-wn').onclick = () => { cam3.nextWindow(1); winLabel(); };
+  $('as3-wo').onclick = () => { cam3.toggleCurrentWindow(); winLabel(); };
   $('as3-back').onclick = () => { close3d(); $('as-draw').onclick(); };
   setInterval(() => { if ($('as-3d').classList.contains('on')) apt.tick(0.5); }, 500);
 
