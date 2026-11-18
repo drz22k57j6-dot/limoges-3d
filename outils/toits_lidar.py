@@ -123,9 +123,9 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
     Les trous et contours de l'emprise sont respectés par intersection Shapely + Earcut.
     """
     from shapely.geometry import box as make_box
-    step = max(1.0, float(resolution))
+    step = max(0.5, float(resolution))
     result = None
-    for _ in range(7):
+    for _ in range(12):
         positions, indices, vertex_map = [], [], {}
         minx, miny, maxx, maxy = poly.bounds
         # Aligner la grille sur les centres MNH (et non sur des multiples arbitraires
