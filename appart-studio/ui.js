@@ -8,7 +8,7 @@ import { sunPosition, sunDirection } from './sun.js';
 import { calculateSolarReport, verifySolarAt } from './solarAnalysis.js';
 import { scoreSoleil } from './solarScore.js';
 import { findSafeRectangle, footprintArea, floorFitsBuilding } from './footprint.js';
-import { automaticWindowCount, automaticWindowPositions, requireMinimumDepth, fractionWithinDay } from './apartmentDefaults.js';
+import { automaticWindowCount, automaticWindowPositions, limitApartmentDepth, fractionWithinDay } from './apartmentDefaults.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -542,12 +542,12 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const {F,A,B,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]],pu=P=>(P[0]-F[0])*u[0]+(P[1]-F[1])*u[1];
     const north=[-u[1],-v[1]],span=[pu(A),pu(B)].sort((a,b)=>a-b),source=r.local.footprints||[[r.local.ring]];
     const footprint=source.map(poly=>poly.map(ring=>ring.map(P=>{const dx=P[0]-F[0],dz=P[1]-F[1];return [dx*u[0]+dz*u[1],dx*v[0]+dz*v[1]];})));
-    const safe=findSafeRectangle(footprint,span,{frontMargin:0.15,sideMargin:0.15,maxDepth:20,minWidth:1.5,minDepth:8,step:0.05});
+    const safe=findSafeRectangle(footprint,span,{frontMargin:0.15,sideMargin:0.15,maxDepth:8,minWidth:1.5,minDepth:1.5,step:0.05});
     if(!safe)return null;return {F,u,v,north,span,safeBounds:{u0:safe.u0,u1:safe.u1,v1:safe.v1},footprint,footprintArea:footprintArea(footprint)};
   }
   function makeSettingsPlan(r){
     const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise IGN trop étroite pour calculer un appartement.');
-    const s=settingsForPlan(),u0=bounds.safeBounds.u0,u1=bounds.safeBounds.u1,depth=requireMinimumDepth(bounds.safeBounds.v1,8),span=u1-u0,autoPositions=automaticWindowPositions(span,s.count);
+    const s=settingsForPlan(),u0=bounds.safeBounds.u0,u1=bounds.safeBounds.u1,depth=limitApartmentDepth(bounds.safeBounds.v1,8,1.5),span=u1-u0,autoPositions=automaticWindowPositions(span,s.count);
     const murs=[{id:'F',a:[u0,0],b:[u1,0],epaisseur:s.facadeThickness,facade:true},
       {id:'E',a:[u1,0],b:[u1,depth],epaisseur:0.25,ext:true},{id:'S',a:[u1,depth],b:[u0,depth],epaisseur:0.25,ext:true},{id:'W',a:[u0,depth],b:[u0,0],epaisseur:0.25,ext:true}];
     const ouvertures=[];
@@ -561,8 +561,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   }
   $('as-enter').onclick=()=>{
     const r=state.res;if(!r||!state.buildingConfirmed)return;
-    try{const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise insuffisante : l’appartement automatique exige au moins 8 m de profondeur.');
-      const plan=makeSettingsPlan(r);plan.footprint=bounds.footprint;requireMinimumDepth(bounds.safeBounds.v1,8);open3d(plan,'fenetre');
+    try{const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise insuffisante : il faut au moins 1,5 m de profondeur exploitable.');
+      const plan=makeSettingsPlan(r);plan.footprint=bounds.footprint;limitApartmentDepth(bounds.safeBounds.v1,8,1.5);open3d(plan,'fenetre');
     }catch(e){$('as-bw').textContent=e.message||String(e);}
   };
   $('as-window-calc').onclick=async()=>{
