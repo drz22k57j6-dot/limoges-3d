@@ -187,13 +187,13 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     <div id="as-window-settings">
       <div class="row"><b style="flex:1">Fenêtres côté rue</b><button class="count-btn" id="as-count-minus">−</button><b id="as-window-count">1</b><button class="count-btn" id="as-count-plus">+</button><button id="as-personalize">Personnaliser</button></div>
       <div class="row">
-        <label>Largeur (m)<input id="as-win-width" type="number" inputmode="decimal" min="0.5" max="4" step="0.05" value="1.20"></label>
-        <label>Hauteur (m)<input id="as-win-height" type="number" min="0.5" max="3.5" step="0.05" value="2.10"></label>
+        <label>Largeur (m)<input id="as-win-width" type="number" inputmode="decimal" inputmode="decimal" min="0.5" max="4" step="0.05" value="1.20"></label>
+        <label>Hauteur (m)<input id="as-win-height" type="number" inputmode="decimal" min="0.5" max="3.5" step="0.05" value="2.10"></label>
       </div>
       <div class="row">
-        <label>Allège (m)<input id="as-win-sill" type="number" min="0" max="2" step="0.05" value="0.90"></label>
-        <label>Mur façade (m)<input id="as-win-thickness" type="number" min="0.15" max="1.2" step="0.05" value="0.35"></label>
-        <label>Plafond (m)<input id="as-win-ceiling" type="number" min="2.2" max="4" step="0.05" value="2.80"></label>
+        <label>Allège (m)<input id="as-win-sill" type="number" inputmode="decimal" min="0" max="2" step="0.05" value="0.90"></label>
+        <label>Mur façade (m)<input id="as-win-thickness" type="number" inputmode="decimal" min="0.15" max="1.2" step="0.05" value="0.35"></label>
+        <label>Plafond (m)<input id="as-win-ceiling" type="number" inputmode="decimal" min="2.2" max="4" step="0.05" value="2.80"></label>
       </div>
       <div id="as-window-warning"></div><div id="as-win-custom"></div><div id="as-window-results"></div>
     </div>
@@ -222,11 +222,11 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const tooTall=s.customize?s.windows.some(w=>Number(w.sill??s.sill)+Number(w.height??s.height)>s.ceilingHeight-0.18):Number(s.sill)+Number(s.height)>s.ceilingHeight-0.18;
     $('as-window-warning').textContent=tooTall?'Attention : la fenêtre dépasse la hauteur sous plafond. Sa hauteur réelle sera réduite dans la 3D et le calcul.':'';
     custom.innerHTML=s.customize?s.windows.map((w,i)=>`<details><summary>Fenêtre ${i+1}</summary><div class="fields">
-      <label>Largeur (m)<input type="number" min="0.5" max="4" step="0.05" data-wi="${i}" data-wf="width" value="${w.width}"></label>
-      <label>Hauteur (m)<input type="number" min="0.5" max="3.5" step="0.05" data-wi="${i}" data-wf="height" value="${w.height}"></label>
-      <label>Allège (m)<input type="number" min="0" max="2" step="0.05" data-wi="${i}" data-wf="sill" value="${w.sill}"></label>
+      <label>Largeur (m)<input type="number" inputmode="decimal" min="0.5" max="4" step="0.05" data-wi="${i}" data-wf="width" value="${w.width}"></label>
+      <label>Hauteur (m)<input type="number" inputmode="decimal" min="0.5" max="3.5" step="0.05" data-wi="${i}" data-wf="height" value="${w.height}"></label>
+      <label>Allège (m)<input type="number" inputmode="decimal" min="0" max="2" step="0.05" data-wi="${i}" data-wf="sill" value="${w.sill}"></label>
       <label>Position<select data-wi="${i}" data-wf="positionMode"><option value="left" ${w.positionMode==='left'?'selected':''}>Gauche</option><option value="center" ${w.positionMode==='center'?'selected':''}>Centre</option><option value="right" ${w.positionMode==='right'?'selected':''}>Droite</option><option value="distance" ${w.positionMode==='distance'?'selected':''}>Distance depuis gauche</option></select></label>
-      <label>Distance (m)<input type="number" min="0" max="20" step="0.05" data-wi="${i}" data-wf="distance" value="${w.distance}"></label>
+      <label>Distance (m)<input type="number" inputmode="decimal" min="0" max="20" step="0.05" data-wi="${i}" data-wf="distance" value="${w.distance}"></label>
     </div></details>`).join(''):'';
   }
   function floorText(f,max){return f===0?'RDC / '+max:floorName(f)+' / '+max;}
