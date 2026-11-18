@@ -1,3 +1,4 @@
+import { floorBandTransform } from './floorBand.js';
 // Appart Studio — vue d'arrivée : caméra posée dans la rue, face à l'immeuble, étage surligné.
 // La caméra est imposée via window.__camOverride (hook de la boucle de rendu d'index.html).
 
@@ -114,8 +115,9 @@ export function createFacadeView({ THREE, scene, camera, drone, ground, CITY }) 
       st.res.floorData = floorData;
       st.res.snap = snapFromFacades(st.res);
       const y = floorY(st.res), h = floorH(st.res);
-      st.group.scale.y = h / Math.max(0.1, st.baseBandHeight || h);
-      st.group.position.y = y + h / 2;
+      const transform=floorBandTransform(y,h,st.baseBandHeight);
+      st.group.scale.y=transform.scaleY;
+      st.group.position.y=transform.centerY;
     },
     onSnap(f) { st.onSnap = f; },
     suspend() { if (st.group) st.group.visible = false; if (window.__camOverride === hook) window.__camOverride = null; },
