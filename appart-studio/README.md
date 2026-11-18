@@ -126,3 +126,15 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
   2. Régler le panneau solaire sur **21 juin**, puis placer l'heure à **13:00** (heure de Paris).
   3. Regarder le sol : seules les taches de lumière passant par les fenêtres doivent être visibles ; le plafond doit empêcher la lumière zénithale.
 - **Limites connues / non testé** : le scénario du 21 juin à 13:00 n'a pas été exécuté sur iPhone ; la concordance visuelle des ombres, le bias réel sur le GPU mobile et la géométrie d'extrusion doivent être vérifiés dans Safari. Aucun résultat ni capture n'est revendiqué.
+
+
+## Phase 5.3 — emprise IGN et fenêtres de façade
+
+- Le plan est borné par l'emprise polygonale IGN projetée dans le repère local : les poignées et les points manipulés sont limités à cette emprise. Les plans sauvegardés sont recadrés à leur réouverture.
+- Les fenêtres ajoutées sur la façade avant sont aimantées aux fenêtres générées par le moteur de façades pour le niveau sélectionné ; leur largeur, hauteur et allège proviennent des métadonnées de la baie.
+- Le plan de découpe commence derrière l'épaisseur de façade (0,45 m) afin de conserver la peau extérieure réelle.
+- **Comment tester sur iPhone (3 étapes)** :
+  1. Ouvrir un immeuble de test dont les données IGN et les façades sont chargées, puis **Dessiner mon plan**.
+  2. Essayer d'agrandir le contour au-delà des limites IGN ; vérifier qu'il reste contenu dans l'emprise.
+  3. Ajouter une fenêtre sur la façade : elle doit se caler sur une baie réelle, puis revenir en vue Maquette et regarder depuis la rue.
+- **Limites connues / non testé** : aucun test iPhone ni rendu depuis la rue n'a été exécuté. Les emprises très étroites ou concaves sont refusées si un rectangle intérieur sûr ne peut pas être calculé. Le choix explicite du nom de rue pour un immeuble d'angle n'est pas encore implémenté : la façade initiale reste celle retenue par la BAN/IGN.

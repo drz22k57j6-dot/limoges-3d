@@ -41,7 +41,7 @@ export function createPlanEditor({ onBack, onView3D }) {
   let hist = [], fut = [], drag = null, sel = null, storeKey = '';
 
   // ---------- données ----------
-  const fresh = () => ({ o: { u0: -2.5, u1: 2.5, v1: 4 }, walls: [], ops: [], labels: [{ p: [0, 2], type: 'sejour' }], n: 1 });
+  const fresh = () => { const b = ctxInfo?.safeBounds; return { o: b ? { u0: b.u0, u1: b.u1, v1: b.v1 } : { u0: -2.5, u1: 2.5, v1: 4 }, walls: [], ops: [], labels: [{ p: [0, Math.min(2, (b?.v1 || 4) / 2)], type: 'sejour' }], n: 1 }; };
   function outline() {
     const { u0, u1, v1 } = P.o;
     return [{ id: 'F', a: [u0, 0], b: [u1, 0], ext: true, facade: true }, { id: 'E', a: [u1, 0], b: [u1, v1], ext: true },
@@ -74,6 +74,7 @@ export function createPlanEditor({ onBack, onView3D }) {
   // ---------- vue ----------
   const toScr = p => [view.ox + p[0] * view.s, view.oy + p[1] * view.s];
   const toPlan = (x, y) => [(x - view.ox) / view.s, (y - view.oy) / view.s];
+  const clampPlan = p => { const b = ctxInfo?.safeBounds; return b ? [Math.max(b.u0, Math.min(b.u1, p[0])), Math.max(0, Math.min(b.v1, p[1]))] : p; };
   function size() {
     const dpr = Math.min(2, window.devicePixelRatio || 1), r = cv.getBoundingClientRect();
     cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -234,7 +235,7 @@ export function createPlanEditor({ onBack, onView3D }) {
     const t = Math.max(0, Math.min(1, ((p[0] - w.a[0]) * d[0] + (p[1] - w.a[1]) * d[1]) / L2));
     return [w.a[0] + d[0] * t, w.a[1] + d[1] * t];
   }
-  function evPt(e) { const r = cv.getBoundingClientRect(); return toPlan(e.clientX - r.left, e.clientY - r.top); }
+  function evPt(e) { const r = cv.getBoundingClientRect(); return clampPlan(toPlan(e.clientX - r.left, e.clientY - r.top)); }
 
   cv.addEventListener('pointerdown', e => {
     if (!P) return; e.preventDefault(); cv.setPointerCapture(e.pointerId);
@@ -250,17 +251,27 @@ export function createPlanEditor({ onBack, onView3D }) {
       const w = hitWall(p, 30); if (!w) { flash('Touche un mur'); return; }
       const d = OPEN_DEF[tool], L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
       if (L < 0.7) { flash('Mur trop court'); return; }
-      const nop = { id: 'o' + P.n++, wall: w.id, p: projectOn(w, p), w: Math.min(d.w, L - 0.2), type: tool, allege: d.allege, h: d.h };
-      // pas de chevauchement : on décale la nouvelle ouverture à côté de sa voisine (50 cm de trumeau)
-      const e = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], tOf = q => (q[0] - w.a[0]) * e[0] + (q[1] - w.a[1]) * e[1];
-      let t = tOf(nop.p);
-      for (let k = 0; k < 6; k++) {
-        const hit = P.ops.find(o => o.wall === w.id && Math.abs(tOf(o.p) - t) < (o.w + nop.w) / 2 + 0.5);
-        if (!hit) break;
-        const to = tOf(hit.p); t = to + Math.sign(t - to || 1) * ((hit.w + nop.w) / 2 + 0.5);
+      let nop;
+      if (tool === 'fenetre' && (w.facade || w.id === 'F')) {
+        const anchors = ctxInfo?.facadeWindows || [];
+        const anchor = anchors.slice().sort((a, b) => Math.abs(a.u - p[0]) - Math.abs(b.u - p[0]))[0];
+        if (!anchor || Math.abs(anchor.u - p[0]) > 1.0) { flash('Touchez une vraie fenêtre de la façade'); return; }
+        if (P.ops.some(o => o.wall === w.id && Math.abs(o.p[0] - anchor.u) < (o.w + anchor.width) / 2 + 0.25)) { flash('Cette fenêtre est déjà placée'); return; }
+        nop = { id: 'o' + P.n++, wall: w.id, p: [anchor.u, 0], w: anchor.width, type: tool, allege: anchor.allege, h: anchor.height, facadeWindowId: anchor.id };
+      } else {
+        const nop0 = { id: 'o' + P.n++, wall: w.id, p: projectOn(w, p), w: Math.min(d.w, L - 0.2), type: tool, allege: d.allege, h: d.h };
+        // pas de chevauchement : on décale la nouvelle ouverture à côté de sa voisine (50 cm de trumeau)
+        const e = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], tOf = q => (q[0] - w.a[0]) * e[0] + (q[1] - w.a[1]) * e[1];
+        let t = tOf(nop0.p);
+        for (let k = 0; k < 6; k++) {
+          const hit = P.ops.find(o => o.wall === w.id && Math.abs(tOf(o.p) - t) < (o.w + nop0.w) / 2 + 0.5);
+          if (!hit) break;
+          const to = tOf(hit.p); t = to + Math.sign(t - to || 1) * ((hit.w + nop0.w) / 2 + 0.5);
+        }
+        if (t < nop0.w / 2 + 0.05 || t > L - nop0.w / 2 - 0.05) { flash('Plus de place sur ce mur'); return; }
+        nop0.p = [w.a[0] + e[0] * t, w.a[1] + e[1] * t];
+        nop = nop0;
       }
-      if (t < nop.w / 2 + 0.05 || t > L - nop.w / 2 - 0.05) { flash('Plus de place sur ce mur'); return; }
-      nop.p = [w.a[0] + e[0] * t, w.a[1] + e[1] * t];
       P.ops.push(nop); sel = { op: nop.id }; drag = { kind: 'op', id: nop.id, moved: true }; openOpSheet(nop); draw(); return;
     }
     // outil Pièces : mur intérieur puis pièce
@@ -275,9 +286,10 @@ export function createPlanEditor({ onBack, onView3D }) {
     const p = evPt(e);
     if (drag.kind === 'handle') {
       const o = P.o, k = drag.k;
-      if (k.includes('E')) o.u1 = Math.max(o.u0 + 1.5, g10(p[0]));
-      if (k === 'W') o.u0 = Math.min(o.u1 - 1.5, g10(p[0]));
-      if (k.includes('S')) o.v1 = Math.max(1.5, g10(p[1]));
+      const bounds = ctxInfo?.safeBounds || { u0: -20, u1: 20, v1: 20 };
+      if (k.includes('E')) o.u1 = Math.min(bounds.u1, Math.max(o.u0 + 1.5, g10(p[0])));
+      if (k === 'W') o.u0 = Math.max(bounds.u0, Math.min(o.u1 - 1.5, g10(p[0])));
+      if (k.includes('S')) o.v1 = Math.min(bounds.v1, Math.max(1.5, g10(p[1])));
       recompute(); draw();
     } else if (drag.kind === 'op') {
       const op = P.ops.find(o => o.id === drag.id), w = op && wallById(op.wall);
@@ -351,6 +363,16 @@ export function createPlanEditor({ onBack, onView3D }) {
       ctxInfo = info; storeKey = 'as-plan:' + info.key;
       let saved = null; try { saved = JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) {}
       P = saved && saved.o ? saved : fresh();
+      if (ctxInfo.safeBounds) {
+        const b = ctxInfo.safeBounds;
+        P.o.u0 = Math.max(b.u0, Math.min(b.u1 - 1.5, P.o.u0));
+        P.o.u1 = Math.min(b.u1, Math.max(P.o.u0 + 1.5, P.o.u1));
+        P.o.v1 = Math.min(b.v1, Math.max(1.5, P.o.v1));
+        const cp = q => clampPlan(q);
+        P.walls.forEach(w => { w.a = cp(w.a); w.b = cp(w.b); });
+        P.labels.forEach(l => { l.p = cp(l.p); });
+        P.ops.forEach(o => { o.p = cp(o.p); });
+      }
       hist = [JSON.stringify(P)]; fut = []; sel = null;
       root.querySelector('#ase-title span').textContent = info.title;
       root.classList.add('on'); recompute(); setTool('piece');

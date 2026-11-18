@@ -526,10 +526,28 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const pu = P => (P[0] - F[0]) * u[0] + (P[1] - F[1]) * u[1];
     const north = [0 * u[0] + -1 * u[1], 0 * v[0] + -1 * v[1]];        // nord local = (0,-1) exprimé dans le plan
     const span = [pu(A), pu(B)].sort((a, b) => a - b);
+    const footprint = r.local.ring.map(P => { const dx = P[0] - F[0], dz = P[1] - F[1]; return [dx * u[0] + dz * u[1], dx * v[0] + dz * v[1]]; });
+    const inside = P => { let hit = false; for (let i = 0, j = footprint.length - 1; i < footprint.length; j = i++) { const a = footprint[i], b = footprint[j]; if ((a[1] > P[1]) !== (b[1] > P[1]) && P[0] < (b[0] - a[0]) * (P[1] - a[1]) / (b[1] - a[1]) + a[0]) hit = !hit; } return hit; };
+    const safeU0 = span[0] + 0.15, safeU1 = span[1] - 0.15;
+    let minDepth = Infinity;
+    for (let x = safeU0; x <= safeU1; x += 0.15) {
+      let depth = 0;
+      for (let y = 0.05; y <= 40; y += 0.05) { if (inside([x, y])) depth = y; else if (depth > 0) break; }
+      if (depth <= 0) { minDepth = 0; break; }
+      minDepth = Math.min(minDepth, depth);
+    }
+    const safeBounds = { u0: safeU0, u1: safeU1, v1: Math.min(20, minDepth - 0.2) };
+    if (safeBounds.u1 - safeBounds.u0 < 1.5 || safeBounds.v1 < 1.5) { $('as-bw').textContent = 'Emprise IGN trop étroite ou irrégulière pour garantir le placement de cet appartement.'; return; }
+    const entries = window.__facadeEtages?.get(r.feature.properties?.cleabs) || [];
+    let facade = null, facadeDistance = Infinity;
+    for (const e of entries) { const dx=e.b[0]-e.a[0], dz=e.b[1]-e.a[1], l2=dx*dx+dz*dz||1; const t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2)); const d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t); if(d<facadeDistance){facadeDistance=d;facade=e;} }
+    const floorIndex = facade?.ent && r.floorData.floor >= 1 ? r.floorData.floor + 1 : r.floorData.floor;
+    const facadeAxis = facade ? [(facade.b[0]-facade.a[0])/(Math.hypot(facade.b[0]-facade.a[0],facade.b[1]-facade.a[1])||1),(facade.b[1]-facade.a[1])/(Math.hypot(facade.b[0]-facade.a[0],facade.b[1]-facade.a[1])||1)] : null;
+    const facadeWindows = facade && facadeDistance <= 6 ? (facade.windows || []).filter(w => w.floor === floorIndex).map(w => { const wx=facade.a[0]+facadeAxis[0]*w.x, wz=facade.a[1]+facadeAxis[1]*w.x; return { id:'facade-'+facade.k+'-'+w.floor+'-'+w.bay, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, height:w.height, allege:facade.y0+w.y-w.height/2-view.floorY(r) }; }) : [];
     $('as-bar').classList.remove('on');
     editor.open({
       key: r.address + '|' + r.floorData.floor, title: r.address + ' · ' + floorName(r.floorData.floor),
-      street: r.street, orient: orientationName(r.local.bearing), north, facadeSpan: span,
+      street: r.street, orient: orientationName(r.local.bearing), north, facadeSpan: span, safeBounds, facadeWindows,
     });
     state.frame = { F, u, v, floorY: view.floorY(r) };
   };
