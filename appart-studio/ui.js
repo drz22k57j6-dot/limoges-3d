@@ -507,8 +507,21 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     ].join('\n');
     if ($('as3-dbg-text')) $('as3-dbg-text').textContent = $('as-dbg').textContent;
   }
-  function makeSettingsPlan(){
-    const s=settingsForPlan(),u0=-3,u1=3,depth=4.5,span=u1-u0;
+  function computeApartmentBounds(r){
+    const {F,A,B,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]];
+    const pu=P=>(P[0]-F[0])*u[0]+(P[1]-F[1])*u[1];
+    const north=[-u[1],-v[1]],span=[pu(A),pu(B)].sort((a,b)=>a-b);
+    const footprint=r.local.ring.map(P=>{const dx=P[0]-F[0],dz=P[1]-F[1];return [dx*u[0]+dz*u[1],dx*v[0]+dz*v[1]];});
+    const inside=P=>{let hit=false;for(let i=0,j=footprint.length-1;i<footprint.length;j=i++){const a=footprint[i],b=footprint[j];if((a[1]>P[1])!==(b[1]>P[1])&&P[0]<(b[0]-a[0])*(P[1]-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;};
+    const u0=span[0]+0.15,u1=span[1]-0.15;let minDepth=Infinity;
+    for(let x=u0;x<=u1;x+=0.15){let depth=0;for(let y=0.05;y<=40;y+=0.05){if(inside([x,y]))depth=y;else if(depth>0)break;}if(depth<=0){minDepth=0;break;}minDepth=Math.min(minDepth,depth);}
+    const safeBounds={u0,u1,v1:Math.min(20,minDepth-0.2)};
+    if(u1-u0<1.5||safeBounds.v1<1.5)return null;
+    return {F,u,v,north,span,safeBounds};
+  }
+  function makeSettingsPlan(r){
+    const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise IGN trop étroite pour calculer un appartement.');
+    const s=settingsForPlan(),u0=bounds.safeBounds.u0,u1=bounds.safeBounds.u1,depth=bounds.safeBounds.v1,span=u1-u0;
     const murs=[{id:'F',a:[u0,0],b:[u1,0],epaisseur:s.facadeThickness,facade:true},
       {id:'E',a:[u1,0],b:[u1,depth],epaisseur:0.25,ext:true},{id:'S',a:[u1,depth],b:[u0,depth],epaisseur:0.25,ext:true},{id:'W',a:[u0,depth],b:[u0,0],epaisseur:0.25,ext:true}];
     const ouvertures=[];
@@ -524,7 +537,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const r=state.res;if(!r)return;const button=$('as-window-calc'),out=$('as-window-results');
     button.disabled=true;button.textContent='Calcul…';out.textContent='Calcul des fenêtres, embrasures et masques…';disposeSolarTrees();state.solarReport=null;
     try{
-      const plan=makeSettingsPlan(),fr={F:r.local.F,u:[-r.local.n[1],r.local.n[0]],v:[-r.local.n[0],-r.local.n[1]],floorY:view.floorY(r),H:plan.settings.ceilingHeight};
+      const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise IGN trop étroite pour calculer un appartement.');
+      const plan=makeSettingsPlan(r),fr={F:bounds.F,u:bounds.u,v:bounds.v,floorY:view.floorY(r),H:plan.settings.ceilingHeight};
       const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan,fr,onProgress:p=>{out.textContent=p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' fenêtres/dates…':'Préparation des obstacles et arbres…';}});
       state.solarReport=result;state.solarTreeGroup=result.treeGroup;renderDbg();
       const score=scoreSoleil(result.rooms),keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};
@@ -557,29 +571,13 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
 
   // plan
   $('as-draw').onclick = () => {
-    const r = state.res; if (!r) return;
-    const { F, A, B, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
-    const pu = P => (P[0] - F[0]) * u[0] + (P[1] - F[1]) * u[1];
-    const north = [0 * u[0] + -1 * u[1], 0 * v[0] + -1 * v[1]];        // nord local = (0,-1) exprimé dans le plan
-    const span = [pu(A), pu(B)].sort((a, b) => a - b);
-    const footprint = r.local.ring.map(P => { const dx = P[0] - F[0], dz = P[1] - F[1]; return [dx * u[0] + dz * u[1], dx * v[0] + dz * v[1]]; });
-    const inside = P => { let hit = false; for (let i = 0, j = footprint.length - 1; i < footprint.length; j = i++) { const a = footprint[i], b = footprint[j]; if ((a[1] > P[1]) !== (b[1] > P[1]) && P[0] < (b[0] - a[0]) * (P[1] - a[1]) / (b[1] - a[1]) + a[0]) hit = !hit; } return hit; };
-    const safeU0 = span[0] + 0.15, safeU1 = span[1] - 0.15;
-    let minDepth = Infinity;
-    for (let x = safeU0; x <= safeU1; x += 0.15) {
-      let depth = 0;
-      for (let y = 0.05; y <= 40; y += 0.05) { if (inside([x, y])) depth = y; else if (depth > 0) break; }
-      if (depth <= 0) { minDepth = 0; break; }
-      minDepth = Math.min(minDepth, depth);
-    }
-    const safeBounds = { u0: safeU0, u1: safeU1, v1: Math.min(20, minDepth - 0.2) };
-    if (safeBounds.u1 - safeBounds.u0 < 1.5 || safeBounds.v1 < 1.5) { $('as-bw').textContent = 'Emprise IGN trop étroite ou irrégulière pour garantir le placement de cet appartement.'; return; }
+    const r=state.res;if(!r)return;
+    const bounds=computeApartmentBounds(r);
+    if(!bounds){$('as-bw').textContent='Emprise IGN trop étroite ou irrégulière pour garantir le placement de cet appartement.';return;}
     $('as-bar').classList.remove('on');
-    editor.open({
-      key:r.address+'|'+r.floorData.floor,title:r.address+' · '+floorName(r.floorData.floor),
-      street:r.street,orient:orientationName(r.local.bearing),north,facadeSpan:span,safeBounds,settings:settingsForPlan(),
-    });
-    state.frame = { F, u, v, floorY: view.floorY(r) };
+    editor.open({key:r.address+'|'+r.floorData.floor,title:r.address+' · '+floorName(r.floorData.floor),
+      street:r.street,orient:orientationName(r.local.bearing),north:bounds.north,facadeSpan:bounds.span,safeBounds:bounds.safeBounds,settings:settingsForPlan()});
+    state.frame={F:bounds.F,u:bounds.u,v:bounds.v,floorY:view.floorY(r)};
   };
 
   Object.assign(state, { open: enter, quit, tests: TESTS, editor, view, apt, cam3, open3d, setMode3d });
