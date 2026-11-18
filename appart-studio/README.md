@@ -79,6 +79,15 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - Le résultat présente chaque fenêtre sélectionnée et un total multi-fenêtres sans double comptage des pas de 15 minutes.
 - Si les métadonnées de façade ne sont pas encore chargées ou si le générateur ne publie pas de baies pour le niveau, le mode express explique pourquoi il ne peut pas démarrer.
 
+## Phase 4D — Score Soleil A→G
+
+- Le score utilise les heures directes du 21 décembre du meilleur séjour (séjour prioritaire) ; si aucun séjour n'est défini, il prend la meilleure chambre.
+- Seuils : A ≥ 4 h ; B ≥ 3 h ; C ≥ 2 h ; D ≥ 1 h ; E ≥ 0,5 h ; F > 0 h ; G = 0 h.
+- Les heures d'été du même local sont affichées à côté du score.
+- Le libellé exact **« Score Soleil »** et l'avertissement **« soleil direct simulé, hors météo »** sont présents dans Détails et le rapport d'analyse.
+- En mode express sans plan, le score A→G est volontairement indiqué comme indisponible : aucune pièce séjour/chambre n'est connue.
+- Test pur hors réseau : `node --test appart-studio/solarScore.test.mjs` (seuils, priorité séjour, secours chambre).
+
 ## Limites
 
 - Le calcul express n'a pas été chronométré sur iPhone ; l'objectif inférieur à 5 secondes reste à mesurer.

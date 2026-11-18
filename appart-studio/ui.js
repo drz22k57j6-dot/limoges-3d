@@ -6,6 +6,7 @@ import { createApartment } from './buildApartment.js';
 import { createCam3d } from './cam3d.js';
 import { sunPosition, sunDirection } from './sun.js';
 import { calculateSolarReport } from './solarAnalysis.js';
+import { scoreSoleil } from './solarScore.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -267,7 +268,9 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
           const names={sejour:'Séjour',chambre:'Chambre',bureau:'Bureau',dressing:'Dressing',cuisine:'Cuisine',entree:'Entrée',sdb:'Salle de bain',wc:'WC'};
           const roomText=result.rooms.map(room=>{const h=room.hours;return (names[room.type]||room.type||'Pièce')+' · '+room.windows.length+' fenêtre(s) · hiver '+h.winter.toFixed(1)+' h · printemps '+h.spring.toFixed(1)+' h · été '+h.summer.toFixed(1)+' h · aujourd’hui '+h.today.toFixed(1)+' h';}).join('\n');
           const winText=result.windows.map(w=>{const h=w.byDate;return 'Fenêtre '+w.id+' ('+(names[w.roomType]||w.roomType)+') : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
-          report.textContent='Arbres 3D pris en compte : '+result.trees+'\n\nPIÈCES\n'+roomText+'\n\nFENÊTRES\n'+winText;
+          const score=scoreSoleil(result.rooms);
+          const scoreText=score.grade?'Score Soleil : '+score.grade+' · hiver '+score.winterHours.toFixed(1)+' h · été '+score.summerHours.toFixed(1)+' h · soleil direct simulé, hors météo':'Score Soleil : séjour/chambre non identifié · soleil direct simulé, hors météo';
+          report.textContent=scoreText+'\n\nArbres 3D pris en compte : '+result.trees+'\n\nPIÈCES\n'+roomText+'\n\nFENÊTRES\n'+winText;
         } catch(e) { report.textContent='Analyse indisponible : '+e.message; }
         finally { button.disabled=false; button.textContent='Recalculer le soleil par pièce'; }
       };
@@ -296,6 +299,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   }
   function open3d() {
     const r = state.res; if (!r) return;
+    state.solarReport = null;
     const plan = editor.getPlan(); state.plan3d = plan;
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
@@ -404,6 +408,10 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const sp = sunPosition(when, r.lat, r.lon), n = r.local.n;
     const incidence = Math.acos(Math.max(-1, Math.min(1, Math.cos(sp.el * Math.PI / 180) * (Math.sin(sp.az * Math.PI / 180) * n[0] - Math.cos(sp.az * Math.PI / 180) * n[1])))) * 180 / Math.PI;
     const facadeSun = sp.el > 0 && Math.cos(incidence * Math.PI / 180) > 0.02;
+    const score = state.solarReport ? scoreSoleil(state.solarReport.rooms) : null;
+    const scoreText = score?.grade
+      ? 'Score Soleil : ' + score.grade + ' · hiver ' + score.winterHours.toFixed(1) + ' h · été ' + score.summerHours.toFixed(1) + ' h · soleil direct simulé, hors météo'
+      : 'Score Soleil : analyse des pièces requise · soleil direct simulé, hors météo';
     $('as-dbg').textContent = [
       'ID IGN : ' + (p.cleabs || '?') + ' · ' + r.matchMode,
       'Hauteur : ' + fd.height.toFixed(1) + ' m · niveaux IGN : ' + fd.floors + ' (RDC compris)',
@@ -411,6 +419,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       (r.snap ? 'Plancher calé sur la façade : ' + r.snap.y.toFixed(2) + ' m alt. · niveau ' + r.snap.h.toFixed(2) + ' m' : 'Plancher estimé : ' + fd.offset.toFixed(2) + ' m au-dessus du sol') + ' · correction ' + (r.adjust >= 0 ? '+' : '') + r.adjust.toFixed(2),
       'Façade : ' + Math.round(r.local.bearing) + '° · adresse → façade ' + r.facade.distance.toFixed(1) + ' m · rue ' + (r.gap ?? 0).toFixed(1) + ' m',
       'Soleil : azimut ' + sp.az.toFixed(1) + '° · élévation ' + sp.el.toFixed(1) + '° · incidence façade ' + incidence.toFixed(1) + '° · soleil sur la façade : ' + (facadeSun ? 'oui' : 'non'),
+      scoreText,
       'FPS : ' + Math.round(window.__fps || 0),
     ].join('\n');
   }
@@ -451,6 +460,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   function startExpress() {
     stopExpress();
     const r=state.res; if(!r) return;
+    state.solarReport=null;
     const list=window.__facadeEtages?.get(r.feature.properties?.cleabs)||[];
     const F=r.local.F; let best=null,bd=Infinity;
     for(const e of list){
@@ -496,7 +506,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       const keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};
       const totals={};
       for(const key of keys){const series=result.windows.map(w=>w.byDate[key].minutes);let minutes=0;for(let i=0;i<(series[0]?.length||0);i++)minutes+=Math.max(0,...series.map(a=>a[i]?.frac||0))*15;totals[key]=minutes/60;}
-      out.textContent='RÉSULTAT EXPRESS · '+selected.length+' fenêtre(s)\nTotal sans double comptage : '+keys.map(k=>labels[k]+' '+totals[k].toFixed(1)+' h').join(' · ')+'\n\n'+result.windows.map(w=>{const h=w.byDate;return w.id+' : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
+      out.textContent='RÉSULTAT EXPRESS · '+selected.length+' fenêtre(s)\nTotal sans double comptage : '+keys.map(k=>labels[k]+' '+totals[k].toFixed(1)+' h').join(' · ')+'\nScore Soleil : disponible après dessin du plan (séjour/chambre requis)\nsoleil direct simulé, hors météo\n\n'+result.windows.map(w=>{const h=w.byDate;return w.id+' : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
     }catch(e){out.textContent='Calcul express impossible : '+e.message;}
     finally{button.disabled=false;button.textContent='Recalculer la sélection';}
   };
