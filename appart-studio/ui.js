@@ -145,6 +145,10 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   const TYPE_N = Object.fromEntries(ROOM_TYPES.map(([k, n]) => [k, n]));
   function setMode3d(m) {
     apt.setDollhouse(m === 'maquette');
+    const ri = renderer.info, mem = ri.memory || {};
+    const snap = { vue: m, programmes: ri.programs?.length ?? null, geometries: mem.geometries ?? null, textures: mem.textures ?? null, drawCalls: apt.info?.drawCalls ?? null, t: new Date().toISOString() };
+    state.vue3dDiagnostics ||= []; state.vue3dDiagnostics.push(snap); if (state.vue3dDiagnostics.length > 10) state.vue3dDiagnostics.shift();
+    window.__boite?.ponctuel('appart-studio', 'entrée vue', m + ' · programmes=' + snap.programmes + ' · géométries=' + snap.geometries + ' · textures=' + snap.textures + ' · drawCalls=' + snap.drawCalls);
     cam3.setMode(m);
     document.querySelectorAll('#as3-modes button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
     $('as3-help').textContent = HELP[m];
@@ -270,6 +274,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       (r.snap ? 'Plancher calé sur la façade : ' + r.snap.y.toFixed(2) + ' m alt. · niveau ' + r.snap.h.toFixed(2) + ' m' : 'Plancher estimé : ' + fd.offset.toFixed(2) + ' m au-dessus du sol') + ' · correction ' + (r.adjust >= 0 ? '+' : '') + r.adjust.toFixed(2),
       'Façade : ' + Math.round(r.local.bearing) + '° · adresse → façade ' + r.facade.distance.toFixed(1) + ' m · rue ' + (r.gap ?? 0).toFixed(1) + ' m',
       'FPS : ' + Math.round(window.__fps || 0),
+      'Appart Studio WebGL : ' + ((state.vue3dDiagnostics || []).slice(-3).map(x => x.vue + ' P' + x.programmes + ' G' + x.geometries + ' T' + x.textures + ' D' + x.drawCalls).join(' → ') || 'aucune vue enregistrée'),
     ].join('\n');
   }
   setInterval(() => { if ($('as-dbg').classList.contains('on')) renderDbg(); }, 1000);

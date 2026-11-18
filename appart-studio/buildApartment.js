@@ -3,6 +3,8 @@
 // Le volume de l'appartement est découpé dans le bâtiment réel (plans de coupe locaux, mode intersection),
 // donc on voit l'intérieur et, par les fenêtres, la vraie rue et les vrais immeubles d'en face.
 
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
 const TEX = {};
 function canvasTex(THREE, key, size, draw, repeatMeters) {
   if (TEX[key]) return TEX[key];
@@ -23,7 +25,7 @@ function plank(g, x, y, w, h, ang, base) {
   g.globalAlpha = 0.55; g.strokeStyle = '#2a1a0c'; g.lineWidth = 1.2; g.strokeRect(0, 0, w, h);
   g.restore(); g.globalAlpha = 1;
 }
-const texHerringbone = THREE => canvasTex(THREE, 'hb', 1024, (g, S) => {
+const texHerringbone = THREE => canvasTex(THREE, 'hb', 512, (g, S) => {
   g.fillStyle = '#7a5130'; g.fillRect(0, 0, S, S);
   const w = S / 16, L = w * 5;                         // lattes ~ 8 x 40 cm sur 1,6 m
   for (let row = -6; row < 22; row++) for (let col = -2; col < 10; col++) {
@@ -32,7 +34,7 @@ const texHerringbone = THREE => canvasTex(THREE, 'hb', 1024, (g, S) => {
     plank(g, x + L * 0.7071 + w * 0.7071, y + L * 0.7071 - w * 0.7071, L, w, -Math.PI / 4, 34);
   }
 }, 1.6);
-const texPlanks = THREE => canvasTex(THREE, 'pl', 1024, (g, S) => {
+const texPlanks = THREE => canvasTex(THREE, 'pl', 512, (g, S) => {
   const w = S / 8;
   for (let r = 0; r < 8; r++) { let x = -rnd() * S * 0.6; while (x < S) { const L = S * (0.35 + rnd() * 0.4); plank(g, x, r * w, L, w, 0, 40); x += L; } }
 }, 1.6);
@@ -45,6 +47,10 @@ const texTiles = (THREE, key, c1, c2, n) => canvasTex(THREE, key, 512, (g, S) =>
 function materials(THREE) {
   const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
   const glow = c => new THREE.Color(c).multiplyScalar(0.16);   // lumière d'ambiance intérieure (évite d'ajouter des lampes → pas de recompilation de la ville)
+  // Matériaux de sol partagés : les pièces de même famille fusionnent en un seul draw call.
+  const solParquet = std({ map: texHerringbone(THREE), roughness: 0.58, emissive: glow(0x8a6040) });
+  const solLames = std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) });
+  const solSdb = std({ map: texTiles(THREE, 'sdb', '#f2f2ef', null, 6), roughness: 0.3, emissive: glow(0x888888) });
   return {
     wall: std({ color: 0xf1ede4, emissive: glow(0xf1ede4) }),
     facadeOut: std({ color: 0xd9ccb3, roughness: 0.95 }),
@@ -55,21 +61,17 @@ function materials(THREE) {
     door: std({ color: 0xece8de, emissive: glow(0xece8de), roughness: 0.55 }),
     knob: std({ color: 0xc9a54b, metalness: 0.9, roughness: 0.3 }),
     floor: {
-      sejour: std({ map: texHerringbone(THREE), roughness: 0.55, emissive: glow(0x8a6040) }),
-      chambre: std({ map: texHerringbone(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
-      bureau: std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
-      dressing: std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
+      sejour: solParquet, chambre: solParquet,
+      bureau: solLames, dressing: solLames,
       entree: std({ map: texTiles(THREE, 'ent', '#efece6', '#26272b', 8), roughness: 0.4, emissive: glow(0x777777) }),
       cuisine: std({ map: texTiles(THREE, 'cui', '#ecebe7', '#3a3b40', 8), roughness: 0.35, emissive: glow(0x777777) }),
-      sdb: std({ map: texTiles(THREE, 'sdb', '#f2f2ef', null, 6), roughness: 0.3, emissive: glow(0x888888) }),
-      wc: std({ map: texTiles(THREE, 'wc', '#f2f2ef', null, 6), roughness: 0.3, emissive: glow(0x888888) }),
-      _: std({ map: texPlanks(THREE), roughness: 0.6, emissive: glow(0x8a6040) }),
+      sdb: solSdb, wc: solSdb, _: solLames,
     },
   };
 }
 
 export function createApartment({ THREE, scene, renderer }) {
-  let M = null, group = null, clip = null, clipped = new Set(), scanT = 0, info = null;
+  let M = null, group = null, clip = null, clipped = new Map(), scanT = 0, info = null;
 
   function dispose() {
     if (!group) return;
@@ -89,32 +91,129 @@ export function createApartment({ THREE, scene, renderer }) {
       pl(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, floorY + top, 0)), pl(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, floorY - 0.06, 0)),
     ];
   }
-  function applyClip(force = false) {
-    if (!clip || !group) return;
-    const c = info.center, R2 = 90 * 90;
-    scene.traverse(o => {
-      if (!o.isMesh || !o.material || o === group || isOurs(o)) return;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      if (!force && mats.every(m => clipped.has(m))) return;
-      // seulement ce qui est autour de l'appartement (la découpe est locale de toute façon)
-      if (o.geometry && !o.geometry.boundingSphere) o.geometry.computeBoundingSphere?.();
-      const bs = o.geometry?.boundingSphere;
-      if (bs) { const p = bs.center.clone().applyMatrix4(o.matrixWorld); const r = bs.radius * o.matrixWorld.getMaxScaleOnAxis(); const dx = p.x - c.x, dz = p.z - c.z; if (dx * dx + dz * dz > (Math.sqrt(R2) + r) ** 2) return; }
-      for (const m of mats) {
-        if (clipped.has(m) && !force) continue;
-        m.clippingPlanes = clip; m.clipIntersection = true; m.clipShadows = true; m.needsUpdate = true; clipped.add(m);
-      }
-    });
+  function clipBounds() {
+    const { fr, box } = info, { F, u, v, floorY } = fr;
+    const b = new THREE.Box3();
+    for (const pu of [box.u0, box.u1]) for (const pv of [box.v0, box.v1])
+      b.expandByPoint(new THREE.Vector3(F[0] + u[0] * pu + v[0] * pv, floorY - 0.06, F[1] + u[1] * pu + v[1] * pv)),
+      b.expandByPoint(new THREE.Vector3(F[0] + u[0] * pu + v[0] * pv, floorY + info.H + 0.32, F[1] + u[1] * pu + v[1] * pv));
+    return b;
   }
   function isOurs(o) { for (let p = o; p; p = p.parent) if (p === group) return true; return false; }
+  function isTargetMesh(o, bounds) {
+    const id = info?.fr?.buildingId;
+    if (!id || !o.isMesh || !o.geometry || o.userData?.appartClipTarget || isOurs(o)) return false;
+    // Les tuiles porteuses d'identifiants sont retenues uniquement si elles contiennent l'ID BAN/IGN cible.
+    const ids = o.userData?.ids;
+    if (Array.isArray(ids)) return ids.includes(id);
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox?.();
+    if (!o.geometry.boundingBox) return false;
+    o.updateWorldMatrix(true, false);
+    const world = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
+    return world.intersectsBox(bounds);
+  }
+  function clippedMaterial(material) {
+    const one = m => { const c = m.clone(); c.clippingPlanes = clip; c.clipIntersection = true; c.clipShadows = false; c.needsUpdate = true; return c; };
+    return Array.isArray(material) ? material.map(one) : one(material);
+  }
+  function isolateBatch(o, id) {
+    const g = o.geometry, ids = o.userData?.ids, ba = g.getAttribute('_batchid') || g.getAttribute('_BATCHID');
+    const batch = Array.isArray(ids) ? ids.indexOf(id) : -1;
+    if (!ba || batch < 0 || Array.isArray(o.material)) return null;
+    const ix = g.index, count = ix ? ix.count : g.getAttribute('position').count, at = n => ix ? ix.getX(n) : n;
+    const target = [], rest = [];
+    for (let i = 0; i + 2 < count; i += 3) {
+      const a=at(i), b=at(i+1), c=at(i+2);
+      const hit=Math.round(ba.getX(a))===batch && Math.round(ba.getX(b))===batch && Math.round(ba.getX(c))===batch;
+      (hit ? target : rest).push(a,b,c);
+    }
+    if (!target.length) return null;
+    const originalGeometry = g, restGeometry = g.clone(), targetGeometry = g.clone();
+    restGeometry.setIndex(rest); targetGeometry.setIndex(target);
+    restGeometry.clearGroups(); targetGeometry.clearGroups();
+    const boundsFor = (geo, indices) => {
+      const p=geo.getAttribute('position'), box=new THREE.Box3().makeEmpty();
+      for(const v of indices) box.expandByPoint(new THREE.Vector3(p.getX(v),p.getY(v),p.getZ(v)));
+      geo.boundingBox=box; geo.boundingSphere=box.getBoundingSphere(new THREE.Sphere());
+    };
+    boundsFor(restGeometry,rest); boundsFor(targetGeometry,target);
+    // Le moteur de façades masque déjà parfois le volume IGN en déplaçant ses sommets.
+    // On rétablit les positions d'origine dans le sous-maillage cible isolé.
+    const vertices=o.userData?.idVerts?.get(id), saved=o.userData?.orig?.get(id), pos=targetGeometry.getAttribute('position');
+    if (vertices && saved) {
+      for (let i=0;i<vertices.length;i++) { const v=vertices[i]; pos.setXYZ(v,saved[i*3],saved[i*3+1],saved[i*3+2]); }
+      pos.needsUpdate=true;
+    }
+    boundsFor(targetGeometry,target);
+    o.updateMatrix();
+    const targetMesh = new THREE.Mesh(targetGeometry, clippedMaterial(o.material));
+    targetMesh.name = 'appart-clip-target:' + id; targetMesh.userData.appartClipTarget = true;
+    targetMesh.position.copy(o.position); targetMesh.quaternion.copy(o.quaternion); targetMesh.scale.copy(o.scale);
+    targetMesh.matrixAutoUpdate = o.matrixAutoUpdate; if (o.matrixAutoUpdate) targetMesh.updateMatrix(); else targetMesh.matrix.copy(o.matrix);
+    targetMesh.castShadow = false; targetMesh.receiveShadow = o.receiveShadow; targetMesh.renderOrder = o.renderOrder;
+    o.geometry = restGeometry; o.parent?.add(targetMesh);
+    return { isolated:true, originalGeometry, targetMesh };
+  }
+  function applyClip() {
+    if (!clip || !group || !info) return;
+    const bounds = clipBounds(), id = info.fr?.buildingId;
+    scene.updateMatrixWorld(true);
+    scene.traverse(o => {
+      if (!o.isMesh || !o.material || clipped.has(o) || !isTargetMesh(o, bounds)) return;
+      const ids = o.userData?.ids;
+      if (Array.isArray(ids) && ids.includes(id)) {
+        const isolated = isolateBatch(o, id);
+        if (isolated) { clipped.set(o, isolated); return; }
+      }
+      const original = o.material;
+      o.material = clippedMaterial(original);
+      clipped.set(o, { material: original, castShadow: o.castShadow });
+      // Pour les meshes agrégés sans identifiant, la boîte locale sert de repli.
+      o.castShadow = false;
+    });
+  }
   function unclip() {
-    for (const m of clipped) { m.clippingPlanes = null; m.clipIntersection = false; m.clipShadows = false; m.needsUpdate = true; }
+    for (const [o, saved] of clipped) {
+      if (saved.isolated) {
+        saved.targetMesh.parent?.remove(saved.targetMesh);
+        saved.targetMesh.geometry.dispose();
+        (Array.isArray(saved.targetMesh.material) ? saved.targetMesh.material : [saved.targetMesh.material]).forEach(m => m.dispose());
+        o.geometry.dispose(); o.geometry = saved.originalGeometry;
+      } else {
+        const current = Array.isArray(o.material) ? o.material : [o.material];
+        current.forEach(m => m.dispose());
+        o.material = saved.material; o.castShadow = saved.castShadow;
+      }
+    }
     clipped.clear(); clip = null;
+  }
+  function mergeApartmentMeshes() {
+    const buckets = new Map();
+    group.updateMatrixWorld(true);
+    for (const o of [...group.children]) {
+      if (!o.isMesh || !o.geometry || Array.isArray(o.material)) continue;
+      o.updateMatrix();
+      const key = o.material.uuid + ':' + (o.userData.ceiling ? 'ceiling' : 'body');
+      if (!buckets.has(key)) buckets.set(key, { material: o.material, items: [], ceiling: !!o.userData.ceiling });
+      const g = o.geometry.clone(); g.applyMatrix4(o.matrix);
+      buckets.get(key).items.push({ mesh: o, geometry: g });
+    }
+    for (const b of buckets.values()) {
+      if (b.items.length < 2) { b.items.forEach(x => x.geometry.dispose()); continue; }
+      let merged = null;
+      try { merged = mergeGeometries(b.items.map(x => x.geometry), false); } catch (_) {}
+      if (!merged) { b.items.forEach(x => x.geometry.dispose()); continue; }
+      for (const x of b.items) { group.remove(x.mesh); x.mesh.geometry.dispose(); x.geometry.dispose(); }
+      const m = new THREE.Mesh(merged, b.material);
+      m.castShadow = b.items.some(x => x.mesh.castShadow);
+      m.receiveShadow = true; if (b.ceiling) m.userData.ceiling = true;
+      group.add(m);
+    }
   }
 
   // ---------- construction ----------
   function build(plan, fr, opts = {}) {
-    dispose(); M ||= materials(THREE);
+    unclip(); dispose(); M ||= materials(THREE);
     const { F, u, v, floorY } = fr, H = fr.H;
     const W = (pu, pv) => [F[0] + u[0] * pu + v[0] * pv, F[1] + u[1] * pu + v[1] * pv];
     group = new THREE.Group(); group.name = 'appart-studio-3d';
@@ -224,30 +323,41 @@ export function createApartment({ THREE, scene, renderer }) {
       }
     }
     scene.add(group);
+    mergeApartmentMeshes();
 
     // boîte de découpe (contour + marge) : on retire le vrai bâtiment là où se trouve l'appartement
     const us = walls.flatMap(w => [w.a[0], w.b[0]]), vs = walls.flatMap(w => [w.a[1], w.b[1]]);
     const box = { u0: Math.min(...us) - 0.15, u1: Math.max(...us) + 0.15, v0: -0.45, v1: Math.max(...vs) + 0.15 };
     const c3 = W((box.u0 + box.u1) / 2, (box.v0 + box.v1) / 2);
-    info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W };
+    info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W, drawCalls: group.children.filter(o => o.isMesh).length };
     renderer.localClippingEnabled = true;
+    clip = makeClip(fr, box, opts.dollhouse ? 400 : H + 0.32); // six plans créés une seule fois pour toute la session 3D
+    applyClip();
     setDollhouse(!!opts.dollhouse);
     return info;
   }
 
   function setDollhouse(on) {
-    if (!info) return;
-    unclip();
-    clip = makeClip(info.fr, info.box, on ? 400 : info.H + 0.32);
+    if (!info || !clip) return;
+    // Le même plan supérieur est déplacé : aucune mutation de matériau ni recompilation de shader.
+    clip[4].constant = -(info.fr.floorY + (on ? 400 : info.H + 0.32));
     group.traverse(o => { if (o.userData.ceiling) o.visible = !on; });
-    applyClip(true);
   }
 
   return {
     build,
     setDollhouse,
-    tick(dt) { if (!clip) return; scanT += dt; if (scanT > 1) { scanT = 0; applyClip(false); } },  // nouvelles tuiles / façades chargées
-    hide() { unclip(); dispose(); info = null; },
+    tick(dt) { if (!clip) return; scanT += dt; if (scanT > 1) { scanT = 0; applyClip(); } }, // attache une seule fois les éventuelles tuiles nouvellement chargées
+    hide() {
+      unclip(); dispose();
+      if (M) {
+        const mats = new Set([...Object.values(M).filter(v => v?.isMaterial), ...Object.values(M.floor || {})]);
+        mats.forEach(m => m.dispose()); M = null;
+      }
+      Object.values(TEX).forEach(t => t.dispose());
+      for (const k of Object.keys(TEX)) delete TEX[k];
+      info = null;
+    },
     get info() { return info; },
   };
 }
