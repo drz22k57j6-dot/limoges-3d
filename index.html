@@ -1669,8 +1669,8 @@ async function startGoogleCity(){
     tiles.registerPlugin(new P.GLTFExtensionsPlugin({dracoLoader:draco}));tiles.registerPlugin(new P.TileCompressionPlugin());
     tiles.registerPlugin(new P.ReorientationPlugin({lat:ORIGIN.lat*Math.PI/180,lon:ORIGIN.lon*Math.PI/180,height:H0+CITY.geoid,recenter:true}));
     tiles.errorTarget=TILE_ERR[qi];
-    tiles.addEventListener('load-model',({scene:sc})=>{photoModelLoaded=true;sc.traverse(o=>{if(!o.isMesh)return;const old=o.material;o.material=new THREE.MeshBasicMaterial({map:old.map||null,color:old.map?0xffffff:old.color,fog:true,toneMapped:false});if(o.material.map)o.material.map.anisotropy=renderer.capabilities.getMaxAnisotropy();old.dispose();});updatePhotoAttribution();});
-    tiles.addEventListener('load-root-tileset',()=>{if(WORLD.mode==='photo')setCity('google');updatePhotoAttribution();});
+    tiles.addEventListener('load-model',({scene:sc})=>{photoModelLoaded=true;sc.traverse(o=>{if(!o.isMesh)return;const old=o.material;o.material=new THREE.MeshBasicMaterial({map:old.map||null,color:old.map?0xffffff:old.color,fog:true,toneMapped:false});if(o.material.map)o.material.map.anisotropy=renderer.capabilities.getMaxAnisotropy();old.dispose();});updatePhotoAttribution();if(WORLD.mode==='photo')setCity('google');});
+    tiles.addEventListener('load-root-tileset',updatePhotoAttribution);
     tiles.addEventListener('load-tileset',updatePhotoAttribution);
     tiles.addEventListener('load-error',({tile,error})=>{console.warn('Google photoréaliste : chargement impossible',error);if(!tile||!tiles?.root)fallbackPhotoCity('Carte photoréaliste indisponible (clé, quota ou réseau) — retour à la vue IGN.');});
     tilesRoot=new THREE.Group();tilesRoot.rotation.y=Math.PI;tilesRoot.add(tiles.group);scene.add(tilesRoot);
