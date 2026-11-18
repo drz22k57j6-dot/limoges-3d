@@ -28,9 +28,10 @@ MNT = mosaic('mnt'); MNH = mosaic('mnh')
 # Le raster 2 m reste en mémoire pour la détection des arbres et sert de repli
 # uniquement si la dalle haute résolution ne contient pas assez d'échantillons.
 MNH_HD_TILES_LOADED = 0
+MNH_HD_VALID_PIXELS = 0
 
 def mosaic_mnh_hd():
-    global MNH_HD_TILES_LOADED
+    global MNH_HD_TILES_LOADED, MNH_HD_VALID_PIXELS
     path = os.path.join(D, 'mnh_hd_0_0.tif')
     if not os.path.exists(path):
         print('MNH 50 cm absent : toitures en mode repli MNH 2 m')
@@ -49,7 +50,8 @@ def mosaic_mnh_hd():
             a[(5-j)*2000:(6-j)*2000, i*2000:(i+1)*2000] = tile
             loaded += 1
     MNH_HD_TILES_LOADED = loaded
-    print('MNH 50 cm tiles', loaded, '/ 36; valid height pixels', int(np.count_nonzero(np.isfinite(a) & (a > 0.5))))
+    MNH_HD_VALID_PIXELS = int(np.count_nonzero(np.isfinite(a) & (a > 0.5)))
+    print('MNH 50 cm tiles', loaded, '/ 36; valid height pixels', MNH_HD_VALID_PIXELS)
     return a if loaded else None
 
 MNH_HD = mosaic_mnh_hd()
@@ -350,7 +352,7 @@ nb = 0; gables = 0; FOOT = []
 ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"reasons":{},
               "source_resolution_m":0.5 if MNH_HD is not None else 2.0,
               "source":"IGN LiDAR HD MNH 50 cm" if MNH_HD is not None else "IGN LiDAR HD MNH WMS 2 m",
-              "high_resolution_tiles_loaded":MNH_HD_TILES_LOADED,"resolution_usage_m":{}}
+              "high_resolution_tiles_loaded":MNH_HD_TILES_LOADED,"high_resolution_valid_pixels":MNH_HD_VALID_PIXELS,"resolution_usage_m":{}}
 for f in B:
     p = f['properties']; g = shape(f['geometry'])
     polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
