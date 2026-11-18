@@ -27,15 +27,8 @@ De la recherche d'adresse à « je suis dans l'appartement face à ma fenêtre �
  
 ## Statut (18/11/2026)
 
-- Étape A — PR en cours : entrée photoréaliste au-dessus de la ville, jeton Cesium ion lu dans Réglages, repli IGN sans clé/si erreur, attributions dynamiques, candidats IGN A/B et confirmation. Restent le toucher direct du bâtiment, le choix interactif de façade rue/cour/angle et les essais réels.
-- Étape B — à faire : valider sur iPhone que le slider d'étage est visible sur la vue photo et que la bande suit la façade choisie sans rechargement.
-- Étape C — à faire : génération standard automatique puis transition directe en 1re personne face à la fenêtre principale, soleil réel, bouton de modification.
-- Étape D — non commencée, hors périmètre.
-
- 
-## Statut (18/11/2026)
-
-- Étape A — PR en cours : entrée photoréaliste au-dessus de la ville, jeton Cesium ion lu dans Réglages, repli IGN sans clé/si erreur, attributions dynamiques, candidats IGN A/B et confirmation. Restent le toucher direct du bâtiment, le choix interactif de façade rue/cour/angle et les essais réels.
-- Étape B — à faire : valider sur iPhone que le slider d'étage est visible sur la vue photo et que la bande suit la façade choisie sans rechargement.
-- Étape C — à faire : génération standard automatique puis transition directe en 1re personne face à la fenêtre principale, soleil réel, bouton de modification.
-- Étape D — non commencée, hors périmètre.
+- [ ] Étape A — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/24 · entrée photo translucide, jeton Cesium ion dans Réglages, repli IGN sans clé/si échec, attributions dynamiques, candidats IGN A/B et confirmation. Restent le toucher direct du bâtiment et le choix interactif de façade rue/cour/autre rue. Aucun essai navigateur/iPhone.
+- [ ] Étape B — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/25 · slider après confirmation et transformation de la bande sans reconstruire sa géométrie. Rendu tactile réel et Safari iPhone non testés.
+- [ ] Étape C — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/26 · plan standard automatique, profondeur plafonnée à min(8 m, disponible), fenêtres estimées sur travées régulières, passage à la ville IGN, ouverture en première personne face à la fenêtre centrale et soleil à l'heure actuelle de Paris. La trame de travées reste approximative ; génération 3D et vue réelle non testées.
+- [ ] Étape D — non commencée, hors périmètre demandé.
+- [ ] Non testé globalement : suite `node --test`, navigateur réel, iPhone Safari, clés/quota Cesium, captures et recette sur adresses réelles.
