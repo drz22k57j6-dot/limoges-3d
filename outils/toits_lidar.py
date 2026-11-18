@@ -93,7 +93,7 @@ def estimate_roof(poly, mnh, xmin, ymax, building_height,
         return {"valid": False, "reason": "faîtage inférieur à l'égout",
                 "samples": len(values), "eave": eave, "ridge": ridge}
     return {"valid": True, "eave": eave, "ridge": ridge,
-            "mesh_max": float(max(ridge, np.percentile(values, 99.5))),
+            "mesh_max": float(max(ridge, np.max(values))),
             "samples": len(values), "edge_samples": len(edge)}
 
 
