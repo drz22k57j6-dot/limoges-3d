@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw
 from shapely.geometry import shape, Polygon, MultiPolygon, LineString
 from shapely.geometry.polygon import orient
 import mapbox_earcut as earcut
+from toits_lidar import estimate_roof, build_roof_mesh
 
 D = sys.argv[1]; OUTD = sys.argv[2]
 import os as _o
@@ -313,6 +314,7 @@ wall_tint = {'Résidentiel': (236, 228, 212), 'Industriel': (200, 200, 196), 'Co
 if _o.environ.get('CITY_NAME') == 'paris':   # Paris stone / render when no photo measurement: estimate, flagged as such
     wall_tint.update({'Résidentiel': (226, 214, 190), 'Indifférencié': (224, 213, 192), 'Commercial et services': (222, 214, 198)})
 nb = 0; gables = 0; FOOT = []
+ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"reasons":{}}
 for f in B:
     p = f['properties']; g = shape(f['geometry'])
     polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
@@ -352,9 +354,45 @@ for f in B:
         is_tiles = rc[0] > rc[1]*1.1 and rc[0] > rc[2]*1.18
         INFO.append({'id': bid, 'usage': usage, 'hauteur_m': round(h, 1), 'mur_rgb': [int(v) for v in col[:3]], 'mur_source': src,
                      'toit_rgb': [int(v) for v in rcol[:3]], 'toit_source': 'orthophoto IGN', 'x': round(cx-X0, 1), 'z': round(-(cy-Y0), 1)})
-        # gable roof for simple houses
+        # Reconstruction LiDAR HD du toit : MNH relatif au sol, emprise BD TOPO exacte.
+        # La même géométrie opaque est exportée dans le GLB / les tuiles détaillées ;
+        # solarAnalysis.makeBvh() la récupère ensuite par scene.traverse().
+        ROOF_STATS["eligible"] += 1
+        roof_est = estimate_roof(poly, MNH, XMIN, YMAX, h, resolution=2.0)
+        roof_pos, roof_idx, roof_step = (np.empty((0,3)), np.empty((0,), dtype=np.uint32), 2.0)
+        if roof_est.get("valid"):
+            roof_pos, roof_idx, roof_step = build_roof_mesh(
+                poly, MNH, XMIN, YMAX, mesh_h, roof_est["eave"], roof_est["mesh_max"],
+                resolution=2.0, triangle_budget=400)
+        lidar_roof_ok = bool(roof_est.get("valid") and len(roof_idx) and len(roof_idx)//3 <= 400)
+        if lidar_roof_ok:
+            eave_z = ground + roof_est["eave"]
+            # Les murs s'arrêtent à l'égout MNH ; la couverture respecte les cours (trous).
+            walls(k, ex, zb, np.full(len(ex), eave_z), ground, col)
+            for r in poly.interiors:
+                ri = np.asarray(r.coords)
+                walls(k, ri, zb, np.full(len(ri), eave_z), ground, col)
+            roof_uv = np.column_stack([roof_pos[:,0]/3.0, roof_pos[:,1]/3.0])
+            push('roof_t' if is_tiles else 'roof_s',
+                 L(roof_pos[:,0], roof_pos[:,1], roof_pos[:,2]), roof_uv,
+                 np.tile(rcol, (len(roof_pos),1)), roof_idx)
+            FOOT[-1][1] = float(np.nanmax(roof_pos[:,2])-H0)
+            INFO[-1].update({"toit":"LiDAR HD — MNH", "hauteur_egout_m":round(roof_est["eave"],2),
+                             "hauteur_faitage_m":round(roof_est["ridge"],2),
+                             "triangles_toit":int(len(roof_idx)//3), "pas_maillage_m":round(float(roof_step),2)})
+            ROOF_STATS["lidar"] += 1
+            ROOF_STATS["triangles"] += int(len(roof_idx)//3)
+            ROOF_STATS["vertices"] += int(len(roof_pos))
+        else:
+            ROOF_STATS["fallback"] += 1
+            reason = roof_est.get("reason", "maillage vide ou budget dépassé")
+            ROOF_STATS["reasons"][reason] = ROOF_STATS["reasons"].get(reason,0)+1
+            INFO[-1]["toit_lidar_fallback"] = reason
+        # Fallback conservé : gable heuristique si le LiDAR est absent/incohérent.
         mrr = poly.minimum_rotated_rectangle
-        if (not poly.interiors and h <= 10 and usage in ('Résidentiel', 'Indifférencié') and 40 < poly.area < 300
+        if lidar_roof_ok:
+            pass
+        elif (not poly.interiors and h <= 10 and usage in ('Résidentiel', 'Indifférencié') and 40 < poly.area < 300
                 and mrr.geom_type == 'Polygon' and poly.area/mrr.area > 0.86):
             c = np.asarray(orient(mrr, 1.0).exterior.coords)[:4]
             l01 = np.hypot(*(c[1]-c[0])); l12 = np.hypot(*(c[2]-c[1]))
@@ -394,7 +432,9 @@ for f in B:
         if TILES: lod1(poly, zb, zt, col, rcol)
         nb += 1
 print('buildings', nb, 'gables', gables)
+print('LiDAR roofs', ROOF_STATS)
 json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
+json.dump(ROOF_STATS, open(OUTD+'/toits_lidar_stats.json', 'w'), ensure_ascii=False)
 
 BMATS = (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F))
 if TILES:
