@@ -3,5 +3,122 @@ on:
   workflow_dispatch:
     inputs:
       whole_paris:
+        description: "Future extension; current build supports one 6x6 km square only"
         type: boolean
+        required: true
         default: false
+      commit_outputs:
+        description: "Commit generated tiles and statistics"
+        type: boolean
+        required: true
+        default: true
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: paris-lidar-roofs
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/appart-studio-lidar-real-roofs
+          fetch-depth: 0
+      - name: Validate coverage input
+        run: |
+          python - <<'PY'
+          import json, os
+          event=json.load(open(os.environ["GITHUB_EVENT_PATH"]))
+          if event.get("inputs",{}).get("whole_paris") == "true":
+              raise SystemExit("Paris entier pas encore supporté : le pipeline actuel est limité à un carré de 6x6 km.")
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy tifffile Pillow shapely mapbox-earcut pyproj
+      - name: Resolve 38 rue Cler in Lambert-93
+        id: address
+        run: |
+          python - <<'PY'
+          import json, urllib.parse, urllib.request, os
+          from pyproj import Transformer
+          q=urllib.parse.urlencode({"q":"38 rue Cler, 75007 Paris","limit":1})
+          with urllib.request.urlopen("https://api-adresse.data.gouv.fr/search/?"+q,timeout=30) as r: data=json.load(r)
+          f=data.get("features",[])
+          if not f: raise SystemExit("Adresse BAN introuvable")
+          lon,lat=f[0]["geometry"]["coordinates"]
+          x,y=Transformer.from_crs("EPSG:4326","EPSG:2154",always_xy=True).transform(lon,lat)
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out: out.write(f"x={x:.3f}\ny={y:.3f}\n")
+          print(f[0]["properties"].get("label"),x,y)
+          PY
+      - name: Measure tiles before
+        id: before
+        run: |
+          bytes=0
+          if [[ -d data/paris/tuiles ]]; then bytes=$(du -sb data/paris/tuiles | cut -f1); fi
+          echo "bytes=$bytes" >> "$GITHUB_OUTPUT"
+      - name: Download IGN MNT/MNH and source data around rue Cler
+        env:
+          X0: ${{ steps.address.outputs.x }}
+          Y0: ${{ steps.address.outputs.y }}
+        run: |
+          mkdir -p data/paris/source data/paris/tuiles
+          python -I outils/dl_ville.py "$X0" "$Y0" data/paris/source
+      - name: Build LiDAR roofs for the 7th arrondissement test window
+        id: build
+        env:
+          CITY_NAME: paris
+          CITY_X0: ${{ steps.address.outputs.x }}
+          CITY_Y0: ${{ steps.address.outputs.y }}
+          TILES_OUT: data/paris/tuiles
+          TEXTURE_DIR: pub/data/tex
+        run: |
+          test -d "$TEXTURE_DIR" || { echo "::error::Textures absentes : $TEXTURE_DIR"; exit 1; }
+          start=$(date +%s)
+          python -I outils/build.py data/paris/source data/paris
+          echo "seconds=$(( $(date +%s)-start ))" >> "$GITHUB_OUTPUT"
+      - name: Measure generated tiles and write summary
+        id: metrics
+        run: |
+          after=$(du -sb data/paris/tuiles | cut -f1)
+          echo "after=$after" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Build LiDAR Paris 7e — rue Cler"
+            echo "| Mesure | Valeur |"
+            echo "|---|---:|"
+            echo "| Tuiles avant | ${{ steps.before.outputs.bytes }} octets |"
+            echo "| Tuiles après | $after octets |"
+            echo "| Durée | ${{ steps.build.outputs.seconds }} secondes |"
+            echo "### Statistiques toits"
+            cat data/paris/toits_lidar_stats.json
+            echo "Soleil au 38 rue Cler, 2e étage : non mesuré par ce job (21 décembre / 21 juin)."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit generated tiles and statistics
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          event=json.load(open(os.environ["GITHUB_EVENT_PATH"]))
+          if event.get("inputs",{}).get("commit_outputs","true") != "true":
+              print("commit_outputs=false : pas de commit")
+              raise SystemExit(0)
+          subprocess.run(["git","config","user.name","github-actions[bot]"],check=True)
+          subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],check=True)
+          subprocess.run(["git","add","data/paris/tuiles","data/paris/toits_lidar_stats.json"],check=True)
+          if subprocess.run(["git","diff","--cached","--quiet"]).returncode:
+              subprocess.run(["git","commit","-m","build(paris): regenerate 7e tiles with LiDAR roofs"],check=True)
+              subprocess.run(["git","push","origin","HEAD:feat/appart-studio-lidar-real-roofs"],check=True)
+          PY
+      - name: Comment measured build metrics on PR 27
+        if: always() && steps.metrics.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment 27 --repo "$GITHUB_REPOSITORY" --body "Build Paris 7e mesuré : tuiles avant ${{ steps.before.outputs.bytes }} octets ; après ${{ steps.metrics.outputs.after }} octets ; durée ${{ steps.build.outputs.seconds }} s. Soleil 38 rue Cler non mesuré."
