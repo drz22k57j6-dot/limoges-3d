@@ -8,7 +8,7 @@ import { sunPosition, sunDirection } from './sun.js';
 import { calculateSolarReport, verifySolarAt } from './solarAnalysis.js';
 import { scoreSoleil } from './solarScore.js';
 import { findSafeRectangle, footprintArea, floorFitsBuilding } from './footprint.js';
-import { automaticWindowCount, automaticWindowPositions, requireMinimumDepth } from './apartmentDefaults.js';
+import { automaticWindowCount, automaticWindowPositions, requireMinimumDepth, fractionWithinDay } from './apartmentDefaults.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -339,7 +339,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const slider = document.getElementById('as3-sun-hour');
     if (!sunUI.bounds) { if (slider) slider.disabled = true; drone.setSun(null); return; }
     if (slider) slider.disabled = false;
-    sunUI.fraction = 0.5; updateSunScene();
+    const today=parisDay(new Date()).getTime()===sunUI.date.getTime();
+    sunUI.fraction=fractionWithinDay(Date.now(),sunUI.bounds.first,sunUI.bounds.last,today);updateSunScene();
   }
   function mountSunControls(r, target) {
     let panel = document.getElementById('as3-sun');
