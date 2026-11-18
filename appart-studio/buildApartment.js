@@ -131,7 +131,12 @@ export function createApartment({ THREE, scene, renderer }) {
     const originalGeometry = g, restGeometry = g.clone(), targetGeometry = g.clone();
     restGeometry.setIndex(rest); targetGeometry.setIndex(target);
     restGeometry.clearGroups(); targetGeometry.clearGroups();
-    restGeometry.computeBoundingBox(); restGeometry.computeBoundingSphere();
+    const boundsFor = (geo, indices) => {
+      const p=geo.getAttribute('position'), box=new THREE.Box3().makeEmpty();
+      for(const v of indices) box.expandByPoint(new THREE.Vector3(p.getX(v),p.getY(v),p.getZ(v)));
+      geo.boundingBox=box; geo.boundingSphere=box.getBoundingSphere(new THREE.Sphere());
+    };
+    boundsFor(restGeometry,rest); boundsFor(targetGeometry,target);
     // Le moteur de façades masque déjà parfois le volume IGN en déplaçant ses sommets.
     // On rétablit les positions d'origine dans le sous-maillage cible isolé.
     const vertices=o.userData?.idVerts?.get(id), saved=o.userData?.orig?.get(id), pos=targetGeometry.getAttribute('position');
@@ -139,7 +144,7 @@ export function createApartment({ THREE, scene, renderer }) {
       for (let i=0;i<vertices.length;i++) { const v=vertices[i]; pos.setXYZ(v,saved[i*3],saved[i*3+1],saved[i*3+2]); }
       pos.needsUpdate=true;
     }
-    targetGeometry.computeBoundingBox(); targetGeometry.computeBoundingSphere();
+    boundsFor(targetGeometry,target);
     o.updateMatrix();
     const targetMesh = new THREE.Mesh(targetGeometry, clippedMaterial(o.material));
     targetMesh.name = 'appart-clip-target:' + id; targetMesh.userData.appartClipTarget = true;
