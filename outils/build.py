@@ -367,8 +367,21 @@ for f in B:
         lidar_roof_ok = bool(roof_est.get("valid") and len(roof_idx) and len(roof_idx)//3 <= 400)
         if lidar_roof_ok:
             eave_z = ground + roof_est["eave"]
-            # Les murs s'arrêtent à l'égout MNH ; la couverture respecte les cours (trous).
-            walls(k, ex, zb, np.full(len(ex), eave_z), ground, col)
+            # Les murs s'arrêtent à l'égout MNH ; conserver les façades spécialisées existantes.
+            eave_tops = np.full(len(ex), eave_z)
+            if sty and sty[0] == 'tour':
+                walls('tour', ex, zb, eave_tops, ground, col, ubay=15.0)
+            elif (k == 'res' and h >= (8 if _o.environ.get('CITY_NAME') == 'paris' else 12)) or (k == 'com' and h >= 8 and _o.environ.get('CITY_NAME') == 'paris') or (sty and sty[0] == 'barre'):
+                for a_, b_ in zip(ex[:-1], ex[1:]):
+                    Ls = math.hypot(*(b_-a_))
+                    if Ls < 0.5: continue
+                    if Ls < (3 if _o.environ.get('CITY_NAME') == 'paris' else 16):
+                        walls('pignon', np.array([a_, b_]), zb, np.full(2, eave_z), ground,
+                              np.array([255,255,255,255], np.uint8), ubay=3.0)
+                    else:
+                        walls('barre', np.array([a_, b_]), zb, np.full(2, eave_z), ground, col, ubay=12.0)
+            else:
+                walls(k, ex, zb, eave_tops, ground, col)
             for r in poly.interiors:
                 ri = np.asarray(r.coords)
                 walls(k, ri, zb, np.full(len(ri), eave_z), ground, col)
