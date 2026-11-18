@@ -2,11 +2,7 @@
 // BVH AABB local au voisinage de l'appartement ; aucun appel réseau hors fetchTrees().
 import { daySamples, windowSunHours, fetchTrees, leafTransmission, rayHitsCrown } from './sun.js';
 
-const RAD = Math.PI / 180;
 const DAY_KEYS = ['winter', 'spring', 'summer', 'today'];
-const dayFor = (key, year) => key === 'today'
-  ? new Date(Date.UTC(year, 5, 21)) // remplacé par la date réelle au montage du rapport
-  : new Date(Date.UTC(year, ({ winter: 11, spring: 2, summer: 5 })[key], 21));
 
 function makeWindows(plan, fr) {
   const walls = plan.murs, center = walls.reduce((s, w) => [s[0] + w.a[0] + w.b[0], s[1] + w.a[1] + w.b[1]], [0, 0]).map(v => v / Math.max(1, walls.length * 2));
@@ -98,11 +94,12 @@ function makeTreeVisuals(THREE, trees) {
 
 export async function calculateSolarReport({ THREE, scene, drone, ground, res, plan, fr, onProgress = () => {} }) {
   const windows = makeWindows(plan,fr), year = new Date().getUTCFullYear(), now = new Date();
+  const paris=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
   const dates = {
     winter:new Date(Date.UTC(year,11,21)),
     spring:new Date(Date.UTC(year,2,21)),
     summer:new Date(Date.UTC(year,5,21)),
-    today:new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate())),
+    today:new Date(Date.UTC(+paris.year,+paris.month-1,+paris.day)),
   };
   onProgress({ stage:'arbres', done:0, total:windows.length });
   let trees=[];
