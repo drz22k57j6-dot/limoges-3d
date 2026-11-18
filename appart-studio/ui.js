@@ -50,7 +50,7 @@ body.as-mode #as-launch{display:none!important}
 #as-spin{width:54px;height:54px;border-radius:50%;border:4px solid #ffffff22;border-top-color:#ff4d63;animation:asr 0.9s linear infinite;margin:0 auto 18px}
 @keyframes asr{to{transform:rotate(360deg)}}
 #as-loading .box{text-align:center}#as-loading b{font-size:20px;display:block}#as-loading span{color:#aeb8c7;font-size:14px;display:block;margin-top:6px}
-#as-bar{position:fixed;z-index:85;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:none;background:#10161ff0;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid #ffffff22;border-radius:22px;padding:14px;box-shadow:0 12px 40px #000a}
+#as-bar{position:fixed;z-index:85;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-height:calc(100dvh - 20px - env(safe-area-inset-top));overflow-y:auto;overscroll-behavior:contain;display:none;background:#10161ff0;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid #ffffff22;border-radius:22px;padding:14px;box-shadow:0 12px 40px #000a}
 #as-bar.on{display:block}
 #as-bar .t{font-weight:800;font-size:17px}#as-bar .s{color:#aeb8c7;font-size:13px;margin-top:2px}
 #as-bar .warn{color:#ffb86b;font-size:12px;margin-top:6px}
@@ -410,7 +410,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   let lp = 0;
   $('as-h1').addEventListener('pointerdown', () => { lp = setTimeout(() => $('as-tests').classList.toggle('on'), 650); });
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('as-h1').addEventListener(ev, () => clearTimeout(lp));
-  document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = TESTS[Number(b.dataset.t)]; $('as-addr').value = t[0]; state.picked = null; setFloor(t[1]); $('as-go').disabled = false; go(); });
+  document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = TESTS[Number(b.dataset.t)]; $('as-addr').value = t[0]; state.picked = null; state.res=null; state.floorMax=15; setFloor(t[1]); $('as-go').disabled = false; go(); });
 
   // autocomplétion
   let sugT = 0, sugN = 0;
@@ -445,7 +445,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   $('as-x').onclick = () => { if (state.res) { $('as-start').classList.remove('on'); $('as-bar').classList.add('on'); } else quit(); };
   $('as-quit').onclick = quit;
   $('as3-quit').onclick = quit;
-  $('as-change').onclick = () => { $('as-floor-live').classList.remove('on'); state.floorMax=15; syncFloorControls(); $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
+  $('as-change').onclick = () => { $('as-floor-live').classList.remove('on'); state.res=null; state.floorMax=15; syncFloorControls(); $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
 
   // localisation
   async function go() {
