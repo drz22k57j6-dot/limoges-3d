@@ -17,7 +17,7 @@ const rngOf = s => { let x = hash(s) % 2147483646 + 1; return () => (x = x * 168
 
 export async function createQuartier(T, opt) {
   const qv = opt.v || '', base = opt.base;
-  const [{ createKit, buildBuilding }, { buildShop, materiauxPartages }, { H }] = await Promise.all([
+  const [{ createKit, buildBuilding, createAppartGuardrail }, { buildShop, materiauxPartages }, { H }] = await Promise.all([
     import('./facades.js' + qv), import('./commerces.js' + qv), import('./facades.js' + qv)]);
   const KIT = createKit(T, new URL('./tex/', import.meta.url).href);
   const idx = await fetch(base + 'index.json' + qv).then(r => r.json()).catch(() => ({ secteurs: {} }));
@@ -76,7 +76,7 @@ export async function createQuartier(T, opt) {
       const shops = f.s.map((s, i) => ({ type: s.t, nom: s.nom, u: s.u, id: bat.id + k + '-' + i }));
       const b = buildBuilding(T, KIT, { width: W, depth: 6, seed: hash(bat.id) + k * 7919, style: st, hGout: bat.h, wear, tone, shops, shopBuilder: buildShop, trottoir: f.tr, verdure: .5, tagP: .35, pClosed: .15, toneJit: 0, lod });
       const M = new T.Matrix4().makeBasis(new T.Vector3(dx, 0, dz), new T.Vector3(0, 1, 0), new T.Vector3(-dz, 0, dx)).setPosition(ax, y, az);
-      if (b.userData.etages) { const R = (window.__facadeEtages ||= new Map()); if (!R.has(bat.id)) R.set(bat.id, []); const L = R.get(bat.id).filter(e => e.k !== k); L.push({ k, a: f.a, b: f.b, y0: y, ...b.userData.etages }); R.set(bat.id, L); }
+      if (b.userData.etages) { const R = (window.__facadeEtages ||= new Map()); if (!R.has(bat.id)) R.set(bat.id, []); const L = R.get(bat.id).filter(e => e.k !== k); L.push({ k, a: f.a, b: f.b, y0: y, ...b.userData.etages, makeGuardrail: (width, height = 1) => createAppartGuardrail(T, KIT, width, height, b.userData.etages.style || st) }); R.set(bat.id, L); }
       b.applyMatrix4(M); grp.add(b);
     });
     if (!isFinite(yMin)) yMin = opt.groundH(bat.cx, bat.cz);

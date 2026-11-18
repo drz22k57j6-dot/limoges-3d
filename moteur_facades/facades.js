@@ -154,6 +154,20 @@ function rail(T, G, x0, x1, y, h, z, orne) {
   for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * (x1 - x0) / (orne ? .8 : 1.04));
   G[orne ? 'garde1' : 'garde0'].push(g);
 }
+// Réutilise les matériaux et le générateur de garde-corps du moteur de façades.
+export function createAppartGuardrail(T, KIT, width, height = 1, style = 'classique') {
+  const G = { fonte: [], garde0: [], garde1: [] }, out = new T.Group();
+  if (style === 'modeste') {
+    G.fonte.push(box(T, width, .055, .06, width / 2, height, 0));
+    G.fonte.push(box(T, width, .04, .04, width / 2, .07, 0));
+    const n = Math.max(2, Math.ceil(width / .12));
+    for (let k = 0; k <= n; k++) G.fonte.push(box(T, .018, height, .018, width * k / n, height / 2, 0));
+  } else rail(T, G, 0, width, 0, height, 0, style === 'riche');
+  const add = (arr, mat) => { if (!arr.length) return; const geo = mergeGeometries(arr, false); geo.computeVertexNormals(); out.add(new T.Mesh(geo, mat)); };
+  add(G.fonte, KIT.fonte); add(G.garde0, KIT.garde[0]); add(G.garde1, KIT.garde[1]);
+  out.userData.appartGuardrail = true;
+  return out;
+}
 const M4 = (T, ang, x, y, z) => new T.Matrix4().makeRotationY(ang).setPosition(x, y, z);
 
 // ------------------------------------------------------------------ tags (graffitis) dessinés sur canvas
@@ -478,13 +492,13 @@ export function buildBuilding(T, M, o) {
           const closed = R() < (o.pClosed ?? .3);
           shopFront(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, shopName[Math.floor(R() * shopName.length)], !closed && b === doorBay && R() < .5, closed, o.tagP ?? .6);
         } else if (isDoor) entryDoor(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, o.numero ?? (2 + Math.floor(R() * 60)), { cochere: cochere && !commerce, style, reno, pal: o.doorPal, tagP: (o.tagP ?? .3) * .5 });
-        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!isDoor) travees[f].push({ position: cx, width: ww, allege: sill, height: wh }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
+        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!isDoor) travees[f].push({ position: cx, width: ww, allege: sill, height: wh, guardrail: !base && (style === 'modeste' ? f !== lastF : f === nobleF || f === lastF), guardrailDepth: style === 'modeste' ? .03 : (f === nobleF ? .79 : .64) }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
         // tag sur un trumeau du rez-de-chaussée (quartiers usés)
         if (wear > .45 && tagsRdc < 2 && R() < (o.tagP ?? .3) * .35) { tagsRdc++; const tw = Math.max(1.2, pierW * 2 + .4); extra.push([new T.PlaneGeometry(tw, tw * .5).translate(cx + ww / 2 + pierW, .9 + R() * .5, .012), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1 + Math.floor(R() * 2)), transparent: true, roughness: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })]); }
         continue;
       }
       if (orielBays.includes(b) && f >= nobleF && f < lastF) continue;
-      travees[f].push({ position: cx, width: ww, allege: sill, height: wh });
+      travees[f].push({ position: cx, width: ww, allege: sill, height: wh, guardrail: style === 'modeste' ? f !== lastF : f === nobleF || f === lastF, guardrailDepth: style === 'modeste' ? .03 : (f === nobleF ? .79 : .64) });
       windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen, pal: palF, floorDrop: sill + .05 });
       const cw = style === 'modeste' ? .09 : .13, cz = style === 'modeste' ? .025 : .045;
       G.moul.push(box(T, cw, wh + cw, cz, cx - ww / 2 - cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));
@@ -611,7 +625,7 @@ export function buildBuilding(T, M, o) {
   for (let i = 0; i < 3; i++) add(G['verre' + i], M.verres[i], false);
   add(G.vit, M.vitre, false);
   const byMat = new Map(); for (const [g, m] of extra) { if (!byMat.has(m)) byMat.set(m, []); byMat.get(m).push(g); } for (const [m, a] of byMat) add(a, m);
-  grp.userData.etages = { yF: yF.slice(), F: F.slice(), ent, facadeDepth: REC, travees: travees.map(L => L.map(w => ({ ...w }))) };   // hauteurs réelles des niveaux (Appart Studio : aimantage de l'étage)
+  grp.userData.etages = { yF: yF.slice(), F: F.slice(), ent, facadeDepth: REC, style, travees: travees.map(L => L.map(w => ({ ...w }))) };   // hauteurs réelles des niveaux (Appart Studio : aimantage de l'étage)
   return grp;
 }
 

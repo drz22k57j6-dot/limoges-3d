@@ -46,8 +46,7 @@ function materials(THREE) {
   const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, ...o });
   const glow = c => new THREE.Color(c).multiplyScalar(0.16);   // lumière d'ambiance intérieure (évite d'ajouter des lampes → pas de recompilation de la ville)
   return {
-    wall: std({ color: 0xf1ede4, emissive: glow(0xf1ede4) }),
-    facadeOut: std({ color: 0xd9ccb3, roughness: 0.95 }),
+    wall: std({ color: 0xf1ede4, emissive: glow(0xf1ede4), side: THREE.FrontSide }),
     ceiling: std({ color: 0xf7f5f0, emissive: glow(0xf7f5f0), side: THREE.DoubleSide }),
     trim: std({ color: 0xfbfaf6, emissive: glow(0xfbfaf6), roughness: 0.6 }),
     frame: std({ color: 0xf4f3ee, roughness: 0.45 }),
@@ -118,10 +117,19 @@ export function createApartment({ THREE, scene, renderer }) {
     const { F, u, v, floorY } = fr, H = fr.H;
     const W = (pu, pv) => [F[0] + u[0] * pu + v[0] * pv, F[1] + u[1] * pu + v[1] * pv];
     group = new THREE.Group(); group.name = 'appart-studio-3d';
-    const solids = [];                                      // segments de collision (monde 2D)
+    const solids = [], windowMeshes = [], windowLeaves = [], windowStates = [];
+    const addObstacle = (a, b, thickness = 0.06) => solids.push({ a: W(a[0], a[1]), b: W(b[0], b[1]), halfWidth: thickness / 2 });
     const add = (geo, mat, cast = true) => { const m = new THREE.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = true; group.add(m); return m; };
 
     // pièce de mur : boîte orientée entre deux points du plan (centre de la ligne), de y0 à y1
+    function slabInterior(a, b, y0, y1, mat, offset = 0) {
+      const d = [b[0] - a[0], b[1] - a[1]], L = Math.hypot(...d); if (L < 0.01 || y1 - y0 < 0.01) return null;
+      const nrm = [-d[1] / L, d[0] / L], ca = W(a[0] + nrm[0] * offset, a[1] + nrm[1] * offset), cb = W(b[0] + nrm[0] * offset, b[1] + nrm[1] * offset);
+      const m = add(new THREE.PlaneGeometry(L, y1 - y0), mat, false);
+      m.position.set((ca[0] + cb[0]) / 2, floorY + (y0 + y1) / 2, (ca[1] + cb[1]) / 2);
+      m.rotation.y = Math.atan2(-(cb[1] - ca[1]), cb[0] - ca[0]) + (offset < 0 ? Math.PI : 0);
+      return m;
+    }
     function slab(a, b, t, y0, y1, mat, offset = 0) {
       const d = [b[0] - a[0], b[1] - a[1]], L = Math.hypot(...d); if (L < 0.01 || y1 - y0 < 0.01) return null;
       const nrm = [-d[1] / L, d[0] / L];
@@ -134,6 +142,17 @@ export function createApartment({ THREE, scene, renderer }) {
     }
 
     const walls = plan.murs, byId = Object.fromEntries(walls.map(w => [w.id, w]));
+    const facadeRaycaster = fr.facadeProxy ? new THREE.Raycaster() : null;
+    function measuredFacadeOffset(s) {
+      if (!facadeRaycaster || !fr.facadeProxy) return (fr.facadeDepth ?? 0.34) + 0.02;
+      const origin2 = W(s, (fr.facadeDepth ?? 0.34) + 1), origin = new THREE.Vector3(origin2[0], floorY + 1.2, origin2[1]);
+      const dir = new THREE.Vector3(-v[0], 0, -v[1]).normalize();
+      fr.facadeProxy.updateMatrixWorld(true); facadeRaycaster.set(origin, dir);
+      const hit = facadeRaycaster.intersectObject(fr.facadeProxy, false)[0];
+      if (!hit) return (fr.facadeDepth ?? 0.34) + 0.02;
+      const dx = hit.point.x - F[0], dz = hit.point.z - F[1];
+      return dx * v[0] + dz * v[1] + 0.02;
+    }
     const center = plan.murs.reduce((s, w) => [s[0] + w.a[0] + w.b[0], s[1] + w.a[1] + w.b[1]], [0, 0]).map(x => x / (2 * walls.length));
     const inwardOffset = w => {                           // murs extérieurs : face extérieure sur le contour
       if (!w.ext && !w.facade && !['F', 'E', 'S', 'W'].includes(w.id)) return 0;
@@ -144,19 +163,20 @@ export function createApartment({ THREE, scene, renderer }) {
 
     for (const w of walls) {
       const d = [w.b[0] - w.a[0], w.b[1] - w.a[1]], L = Math.hypot(...d), e = [d[0] / L, d[1] / L];
-      const off = w.facade ? (fr.facadeDepth ?? 0.4) : inwardOffset(w), t = w.facade ? 0.08 : w.epaisseur;
-      const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
+      const off = w.facade ? measuredFacadeOffset((w.a[0] + w.b[0]) / 2) : inwardOffset(w), t = w.facade ? 0.04 : w.epaisseur;
+      const exterior = !!(w.facade || w.ext || ['F', 'E', 'S', 'W'].includes(w.id));
+      const P = s => { const p=[w.a[0]+e[0]*s,w.a[1]+e[1]*s]; if(!w.facade && Math.abs(p[1])<0.05) p[1]=(fr.facadeDepth??0.34)+0.02; return p; };
       const ops = plan.ouvertures.filter(o => o.murId === w.id && o.centre).map(o => {
         const s = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
         return { ...o, s0: Math.max(0, s - o.largeur / 2), s1: Math.min(L, s + o.largeur / 2) };
       }).sort((x, y) => x.s0 - y.s0);
-      const mat = M.wall, matOut = M.wall;
+      const mat = M.wall;
       const piece = (s0, s1, y0, y1, solid) => {
         if (s1 - s0 < 0.005) return;
         // mur extérieur : deux couches (intérieur peint / extérieur pierre)
-        if (w.facade) { slab(P(s0), P(s1), t * 0.25, y0, y1, mat, off + Math.sign(off) * t * 0.375); slab(P(s0), P(s1), t * 0.75, y0, y1, matOut, off - Math.sign(off) * t * 0.125); }
+        if (exterior) slabInterior(P(s0), P(s1), y0, y1, mat, off);
         else slab(P(s0), P(s1), t, y0, y1, mat, off);
-        if (solid) { const nrm = [-e[1], e[0]]; solids.push([W(P(s0)[0] + nrm[0] * off, P(s0)[1] + nrm[1] * off), W(P(s1)[0] + nrm[0] * off, P(s1)[1] + nrm[1] * off)]); }
+        if (solid) { const aa=P(s0),bb=P(s1),nn=[-e[1],e[0]]; addObstacle([aa[0]+nn[0]*off,aa[1]+nn[1]*off],[bb[0]+nn[0]*off,bb[1]+nn[1]*off],t); }
       };
       let s = 0;
       for (const o of ops) {
@@ -187,18 +207,45 @@ export function createApartment({ THREE, scene, renderer }) {
       const y0 = o.allege, y1 = Math.min(H - 0.18, o.allege + o.hauteur), f = 0.06;
       slab(P(o.s0), P(o.s0 + f), 0.08, y0, y1, M.frame, so); slab(P(o.s1 - f), P(o.s1), 0.08, y0, y1, M.frame, so);
       slab(P(o.s0), P(o.s1), 0.08, y0, y0 + f, M.frame, so); slab(P(o.s0), P(o.s1), 0.08, y1 - f, y1, M.frame, so);
-      const mid = (o.s0 + o.s1) / 2;
-      slab(P(mid - 0.025), P(mid + 0.025), 0.06, y0, y1, M.frame, so);                       // battants
-      for (const k of [0.33, 0.66]) slab(P(o.s0), P(o.s1), 0.05, y0 + (y1 - y0) * k - 0.012, y0 + (y1 - y0) * k + 0.012, M.frame, so);  // petits bois
-      const g = slab(P(o.s0 + f), P(o.s1 - f), 0.01, y0 + f, y1 - f, M.glass, so); if (g) { g.castShadow = false; g.renderOrder = 5; }
+            const mid = (o.s0 + o.s1) / 2, totalW = o.s1 - o.s0, windowIndex = Number.isInteger(o._windowIndex) ? o._windowIndex : windowLeaves.length;
+      const worldA = W(P(0)[0], P(0)[1]), worldB = W(P(1)[0], P(1)[1]);
+      const baseAngle = Math.atan2(-(worldB[1] - worldA[1]), worldB[0] - worldA[0]);
+      const inwardSign = Math.sign(off || 1);
+      const leafPivots = [];
+      for (let side = 0; side < 2; side++) {
+        const leafW = totalW / 2, hingeS = side === 0 ? o.s0 : o.s1;
+        const hp = P(hingeS), hworld = W(hp[0] + nrm[0] * so, hp[1] + nrm[1] * so);
+        const pivot = new THREE.Group(); pivot.position.set(hworld[0], floorY + y0, hworld[1]); pivot.rotation.y = baseAngle;
+        const leaf = new THREE.Group(), cx = side === 0 ? leafW / 2 : -leafW / 2;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(Math.max(.04, leafW - .015), Math.max(.04, y1 - y0), .045), M.frame);
+        frame.position.set(cx, (y1 - y0) / 2, 0); frame.userData.windowIndex = windowIndex; frame.userData.windowLeaf = true; leaf.add(frame); windowMeshes.push(frame);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(Math.max(.03, leafW - .12), Math.max(.03, y1 - y0 - .12), .012), M.glass);
+        glass.position.set(cx, (y1 - y0) / 2, .027); glass.userData.windowIndex = windowIndex; glass.userData.windowLeaf = true; leaf.add(glass); windowMeshes.push(glass);
+        for (const k of [0.33, 0.66]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(Math.max(.03, leafW - .04), .024, .05), M.frame); bar.position.set(cx, (y1 - y0) * k, 0); leaf.add(bar); }
+        const vertical = new THREE.Mesh(new THREE.BoxGeometry(.025, Math.max(.03, y1 - y0 - .04), .05), M.frame); vertical.position.set(cx, (y1 - y0) / 2, 0); leaf.add(vertical);
+        pivot.add(leaf); group.add(pivot); leafPivots.push(pivot);
+      }
+      windowLeaves[windowIndex] = { left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]], inwardSign, baseAngle };
+      windowStates[windowIndex] = false;
+      // Les deux vantaux s'ouvrent vers l'intérieur ; l'animation est pilotée par cam3d.
+      windowMeshes.forEach(m => { if (m.userData.windowIndex === windowIndex) m.userData.windowId = windowIndex; });
       // appui intérieur
       if (off) slab(P(o.s0 - 0.05), P(o.s1 + 0.05), 0.22, y0 - 0.04, y0, M.trim, off + Math.sign(off) * (t / 2 - 0.05));
+      if (o.allege < 0.9 && !o.guardrail && typeof fr.makeGuardrail === 'function') {
+        const guard = fr.makeGuardrail(totalW, 1.0), railS = P(mid), outward = -inwardSign;
+        const gp = W(railS[0] - nrm[0] * inwardSign * .12, railS[1] - nrm[1] * inwardSign * .12);
+        guard.position.set(gp[0] - Math.cos(baseAngle) * totalW / 2, floorY + y0, gp[1] + Math.sin(baseAngle) * totalW / 2);
+        guard.rotation.y = baseAngle; guard.scale.z = outward;
+        group.add(guard);
+        addObstacle([P(o.s0)[0]-nrm[0]*inwardSign*.12,P(o.s0)[1]-nrm[1]*inwardSign*.12],[P(o.s1)[0]-nrm[0]*inwardSign*.12,P(o.s1)[1]-nrm[1]*inwardSign*.12],.08);
+      } else if (o.guardrail) { const gd=o.guardrailDepth ?? .12; addObstacle([P(o.s0)[0]-nrm[0]*inwardSign*gd,P(o.s0)[1]-nrm[1]*inwardSign*gd],[P(o.s1)[0]-nrm[0]*inwardSign*gd,P(o.s1)[1]-nrm[1]*inwardSign*gd],.08); }
       void nrm;
     }
     function buildDoor(w, e, off, t, o) {
       const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
       const y1 = Math.min(H, o.hauteur);
       slab(P(o.s0 - 0.06), P(o.s0), t + 0.03, 0, y1 + 0.06, M.trim, off); slab(P(o.s1), P(o.s1 + 0.06), t + 0.03, 0, y1 + 0.06, M.trim, off);
+      addObstacle(P(o.s0 - 0.06), P(o.s0), t + 0.03); addObstacle(P(o.s1), P(o.s1 + 0.06), t + 0.03);
       slab(P(o.s0 - 0.06), P(o.s1 + 0.06), t + 0.03, y1, y1 + 0.06, M.trim, off);
       // battant ouvert à ~75°, pivot sur s0
       const nrm = [-e[1], e[0]], side = off ? Math.sign(off) : 1, ang = 1.3;
@@ -206,12 +253,13 @@ export function createApartment({ THREE, scene, renderer }) {
       const dir = [e[0] * Math.cos(ang) + nrm[0] * side * Math.sin(ang), e[1] * Math.cos(ang) + nrm[1] * side * Math.sin(ang)];
       const tip = [hinge[0] + dir[0] * wdt, hinge[1] + dir[1] * wdt];
       const leaf = slab(hinge, tip, 0.04, 0.01, y1 - 0.01, M.door, off + side * t / 2);
-      if (leaf) { const kn = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M.knob); const kp = W(hinge[0] + dir[0] * (wdt - 0.07), hinge[1] + dir[1] * (wdt - 0.07)); kn.position.set(kp[0], floorY + 1.0, kp[1]); group.add(kn); }
+      if (leaf) { addObstacle(hinge, tip, 0.04); const kn = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M.knob); const kp = W(hinge[0] + dir[0] * (wdt - 0.07), hinge[1] + dir[1] * (wdt - 0.07)); kn.position.set(kp[0], floorY + 1.0, kp[1]); group.add(kn); }
     }
 
     // sols par pièce + plafond
     for (const r of plan.pieces) {
-      const pts = r.polygone.map(p => W(p[0], p[1]));
+      const frontDepth=(fr.facadeDepth??0.34)+0.02;
+      const pts = r.polygone.map(p => W(p[0], Math.abs(p[1])<0.05 ? frontDepth : p[1]));
       const shape = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], -p[1])));
       const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
       const fl = add(g, M.floor[r.type] || M.floor._, false); fl.position.y = floorY + 0.005;
@@ -229,7 +277,7 @@ export function createApartment({ THREE, scene, renderer }) {
     const us = walls.flatMap(w => [w.a[0], w.b[0]]), vs = walls.flatMap(w => [w.a[1], w.b[1]]);
     const box = { u0: Math.min(...us) - 0.02, u1: Math.max(...us) + 0.02, v0: (fr.facadeDepth ?? 0.4) + 0.05, v1: Math.max(...vs) + 0.02 };
     const c3 = W((box.u0 + box.u1) / 2, (box.v0 + box.v1) / 2);
-    info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W };
+    info = { fr, box, solids, windowMeshes, windowLeaves, windowStates, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W, toPlan: p => { const dx=p[0]-F[0], dz=p[1]-F[1]; return [dx*u[0]+dz*u[1], dx*v[0]+dz*v[1]]; } };
     renderer.localClippingEnabled = true;
     setDollhouse(!!opts.dollhouse);
     return info;
@@ -247,7 +295,7 @@ export function createApartment({ THREE, scene, renderer }) {
     build,
     setDollhouse,
     tick(dt) { if (!clip) return; scanT += dt; if (scanT > 1) { scanT = 0; applyClip(false); } },  // nouvelles tuiles / façades chargées
-    hide() { unclip(); dispose(); info = null; },
+    hide() { unclip(); dispose(); if (info?.fr?.facadeProxy) { info.fr.facadeProxy.geometry?.dispose?.(); info.fr.facadeProxy.material?.dispose?.(); } info = null; },
     get info() { return info; },
   };
 }

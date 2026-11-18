@@ -25,3 +25,25 @@
 - Les travées sont disponibles uniquement si le moteur de façades a généré l'immeuble.
 - Si le géocodeur inverse ne renvoie pas de nom de rue exploitable, la façade la plus proche de l'adresse BAN reste utilisée.
 - La validation visuelle sur iPhone reste à effectuer.
+
+
+## QA — BUG 3 : finitions 3D, fenêtres et collisions
+
+### Comment tester sur iPhone
+1. Ouvrir **38 rue Cler, 2e**, passer en Maquette et vérifier depuis la rue que seul le parement réel est visible, sans bord blanc de l'appartement.
+2. Passer en Visite, toucher une fenêtre à faible allège : vérifier les deux battants, l'ouverture vers l'intérieur en 0,6 s, puis le garde-corps et son blocage ; répéter avec le bouton Ouvrir/Fermer en vue Fenêtres.
+3. En Visite, pousser le joystick contre les quatre côtés d'une pièce, un angle, une cloison, un chambranle et une fenêtre pendant 2 minutes ; vérifier qu'aucune traversée n'est possible.
+
+### Captures requises avant validation
+- `captures/bug3-rue.png` — vue Maquette depuis la rue.
+- `captures/bug3-fenetre-ouverte.png` — deux battants ouverts et garde-corps visible.
+- `captures/bug3-collision-angle.png` — joueur arrêté à 30 cm d'un angle.
+
+**État : captures iPhone physiques à joindre.** Aucune capture simulée n'est présentée comme preuve.
+
+### Limites connues
+- Les garde-corps réels sont identifiés à partir des travées et des niveaux de balcon exposés par le générateur ; les baies d'oriel ne disposent pas encore d'un attribut garde-corps dédié.
+- Le fallback de collision des battants ouverts utilise leur boîte englobante monde, volontairement conservatrice.
+- Le départ à plus de 0,5 m est garanti lorsque la pièce contient un point échantillonné avec ce dégagement ; les pièces plus étroites nécessitent un traitement spécifique.
+- Le raycast du nu intérieur utilise un proxy de plan placé à la profondeur réelle publiée par le moteur de façades ; il ne mesure pas les irrégularités locales de moulures et d'oriels.
+- Les tests de 2 minutes et les captures doivent être réalisés sur Safari iPhone physique avant fusion.
