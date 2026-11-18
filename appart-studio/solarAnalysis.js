@@ -31,7 +31,7 @@ function makeWindows(plan, fr) {
     const thickness = Math.max(0.15, Number(plan.settings?.facadeThickness ?? w.epaisseur) || 0.35);
     const along = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
     // Les points de départ sont sur le nu intérieur ; chaque rayon doit traverser toute l'embrasure.
-    const base = [w.a[0] + e[0] * along - n[0] * thickness / 2, w.a[1] + e[1] * along - n[1] * thickness / 2];
+    const base = [w.a[0] + e[0] * along - n[0] * thickness, w.a[1] + e[1] * along - n[1] * thickness];
     const q = W(base[0], base[1]), axis = [e[0] * fr.u[0] + e[1] * fr.v[0], e[0] * fr.u[1] + e[1] * fr.v[1]];
     const normal = [n[0] * fr.u[0] + n[1] * fr.v[0], n[0] * fr.u[1] + n[1] * fr.v[1]];
     const bottom = fr.floorY + sill, top = bottom + height, y = (bottom + top) / 2;
