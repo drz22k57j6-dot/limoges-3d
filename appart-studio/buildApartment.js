@@ -144,13 +144,13 @@ export function createApartment({ THREE, scene, renderer }) {
 
     for (const w of walls) {
       const d = [w.b[0] - w.a[0], w.b[1] - w.a[1]], L = Math.hypot(...d), e = [d[0] / L, d[1] / L];
-      const off = inwardOffset(w), t = w.epaisseur;
+      const off = w.facade ? (fr.facadeDepth ?? 0.4) : inwardOffset(w), t = w.facade ? 0.08 : w.epaisseur;
       const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
       const ops = plan.ouvertures.filter(o => o.murId === w.id && o.centre).map(o => {
         const s = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
         return { ...o, s0: Math.max(0, s - o.largeur / 2), s1: Math.min(L, s + o.largeur / 2) };
       }).sort((x, y) => x.s0 - y.s0);
-      const mat = M.wall, matOut = w.facade ? M.facadeOut : M.wall;
+      const mat = M.wall, matOut = M.wall;
       const piece = (s0, s1, y0, y1, solid) => {
         if (s1 - s0 < 0.005) return;
         // mur extérieur : deux couches (intérieur peint / extérieur pierre)
@@ -227,7 +227,7 @@ export function createApartment({ THREE, scene, renderer }) {
 
     // boîte de découpe (contour + marge) : on retire le vrai bâtiment là où se trouve l'appartement
     const us = walls.flatMap(w => [w.a[0], w.b[0]]), vs = walls.flatMap(w => [w.a[1], w.b[1]]);
-    const box = { u0: Math.min(...us) - 0.15, u1: Math.max(...us) + 0.15, v0: -0.45, v1: Math.max(...vs) + 0.15 };
+    const box = { u0: Math.min(...us) - 0.02, u1: Math.max(...us) + 0.02, v0: (fr.facadeDepth ?? 0.4) + 0.05, v1: Math.max(...vs) + 0.02 };
     const c3 = W((box.u0 + box.u1) / 2, (box.v0 + box.v1) / 2);
     info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W };
     renderer.localClippingEnabled = true;

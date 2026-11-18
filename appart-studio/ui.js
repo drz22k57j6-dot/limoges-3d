@@ -159,13 +159,24 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     for (const [dx, dy] of [[0, tol], [0, -tol], [tol, 0], [-tol, 0]]) { const p = [c[0] + dx, c[1] + dy]; let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) ins = !ins; } if (ins) return true; }
     return false;
   }
+  async function waitFacadeMetadata(id, timeout = 3000) {
+    const until = performance.now() + timeout;
+    while (performance.now() < until) {
+      const L = window.__facadeEtages?.get(id);
+      if (L?.length) return L;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return window.__facadeEtages?.get(id) || [];
+  }
   function open3d() {
     const r = state.res; if (!r) return;
     const plan = editor.getPlan(); state.plan3d = plan;
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
     const H = Math.max(2.4, Math.min(3.6, lvl - 0.25));
-    const fr = { F, u, v, floorY: view.floorY(r), H };
+    const facadeList = window.__facadeEtages?.get(r.feature.properties?.cleabs) || [];
+    const facadeMeta = facadeList.reduce((best,e) => { const dx=e.b[0]-e.a[0],dz=e.b[1]-e.a[1],l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2)),d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t); return !best || d<best.d ? {e,d} : best; },null)?.e;
+    const fr = { F, u, v, floorY: view.floorY(r), H, buildingId: r.feature.properties?.cleabs, facadeDepth: facadeMeta?.facadeDepth ?? 0.34 };
     view.suspend();
     apt.build(plan, fr, { dollhouse: true });
     $('as3-title').querySelector('span').textContent = (r.housenumber ? r.housenumber + ' ' : '') + (r.street || r.address) + ' · ' + floorName(r.floorData.floor) + ' · ' + plan.pieces.reduce((s, p) => s + p.surface, 0).toFixed(1).replace('.', ',') + ' m²';
@@ -236,7 +247,16 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     $('as-start').classList.remove('on'); $('as-loading').classList.add('on'); $('as-step').textContent = 'Recherche de l\'adresse';
     try {
       const res = await locateApartment(q, state.floor, ctx, state.picked);
+      if (res.facadeChoices?.length > 1) {
+        const choices = res.facadeChoices.map((c,i) => (i+1) + '. ' + c.street).join('\n');
+        const answer = window.prompt('Votre appartement donne sur :\n' + choices + '\n\nSaisis le numéro de la rue :', '1');
+        if (answer !== null) {
+          const selected = res.facadeChoices[Number(answer)-1];
+          if (selected) { res.street = selected.street; res.facade = selected.facade; res.local = selected.local; }
+        }
+      }
       $('as-step').textContent = 'Chargement du quartier';
+      await waitFacadeMetadata(res.feature.properties?.cleabs, 3000);
       const F = res.local.F, n = res.local.n;
       await drone.teleport(F[0] + n[0] * 8, F[1] + n[1] * 8, { nom: res.address, dist: 0, alt: 25 });
       $('as-step').textContent = 'Calcul de votre étage';
@@ -284,11 +304,19 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const { F, A, B, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const pu = P => (P[0] - F[0]) * u[0] + (P[1] - F[1]) * u[1];
     const north = [0 * u[0] + -1 * u[1], 0 * v[0] + -1 * v[1]];        // nord local = (0,-1) exprimé dans le plan
+    const pv = P => (P[0] - F[0]) * v[0] + (P[1] - F[1]) * v[1];
     const span = [pu(A), pu(B)].sort((a, b) => a - b);
+    const footprint = r.local.ring.map(P => [pu(P), pv(P)]);
+    const facadeEdge = [[pu(A), pv(A)], [pu(B), pv(B)]];
+    const id = r.feature.properties?.cleabs, facades = window.__facadeEtages?.get(id) || [];
+    let facade = null, bestD = Infinity;
+    for (const e of facades) { const dx=e.b[0]-e.a[0], dz=e.b[1]-e.a[1], l2=dx*dx+dz*dz||1; const t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2)); const d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t); if(d<bestD){bestD=d;facade=e;} }
+    const floorIndex = facade?.ent && r.floorData.floor >= 1 ? r.floorData.floor + 1 : r.floorData.floor;
+    const facadeWindows = (facade?.travees?.[floorIndex] || []).map((w,i) => { const dx=facade.b[0]-facade.a[0], dz=facade.b[1]-facade.a[1], L=Math.hypot(dx,dz)||1; const along=((dx/L)*u[0]+(dz/L)*u[1])>=0?w.position:L-w.position; const world=[facade.a[0]+dx/L*along, facade.a[1]+dz/L*along]; return { id: facade.k+':'+floorIndex+':'+i, u: pu(world), width: w.width, allege: w.allege, height: w.height }; });
     $('as-bar').classList.remove('on');
     editor.open({
       key: r.address + '|' + r.floorData.floor, title: r.address + ' · ' + floorName(r.floorData.floor),
-      street: r.street, orient: orientationName(r.local.bearing), north, facadeSpan: span,
+      street: r.street, orient: orientationName(r.local.bearing), north, facadeSpan: span, footprint, facadeEdge, facadeWindows,
     });
     state.frame = { F, u, v, floorY: view.floorY(r) };
   };

@@ -414,6 +414,7 @@ export function buildBuilding(T, M, o) {
   const extra = [];
   const REC = style === 'riche' ? .34 : .28, winW = Math.min(1.3, bw * .48);
   const yF = []; let y = 0; for (const h of F) { yF.push(y); y += h; } const Htop = y;
+  const travees = F.map(() => []);
   // masse de l'immeuble en retrait (les pièces visibles occupent les DEEP premiers mètres) + joues latérales
   G.mur.push(box(T, W, Htop, D - REC - DEEP, W / 2, Htop / 2, -REC - DEEP - (D - REC - DEEP) / 2));
   for (const x of [.06, W - .06]) G.mur.push(box(T, .12, Htop, DEEP, x, Htop / 2, -REC - DEEP / 2));
@@ -477,12 +478,13 @@ export function buildBuilding(T, M, o) {
           const closed = R() < (o.pClosed ?? .3);
           shopFront(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, shopName[Math.floor(R() * shopName.length)], !closed && b === doorBay && R() < .5, closed, o.tagP ?? .6);
         } else if (isDoor) entryDoor(T, G, extra, M, R, cx, y0 + sill, ww, wh, REC, o.numero ?? (2 + Math.floor(R() * 60)), { cochere: cochere && !commerce, style, reno, pal: o.doorPal, tagP: (o.tagP ?? .3) * .5 });
-        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
+        else { windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen: .02, floorDrop: sill }); if (!isDoor) travees[f].push({ position: cx, width: ww, allege: sill, height: wh }); if (!G.lod) for (let x = cx - ww / 2 + .08; x < cx + ww / 2; x += .14) G.fonte.push(box(T, .02, wh * .55, .02, x, y0 + sill + wh * .28, -.04)); G.fonte.push(box(T, ww, .03, .03, cx, y0 + sill + wh * .55, -.04)); }
         // tag sur un trumeau du rez-de-chaussée (quartiers usés)
         if (wear > .45 && tagsRdc < 2 && R() < (o.tagP ?? .3) * .35) { tagsRdc++; const tw = Math.max(1.2, pierW * 2 + .4); extra.push([new T.PlaneGeometry(tw, tw * .5).translate(cx + ww / 2 + pierW, .9 + R() * .5, .012), new T.MeshStandardMaterial({ map: tagTexture(T, R, 1 + Math.floor(R() * 2)), transparent: true, roughness: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 })]); }
         continue;
       }
       if (orielBays.includes(b) && f >= nobleF && f < lastF) continue;
+      travees[f].push({ position: cx, width: ww, allege: sill, height: wh });
       windowUnit(T, G, R, cx, y0 + sill, ww, wh, REC, { pOpen, pal: palF, floorDrop: sill + .05 });
       const cw = style === 'modeste' ? .09 : .13, cz = style === 'modeste' ? .025 : .045;
       G.moul.push(box(T, cw, wh + cw, cz, cx - ww / 2 - cw / 2, y0 + sill + (wh + cw) / 2, cz / 2));
@@ -535,7 +537,7 @@ export function buildBuilding(T, M, o) {
       G.mur.push(box(T, inner, sill, .28, (x0 + x1) / 2, yy + sill / 2, zf));
       G.mur.push(box(T, inner, F[f] - sill - wh, .28, (x0 + x1) / 2, yy + sill + wh + (F[f] - sill - wh) / 2, zf));
       for (let k = 1; k < n; k++) G.mur.push(box(T, .22, wh, .28, x0 + .25 + cw * k, yy + sill + wh / 2, zf));
-      for (let k = 0; k < n; k++) { const cx = x0 + .25 + cw * (k + .5); windowUnit(T, G, R, cx, yy + sill, cw - .26, wh, .37 - od, { pOpen: .05, deep: REC + DEEP - .1 - (.37 - od), floorDrop: sill }); }
+      for (let k = 0; k < n; k++) { const cx = x0 + .25 + cw * (k + .5); travees[f].push({ position: cx, width: cw - .26, allege: sill, height: wh }); windowUnit(T, G, R, cx, yy + sill, cw - .26, wh, .37 - od, { pOpen: .05, deep: REC + DEEP - .1 - (.37 - od), floorDrop: sill }); }
       G.moul.push(box(T, x1 - x0 + .1, .16, od + .1, (x0 + x1) / 2, yy + .08, od / 2));
     }
   }
@@ -609,7 +611,7 @@ export function buildBuilding(T, M, o) {
   for (let i = 0; i < 3; i++) add(G['verre' + i], M.verres[i], false);
   add(G.vit, M.vitre, false);
   const byMat = new Map(); for (const [g, m] of extra) { if (!byMat.has(m)) byMat.set(m, []); byMat.get(m).push(g); } for (const [m, a] of byMat) add(a, m);
-  grp.userData.etages = { yF: yF.slice(), F: F.slice(), ent };   // hauteurs réelles des niveaux (Appart Studio : aimantage de l'étage)
+  grp.userData.etages = { yF: yF.slice(), F: F.slice(), ent, facadeDepth: REC, travees: travees.map(L => L.map(w => ({ ...w }))) };   // hauteurs réelles des niveaux (Appart Studio : aimantage de l'étage)
   return grp;
 }
 

@@ -40,17 +40,44 @@ function facadeFor(point, rings) {
     if(!best || hit.d<best.d) best={...hit,a:ring[i],b:ring[i+1],ring};
   }
   if(!best) throw new Error('Emprise IGN sans arête exploitable.');
-  const inside=rings.some(r=>pointInRing(point[0],point[1],r));
-  let outward;
-  if(inside){
-    const c=best.ring.reduce((s,p)=>[s[0]+p[0]/best.ring.length,s[1]+p[1]/best.ring.length],[0,0]);
-    outward=[best.q[0]-c[0],best.q[1]-c[1]];
-  } else outward=[point[0]-best.q[0],point[1]-best.q[1]];
-  let L=Math.hypot(...outward);
-  if(L<0.01){outward=[best.b[1]-best.a[1],best.a[0]-best.b[0]];L=Math.hypot(...outward)||1;}
+  return facadeFromEdge(point,best.a,best.b,best.ring,best.d);
+}
+function facadeFromEdge(point,a,b,ring,distance0) {
+  const hit=nearestOnSegment(point,a,b), c=ring.reduce((s,p)=>[s[0]+p[0]/ring.length,s[1]+p[1]/ring.length],[0,0]);
+  let outward=[hit.q[0]-c[0],hit.q[1]-c[1]], L=Math.hypot(...outward);
+  if(L<0.01){outward=[b[1]-a[1],a[0]-b[0]];L=Math.hypot(...outward)||1;}
   outward=outward.map(v=>v/L);
-  const edgeAngle=Math.atan2(best.b[1]-best.a[1],best.b[0]-best.a[0]);
-  return {point:best.q,a:best.a,b:best.b,outward,edgeAngle,distance:best.d,inside};
+  return {point:hit.q,a,b,outward,edgeAngle:Math.atan2(b[1]-a[1],b[0]-a[0]),distance:distance0 ?? hit.d,inside:true};
+}
+function lambert93ToLonLat(x,y) {
+  const n=.725607765053267, C=11754255.426096, xs=700000, ys=12655612.049876, e=.0818191910428158, lon0=3*Math.PI/180;
+  const dx=x-xs, dy=ys-y, R=Math.hypot(dx,dy), gamma=Math.atan2(dx,dy);
+  const iso=Math.log(C/R)/n; let lat=2*Math.atan(Math.exp(iso))-Math.PI/2;
+  for(let i=0;i<6;i++) lat=2*Math.atan(Math.exp(iso)*Math.pow((1+e*Math.sin(lat))/(1-e*Math.sin(lat)),e/2))-Math.PI/2;
+  return [(lon0+gamma/n)*180/Math.PI,lat*180/Math.PI];
+}
+async function reverseStreet(x,y) {
+  try {
+    const [lon,lat]=lambert93ToLonLat(x,y), url='https://data.geopf.fr/geocodage/reverse?'+new URLSearchParams({lon:String(lon),lat:String(lat),index:'address'});
+    const r=await fetch(url); if(!r.ok) return '';
+    const d=await r.json(), p=d.features?.[0]?.properties || {};
+    const label=String(p.label || '').replace(/^\s*\d+\s*(?:bis|ter)?\s*/i,'').split(',')[0];
+    return String(p.street || p.name || label || '').trim();
+  } catch (_) { return ''; }
+}
+async function facadeRoadChoices(point,rings) {
+  const ring=rings[0] || [], c=ring.reduce((s,p)=>[s[0]+p[0]/ring.length,s[1]+p[1]/ring.length],[0,0]);
+  const raw=await Promise.all(ring.slice(0,-1).map(async (a,i)=>{
+    const b=ring[i+1], L=distance(a,b); if(L<4) return null;
+    const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2], out=[mid[0]-c[0],mid[1]-c[1]], n=Math.hypot(...out)||1;
+    const street=await reverseStreet(mid[0]+out[0]/n*3,mid[1]+out[1]/n*3);
+    if(!street) return null;
+    return {street,facade:facadeFromEdge(point,a,b,ring),edgeIndex:i};
+  }));
+  const candidates=raw.filter(Boolean), seen=new Set(), unique=[];
+  for(const x of candidates) { const key=x.street.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); if(seen.has(key)) continue; seen.add(key); unique.push(x); }
+  const bestDistance=Math.min(...unique.map(x=>x.facade.distance),Infinity);
+  return unique.filter(x=>x.facade.distance<=bestDistance+18);
 }
 async function identityCell(i,j) {
   const key=i+'_'+j;
@@ -164,12 +191,16 @@ export async function locateApartment(address, floor, ctx, picked=null) {
   const floorData=floorModel(props,identity,floor);
   // repère local du jeu : x = Est, z = -Nord
   const toLocal=P=>[P[0]-CITY.X0,-(P[1]-CITY.Y0)];
-  const F=toLocal(facade.point), A=toLocal(facade.a), B=toLocal(facade.b);
-  const n=[facade.outward[0],-facade.outward[1]];               // normale sortante (vers la rue), repère local
-  const bearing=((Math.atan2(facade.outward[0],facade.outward[1])*180/Math.PI)+360)%360;
+  const localFor = f => {
+    const F=toLocal(f.point), A=toLocal(f.a), B=toLocal(f.b), n=[f.outward[0],-f.outward[1]];
+    const bearing=((Math.atan2(f.outward[0],f.outward[1])*180/Math.PI)+360)%360;
+    return {F,A,B,n,bearing,ring:rings[0].map(toLocal)};
+  };
+  const choices = await facadeRoadChoices(point,rings);
+  const facadeChoices = choices.map(c => ({street:c.street,facade:c.facade,local:localFor(c.facade)}));
   return {address:label,street:hit.properties?.street||'',housenumber:hit.properties?.housenumber||'',lon,lat,point,
-    feature,identity,exact,matchMode,fallbackDistance,facade,floorData,adjust:0,
-    local:{F,A,B,n,bearing,ring:rings[0].map(toLocal)}};
+    feature,identity,exact,matchMode,fallbackDistance,facade,floorData,adjust:0,facadeChoices,
+    local:localFor(facade)};
 }
 export function orientationName(b){
   return ['Nord','Nord-Est','Est','Sud-Est','Sud','Sud-Ouest','Ouest','Nord-Ouest'][Math.round(b/45)%8];
