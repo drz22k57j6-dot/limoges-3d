@@ -1653,7 +1653,7 @@ setInterval(() => { const b = $('fCar'); if (b) b.classList.toggle('near', mode 
 // ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
 const TILE_ERR = [2, 5, 12]; // lower = sharper photo city
 const ORIGIN={lat:CITY.lat,lon:CITY.lon,ellHeight:0};
-let tiles=null,tilesRoot=null,cityMode='ign',tilesCalib={t:0,n:0},tilesLoading=false,photoModelLoaded=false;
+let tiles=null,tilesRoot=null,cityMode='ign',tilesCalib={t:0,n:0},tilesLoading=false,photoModelLoaded=false,photoAttributionT=0;
 const raycaster=new THREE.Raycaster();
 function readCesiumIonToken(){try{return tokenFromSettingsJSON(localStorage.getItem('reglages-dev-v1'));}catch(e){return '';}}
 function updatePhotoAttribution(){const el=$('photoAttribution');if(!el)return;let values=[];try{values=tiles?.getAttributions?.([])||[];}catch(e){console.warn('attributions photoréalistes',e);}const sources=formatPhotoAttributions(values);el.textContent=sources?'Google Maps · '+sources:'Google Maps · attribution des fournisseurs en chargement';}
@@ -1971,7 +1971,7 @@ function loop(now) {
     cityTiles.errorTarget = Math.max(0.5, 3.5 * H / k);
   }
   if (cityTiles) { cityTiles.group.visible = cityMode !== 'google'; if (cityTiles.group.visible) { camera.updateMatrixWorld(); cityTiles.setResolutionFromRenderer(camera, renderer); cityTiles.update(); } }
-  if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
+  if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((photoAttributionT -= dt) < 0) { photoAttributionT = 0.5; if (cityMode === 'google') updatePhotoAttribution(); } if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : mode === 'foot' ? FT.spd : S.vf) * 3.6);
   $('spd').firstChild.nodeValue = kmh;
