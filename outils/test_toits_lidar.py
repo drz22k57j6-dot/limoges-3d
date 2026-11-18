@@ -60,6 +60,28 @@ class LidarRoofSyntheticTests(unittest.TestCase):
         self.assertFalse(got["valid"])
         self.assertIn("écart",got["reason"])
 
+    def test_half_metre_mnh_detects_small_roof_feature(self):
+        resolution = 0.5
+        n = 80
+        xmin, ymax = 0.0, 40.0
+        x = np.arange(n) * resolution + resolution / 2
+        y = ymax - (np.arange(n) * resolution + resolution / 2)
+        xx, yy = np.meshgrid(x, y)
+        roof = np.full((n, n), 8.0, dtype=np.float32)
+        # Petite émergence de 1,5 m, visible sur plusieurs pixels de 50 cm.
+        roof[(xx >= 18.5) & (xx <= 20.0) & (yy >= 18.5) & (yy <= 20.0)] = 9.5
+        polygon = Polygon([(4,4),(36,4),(36,36),(4,36)])
+        got = estimate_roof(polygon, roof, xmin, ymax, 9.5, resolution=resolution)
+        self.assertTrue(got["valid"], got)
+        self.assertGreaterEqual(got["samples"], 4)
+        verts, indices, step = build_roof_mesh(
+            polygon, roof, xmin, ymax, self.ground, got["eave"], got["mesh_max"],
+            resolution=resolution, triangle_budget=400)
+        self.assertGreater(len(indices), 0)
+        self.assertGreaterEqual(step, resolution)
+        self.assertLessEqual(len(indices)//3, 400)
+        self.assertGreater(float(verts[:,2].max()), 9.0)
+
     def test_mesh_respects_budget_and_building_holes(self):
         polygon=Polygon([(4,4),(36,4),(36,36),(4,36)], [[(14,14),(14,26),(26,26),(26,14)]])
         roof=np.full((self.n,self.n),8.0,dtype=np.float32)
