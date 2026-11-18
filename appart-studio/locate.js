@@ -132,6 +132,13 @@ export async function geocode(q, CITY, limit=5) {
 }
 
 // adresse → bâtiment IGN → façade côté rue → étage. Ne touche ni à la caméra ni à la scène.
+export function setApartmentFloor(res, floor) {
+  const props = res.feature?.properties || {};
+  res.floorData = floorModel(props, res.identity || {}, floor);
+  res.snap = null;
+  return res.floorData;
+}
+
 export async function locateApartment(address, floor, ctx, picked=null) {
   const {CITY,drone}=ctx;
   if(CITY?.id!=='paris') throw new Error('Appart Studio est actuellement limité à Paris.');
