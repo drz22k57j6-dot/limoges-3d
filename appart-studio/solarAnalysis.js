@@ -77,8 +77,23 @@ function makeBlocker(THREE, bvh) {
 function makeTreeModel(trees, drone, ground) {
   return trees.map(t => {
     const [x,z] = drone.ll(t.lon,t.lat), y0 = ground(x,z);
-    return { ...t, c:[x,y0+t.h*0.72,z], r:Math.max(1.5,t.r) };
+    return { ...t, y0, c:[x,y0+t.h*0.72,z], r:Math.max(1.5,t.r) };
   });
+}
+function makeTreeVisuals(THREE, trees) {
+  const group=new THREE.Group(); group.name='appart-studio-solar-trees';
+  if(!trees.length) return group;
+  const crownGeo=new THREE.SphereGeometry(1,8,6), trunkGeo=new THREE.CylinderGeometry(0.12,0.2,1,6);
+  const crownMat=new THREE.MeshStandardMaterial({color:0x477344,roughness:1});
+  const trunkMat=new THREE.MeshStandardMaterial({color:0x765238,roughness:1});
+  const crowns=new THREE.InstancedMesh(crownGeo,crownMat,trees.length), trunks=new THREE.InstancedMesh(trunkGeo,trunkMat,trees.length);
+  const matrix=new THREE.Matrix4(), pos=new THREE.Vector3(), scale=new THREE.Vector3(), quat=new THREE.Quaternion();
+  trees.forEach((t,i)=>{
+    pos.set(t.c[0],t.c[1],t.c[2]); scale.set(t.r,t.r,t.r); matrix.compose(pos,quat,scale); crowns.setMatrixAt(i,matrix);
+    pos.set(t.c[0],t.y0+t.h*0.2,t.c[2]); scale.set(1,t.h*0.4,1); matrix.compose(pos,quat,scale); trunks.setMatrixAt(i,matrix);
+  });
+  crowns.instanceMatrix.needsUpdate=true; trunks.instanceMatrix.needsUpdate=true;
+  group.add(trunks,crowns); return group;
 }
 
 export async function calculateSolarReport({ THREE, scene, drone, ground, res, plan, fr, onProgress = () => {} }) {
@@ -92,6 +107,7 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   onProgress({ stage:'arbres', done:0, total:windows.length });
   let trees=[];
   try { trees=makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground); } catch(e) { console.warn('[Appart Studio] arbres indisponibles',e); }
+  const treeGroup=makeTreeVisuals(THREE,trees); scene.add(treeGroup);
   const bvh=makeBvh(THREE,scene,[fr.F[0],fr.floorY+fr.H/2,fr.F[1]],250);
   const isBlocked=makeBlocker(THREE,bvh);
   const treeTransmission=(origin,dir,date)=>{
@@ -123,5 +139,5 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
     return {id:room.id,type:room.type,windows:ws.map(w=>w.id),hours:sums};
   });
   onProgress({stage:'termine',done:total,total,trees:trees.length});
-  return {windows:results,rooms,trees:trees.length,dates:Object.fromEntries(Object.entries(dates).map(([k,d])=>[k,d.toISOString().slice(0,10)]))};
+  return {windows:results,rooms,trees:trees.length,treeGroup,dates:Object.fromEntries(Object.entries(dates).map(([k,d])=>[k,d.toISOString().slice(0,10)]))};
 }
