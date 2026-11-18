@@ -64,6 +64,7 @@
   #go { background:#fff; color:#000; border:0; }
   #help { display:none; }
   #credits { position:fixed; left:50%; bottom:4px; transform:translateX(-50%); font-size:10px; opacity:.55; z-index:5; pointer-events:none; white-space:nowrap; }
+  #photoAttribution { display:none; position:fixed; z-index:14; left:50%; bottom:calc(5px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(96vw,900px); padding:4px 8px; border-radius:6px; background:rgba(0,0,0,.58); color:#fff; font:10px/1.3 Arial,sans-serif; text-align:center; pointer-events:none; white-space:normal; text-shadow:0 1px 2px #000; }
   #flash { position:fixed; inset:0; pointer-events:none; z-index:3; box-shadow:inset 0 0 0 rgba(255,40,20,0); transition:box-shadow .15s; }
   #toast { top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); font-size:15px; font-weight:600; opacity:0; transition:opacity .3s; background:var(--glass); padding:5px 14px; border-radius:14px; }
 </style>
@@ -98,6 +99,7 @@
 <div id="dsticks"><div class="dst" id="dsL"><div class="dkn"></div><span>GAZ · LACET</span></div><div class="dst" id="dsR"><div class="dkn"></div><span>TANGAGE · ROULIS</span></div></div>
 <div id="pipBox"><canvas id="pip" width="320" height="180"></canvas><b id="pipLbl">CAMÉRA</b></div>
 <div id="credits">Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)</div>
+<div id="photoAttribution" role="note" aria-label="Google Maps et fournisseurs de données"></div>
 <script>
 // ---------- choice of city (?ville=paris), remembered on the phone ----------
 window.CITIES = {
@@ -142,6 +144,7 @@ import { createTrees } from './commun/arbres.js';
 import { createRoads } from './commun/chaussee.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { initAppartStudio } from './appart-studio/ui.js';
+import { tokenFromSettingsJSON, formatPhotoAttributions } from './appart-studio/photoMode.js';
 
 const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 if (isTouch) document.documentElement.classList.add('is-touch');
@@ -1648,87 +1651,50 @@ setInterval(() => { const b = $('fCar'); if (b) b.classList.toggle('near', mode 
 
 // ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
 const TILE_ERR = [2, 5, 12]; // lower = sharper photo city
-const ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IlVEOVV6R05CSWVjTHZrMkUiLCJqdGkiOiIzMzU1MWMwNS1mOTI4LTRkZjItOTFlMy1mNTY0ZDVhMzY1MzMiLCJpZCI6NTQ5MjIzLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3OTQ2NTU2Njd9.36tL2NsuqQYEqQ66NQYshABW3ACnL4ldZv1p0eWrst0';
-const ORIGIN = { lat: CITY.lat, lon: CITY.lon, ellHeight: 0 }; // city origin (Lambert-93 X0, Y0)
-let tiles = null, tilesRoot = null, cityMode = 'ign', tilesCalib = { t: 0, n: 0 };
-const raycaster = new THREE.Raycaster();
-// ---------- buildings streamed as 3D Tiles (data/tuiles, outils/tuiles.py): detailed 250 m tiles near the camera, simple 1 km tiles far away ----------
-async function startCityTiles() {
-  await modelledReady;
-  try {
-    const [{ TilesRenderer }, P] = await Promise.all([
-      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),
-      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
-    const t = new TilesRenderer(CITY.data + 'tuiles/tileset.json' + V);
-    t.registerPlugin(new P.GLTFExtensionsPlugin({ meshoptDecoder: MeshoptDecoder }));
-    t.errorTarget = [3, 6, 12][qi]; t.lruCache.minSize = 300; t.lruCache.maxSize = 900;
-    // téléphone : cache des tuiles d'immeubles plafonné en mémoire (le navigateur iOS ferme l'onglet vers 1,5 Go)
-    if (isTouch) { t.lruCache.minSize = 150; t.lruCache.maxSize = 450; t.lruCache.minBytesSize = 120 * 2 ** 20; t.lruCache.maxBytesSize = 200 * 2 ** 20; }
-    const far = new THREE.MeshStandardMaterial({ name: 'mur_lointain', vertexColors: true, roughness: 0.9 }); MT.appliquer(far, MT.PROFILS.facade);
-    t.addEventListener('load-model', ({ scene: sc, tile }) => { if (BN) BN.ponctuel('tuiles', 'chargement', tile && tile.content && tile.content.uri || '');
-      alleger(sc, 512);
-      sc.traverse(o => {
-        if (!o.isMesh) return;
-        const n = o.material.name, m = n === 'lointain' ? far : BMAT[n];
-        if (m) { o.material.dispose(); o.material = m; }
-        let p = o; while (p && !p.userData.ids) p = p.parent; if (p) o.userData.ids = p.userData.ids;
-        o.castShadow = o.receiveShadow = true; try { hideModelled(o); didPrep(o); idxTile(o); } catch (e) { console.warn('identifiants', e); }
-      });
-    });
-    t.setCamera(camera); t.setResolutionFromRenderer(camera, renderer);
-    t.addEventListener('dispose-model', ({ tile }) => { if (BN) BN.ponctuel('tuiles', 'déchargement', tile && tile.content && tile.content.uri || ''); });
-    t.group.userData.bnNom = 'tuiles'; scene.add(t.group); cityTiles = t; window.__cityTiles = t;
-    if (CITY.id === 'paris') import('./moteur_facades/quartier.js' + V).then(m => m.createQuartier(THREE, { scene, base: CITY.data + 'facades/', v: V, groundH, solPret: (x, z) => Array.isArray(relief) && relief.some(t => x >= t.x0 && x <= t.x0 + 2000 && -z >= t.y0 && -z <= t.y0 + 2000), masquer: masquerBatiments, bn: () => BN, rayon: isTouch ? 70 : 140, rayonDetail: isTouch ? 30 : 70, ombres: !isTouch })).then(q => { QUART = q; q.actif = GFX.facades; window.__quartier = q; }).catch(e => console.warn('façades quartier', e));
-  } catch (e) { console.warn('tuiles ville', e); }
+const ORIGIN={lat:CITY.lat,lon:CITY.lon,ellHeight:0};
+let tiles=null,tilesRoot=null,cityMode='ign',tilesCalib={t:0,n:0},tilesLoading=false,photoModelLoaded=false;
+const raycaster=new THREE.Raycaster();
+function readCesiumIonToken(){try{return tokenFromSettingsJSON(localStorage.getItem('reglages-dev-v1'));}catch(e){return '';}}
+function updatePhotoAttribution(){const el=$('photoAttribution');if(!el)return;let values=[];try{values=tiles?.getAttributions?.([])||[];}catch(e){console.warn('attributions photoréalistes',e);}const sources=formatPhotoAttributions(values);el.textContent=sources?'Google Maps · '+sources:'Google Maps · attribution des fournisseurs en chargement';}
+function fallbackPhotoCity(message){try{tiles?.dispose?.();}catch(e){}if(tilesRoot)scene.remove(tilesRoot);tiles=null;tilesRoot=null;tilesLoading=false;photoModelLoaded=false;WORLD.mode='3d';try{localStorage.setItem('monde','3d');}catch(e){}for(const b of document.querySelectorAll('[data-world]'))b.classList.toggle('on',b.dataset.world==='3d');setCity('ign');if(message)toast(message);}
+async function startGoogleCity(){
+  if(tiles||tilesLoading)return;const token=readCesiumIonToken();
+  if(!token){fallbackPhotoCity('Clé Cesium ion absente — vue IGN conservée. Ajoute-la dans Réglages > Monde.');return;}
+  tilesLoading=true;photoModelLoaded=false;
+  try{
+    const [{TilesRenderer},P]=await Promise.all([import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
+    tiles=new TilesRenderer();
+    tiles.registerPlugin(new P.CesiumIonAuthPlugin({apiToken:token,assetId:'2275207',autoRefreshToken:true}));
+    const draco=new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/libs/draco/gltf/');
+    tiles.registerPlugin(new P.GLTFExtensionsPlugin({dracoLoader:draco}));tiles.registerPlugin(new P.TileCompressionPlugin());
+    tiles.registerPlugin(new P.ReorientationPlugin({lat:ORIGIN.lat*Math.PI/180,lon:ORIGIN.lon*Math.PI/180,height:H0+CITY.geoid,recenter:true}));
+    tiles.errorTarget=TILE_ERR[qi];
+    tiles.addEventListener('load-model',({scene:sc})=>{photoModelLoaded=true;sc.traverse(o=>{if(!o.isMesh)return;const old=o.material;o.material=new THREE.MeshBasicMaterial({map:old.map||null,color:old.map?0xffffff:old.color,fog:true,toneMapped:false});if(o.material.map)o.material.map.anisotropy=renderer.capabilities.getMaxAnisotropy();old.dispose();});updatePhotoAttribution();if(WORLD.mode==='photo')setCity('google');});
+    tiles.addEventListener('load-root-tileset',updatePhotoAttribution);
+    tiles.addEventListener('load-tileset',updatePhotoAttribution);
+    tiles.addEventListener('load-error',({tile,error})=>{console.warn('Google photoréaliste : chargement impossible',error);if(!tile||!tiles?.root)fallbackPhotoCity('Carte photoréaliste indisponible (clé, quota ou réseau) — retour à la vue IGN.');});
+    tilesRoot=new THREE.Group();tilesRoot.rotation.y=Math.PI;tilesRoot.add(tiles.group);scene.add(tilesRoot);
+    tiles.setCamera(camera);tiles.setResolutionFromRenderer(camera,renderer);
+    setTimeout(()=>{if(WORLD.mode==='photo'&&!photoModelLoaded)fallbackPhotoCity('Carte photoréaliste indisponible (quota ou réseau) — retour à la vue IGN.');},20000);
+  }catch(e){console.warn('Google 3D tiles',e);fallbackPhotoCity('Carte photoréaliste indisponible — retour à la vue IGN.');}
+  finally{tilesLoading=false;}
 }
-async function startGoogleCity() {
-  try {
-    const [{ TilesRenderer }, P] = await Promise.all([
-      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.js'),
-      import('https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.5.4/build/index.plugins.js')]);
-    tiles = new TilesRenderer();
-    tiles.registerPlugin(new P.CesiumIonAuthPlugin({ apiToken: ION_TOKEN, assetId: '2275207', autoRefreshToken: true }));
-    const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/libs/draco/gltf/');
-    tiles.registerPlugin(new P.GLTFExtensionsPlugin({ dracoLoader: draco }));
-    tiles.registerPlugin(new P.TileCompressionPlugin());
-    // the plugin puts the address at the origin with X west / Z north: we turn it to X east / -Z north
-    tiles.registerPlugin(new P.ReorientationPlugin({ lat: ORIGIN.lat * Math.PI / 180, lon: ORIGIN.lon * Math.PI / 180, height: H0 + CITY.geoid, recenter: true }));
-    tiles.errorTarget = TILE_ERR[qi];
-    tiles.addEventListener('load-model', ({ scene: sc }) => {
-      sc.traverse(o => {
-        if (!o.isMesh) return;
-        const old = o.material; // photogrammetry already contains the real light: draw it unlit
-        o.material = new THREE.MeshBasicMaterial({ map: old.map || null, color: old.map ? 0xffffff : old.color, fog: true, toneMapped: false }); // show the photo as it is
-        if (o.material.map) o.material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        old.dispose();
-      });
-    });
-    tilesRoot = new THREE.Group(); tilesRoot.rotation.y = Math.PI; tilesRoot.add(tiles.group); scene.add(tilesRoot);
-    tiles.setCamera(camera); tiles.setResolutionFromRenderer(camera, renderer);
-    tiles.addEventListener('load-tile-set', () => { if (WORLD.mode === 'photo') setCity('google'); });
-    setTimeout(() => { if (cityMode !== 'google' && !tiles.root) toast('Ville photo indisponible — ville IGN'); }, 15000);
-  } catch (e) { console.warn('Google 3D tiles', e); tiles = null; toast('Ville photo indisponible — ville IGN'); }
+const WORLD = { mode: '3d', ready: false };
+function setWorld(m){
+  if(m==='photo'&&!readCesiumIonToken()){fallbackPhotoCity('Clé Cesium ion absente — vue IGN conservée. Ajoute-la dans Réglages > Monde.');return false;}
+  WORLD.mode=m;try{localStorage.setItem('monde',m);}catch(e){}
+  for(const b of document.querySelectorAll('[data-world]'))b.classList.toggle('on',b.dataset.world===m);
+  if(m==='photo'){if(tiles?.root)setCity('google');else if(WORLD.ready){toast('Chargement du Paris photoréaliste…');startGoogleCity();}}
+  else setCity('ign');return true;
 }
-// choix du monde (menu et réglages), mémorisé
-const WORLD = { mode: (() => { try { return localStorage.getItem('monde') || '3d'; } catch (e) { return '3d'; } })(), ready: false };
-function setWorld(m) {
-  WORLD.mode = m; try { localStorage.setItem('monde', m); } catch (e) {}
-  for (const b of document.querySelectorAll('[data-world]')) b.classList.toggle('on', b.dataset.world === m);
-  if (m === 'photo') { if (tiles) setCity('google'); else if (WORLD.ready) { toast('Chargement du Paris photo réaliste…'); startGoogleCity(); } }
-  else setCity('ign');
-}
-window.__setWorld = setWorld; window.__WORLD = WORLD;
-function setCity(m) {
-  if (m === 'google' && !tiles) return;
-  cityMode = m;
-  const g = m === 'google';
-  if (tilesRoot) tilesRoot.visible = g;
-  terrainRoot && (terrainRoot.visible = !g);
-  chunks.forEach(c => c.hiddenByCity = g);
-  carBlob.visible = g;
-  $('bVille').textContent = g ? 'VILLE PHOTO' : 'VILLE IGN';
-  $('credits').textContent = g ? 'Ville 3D : Google (via Cesium ion) · Données IGN (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)'
-    : 'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)';
+window.__setWorld=setWorld;window.__WORLD=WORLD;
+function setCity(m){
+  if(m==='google'&&(!tiles||!tiles.root))return;
+  cityMode=m;const g=m==='google';if(tilesRoot)tilesRoot.visible=g;if(cityTiles)cityTiles.group.visible=!g;terrainRoot&&(terrainRoot.visible=!g);chunks.forEach(c=>c.hiddenByCity=g);carBlob.visible=g;
+  $('bVille').textContent=g?'VILLE PHOTO':'VILLE IGN';
+  $('credits').style.display=g?'none':'block';
+  $('credits').textContent=g?'Données IGN et overlays indépendants affichés sur le fond photoréaliste.':'Données © IGN – BD TOPO®, LiDAR HD, BD ORTHO® (Licence Ouverte 2.0) · Voirie et arbres © Ville de Paris (ODbL) · Monuments : Open Landmarks (CC BY), © contributeurs OpenStreetMap (ODbL)';
+  $('photoAttribution').style.display=g?'block':'none';if(g)updatePhotoAttribution();
 }
 // keep the photo city at the right height: compare it with the LiDAR ground on roads around the player
 function calibrateTiles(F) {
