@@ -255,7 +255,7 @@ TEX_RES = G.texture(facade('res')); TEX_COM = G.texture(facade('com'))
 M_BARRE = G.material('facade_barre', tex=G.texture(facade_barre())); M_TOUR = G.material('facade_tour', tex=G.texture(facade_tour())); M_PIGNON = G.material('pignon', tex=G.texture(pignon()))
 M_RES = G.material('facade_logements', tex=TEX_RES); M_COM = G.material('facade_activites', tex=TEX_COM)
 M_PLAIN = G.material('mur_simple')
-TXD = '/home/claude/game/pub/data/tex/'
+TXD = os.environ.get('TEXTURE_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pub', 'data', 'tex')) + '/'
 def ftex(n): return G.texture(Image.open(TXD+n+'_d.jpg').convert('RGB'), q=84)
 M_ROOF_T = G.material('toit_tuiles', tex=ftex('tuiles'), rough=0.75); M_ROOF_S = G.material('toit_ardoise', tex=ftex('ardoise'), rough=0.6); M_ROOF_F = G.material('toit_plat', tex=ftex('toit_plat'), rough=0.9)
 import os
