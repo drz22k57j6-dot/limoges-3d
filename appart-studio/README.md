@@ -64,3 +64,11 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - Les fenêtres réelles sont affichées en pointillé et les ouvertures reprennent leurs dimensions.
 - Le plan peut être déplacé le long de la façade par travée.
 - Le doublage intérieur est déplacé derrière le parement réel ; la découpe commence côté intérieur.
+
+
+## Finitions 3D — BUG 3 (PR dédiée)
+
+- Garde-corps réels conservés hors de la boîte de découpe ; garde-corps manquants générés via le helper et les matériaux du moteur de façades.
+- Doublage extérieur supprimé : murs de contour rendus uniquement côté intérieur, après mesure du nu intérieur par raycast sur le proxy aligné à la façade générée.
+- Fenêtres à deux battants pivotants, animation ease-out de 0,6 s, activation au toucher en Visite/Fenêtres et bouton Ouvrir/Fermer.
+- Collisions rectangulaires tenant compte de l'épaisseur, sous-pas de 5 cm, obstacles des battants ouverts, garde-corps, allèges et chambranles ; retour à la dernière position valide hors des polygones de pièces.
