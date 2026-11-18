@@ -227,6 +227,37 @@ const TIMES = [
 ];
 let ti = 0;
 const sunDir = new THREE.Vector3();
+let sunOverride = null;
+function setSunOverride(dir, target) {
+  if (!dir || !target) {
+    sunOverride = null;
+    applyTime();
+    sun.shadow.camera.left = sun.shadow.camera.bottom = -150;
+    sun.shadow.camera.right = sun.shadow.camera.top = 150;
+    sun.shadow.camera.updateProjectionMatrix();
+    const size = QUALITIES[qi].shadow;
+    if (sun.shadow.mapSize.x !== size || sun.shadow.mapSize.y !== size) {
+      sun.shadow.mapSize.set(size, size);
+      if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+    }
+    sun.shadow.needsUpdate = true;
+    return true;
+  }
+  sunOverride = { dir: new THREE.Vector3(dir[0], dir[1], dir[2]).normalize(), target: new THREE.Vector3(target[0], target[1], target[2]) };
+  const daylight = THREE.MathUtils.clamp(sunOverride.dir.y * 1.65, 0, 1);
+  sun.color.setRGB(1, 0.76 + daylight * 0.22, 0.52 + daylight * 0.42);
+  sun.intensity = 3.37 * daylight;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -75;
+  sun.shadow.camera.right = sun.shadow.camera.top = 75;
+  const size = isTouch ? Math.min(1024, QUALITIES[qi].shadow) : Math.min(2048, QUALITIES[qi].shadow);
+  if (sun.shadow.mapSize.x !== size || sun.shadow.mapSize.y !== size) {
+    sun.shadow.mapSize.set(size, size);
+    if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+  }
+  sun.shadow.camera.updateProjectionMatrix();
+  sun.shadow.needsUpdate = true;
+  return true;
+}
 function applyTime() {
   const t = TIMES[ti];
   const phi = THREE.MathUtils.degToRad(90 - Math.max(t.elev, -2)), th = THREE.MathUtils.degToRad(t.az);
@@ -1384,6 +1415,8 @@ window.__dev = {
 };
 // API pour le panneau Réglages (drone/reglages.js) : vitesse, téléportation instantanée (sans IA)
 window.__drone = {
+  // Appart Studio : pilote temporairement la DirectionalLight existante.
+  setSun: setSunOverride,
   // rue d'essai du moteur de façades (moteur_facades/), posée sur la pelouse du Champ de Mars ; drone posé à 1 m dans la rue
   async rueTest(ctx = '7e') {
     const { buildTestStreet } = await import('./moteur_facades/rue_test.js' + V);
@@ -1937,8 +1970,14 @@ function loop(now) {
   // Appart Studio : caméra cinématique imposée (le drone est garé sur la caméra pour que le streaming suive)
   if (window.__camOverride && window.__camOverride(dt, t)) { drone.visible = false; PL.vx = PL.vy = PL.vz = 0; PL.spd = 0; }
   const F = mode === 'plane' ? PL : mode === 'foot' ? FT : S;
-  // sun follows car for shadows
-  sun.position.set(F.x + sunDir.x * 450, F.y + sunDir.y * 450, F.z + sunDir.z * 450); sun.target.position.set(F.x, F.y, F.z);
+  // Soleil réel Appart Studio : même DirectionalLight ; suivi historique sinon.
+  if (sunOverride) {
+    sun.target.position.copy(sunOverride.target);
+    sun.position.copy(sunOverride.target).addScaledVector(sunOverride.dir, 450);
+  } else {
+    sun.position.set(F.x + sunDir.x * 450, F.y + sunDir.y * 450, F.z + sunDir.z * 450);
+    sun.target.position.set(F.x, F.y, F.z);
+  }
   sky.position.copy(camera.position);
   waterNormal.offset.x = (t * 0.012) % 1; waterNormal.offset.y = (t * 0.007) % 1;
   // distance culling
