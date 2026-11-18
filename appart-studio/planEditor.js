@@ -340,12 +340,12 @@ export function createPlanEditor({ onBack, onView3D }) {
       Object.assign(o, constrainRect(next, o)); recompute(); draw();
     } else if (drag.kind === 'op') {
       const op = P.ops.find(o => o.id === drag.id), w = op && wallById(op.wall);
-      if (w) { op.p = projectOn(w, p); drag.moved = true; draw(); }
+      if (w && !op.traveeId) { op.p = projectOn(w, p); drag.moved = true; draw(); }
     } else if (drag.kind === 'slide') {
       const origin = JSON.parse(drag.origin), target = drag.center0 + (p[0] - drag.x0);
       const bay = ctxInfo.facadeWindows.reduce((best, x) => !best || Math.abs(x.u-target) < Math.abs(best.u-target) ? x : best, null);
       const delta = bay.u - drag.center0, next = { ...origin.o, u0: origin.o.u0 + delta, u1: origin.o.u1 + delta };
-      if (rectFits(next)) { P = origin; P.o = next; P.walls.forEach(w => { w.a[0] += delta; w.b[0] += delta; }); P.ops.forEach(o => { o.p[0] += delta; }); P.labels.forEach(l => { l.p[0] += delta; }); recompute(); draw(); }
+      if (rectFits(next)) { P = origin; P.o = next; P.walls.forEach(w => { w.a[0] += delta; w.b[0] += delta; }); P.ops.forEach(o => { if (o.traveeId && o.type === 'fenetre') { const target=o.p[0]+delta, bay=ctxInfo.facadeWindows.reduce((best,x)=>!best||Math.abs(x.u-target)<Math.abs(best.u-target)?x:best,null); if(bay){o.p=[bay.u,0];o.w=bay.width;o.allege=bay.allege;o.h=bay.height;o.traveeId=bay.id;} } else o.p[0] += delta; }); P.labels.forEach(l => { l.p[0] += delta; }); recompute(); draw(); }
     } else if (drag.kind === 'draw') { drag.b = snap(p, drag.a); draw(); }
   });
   const end = e => {
