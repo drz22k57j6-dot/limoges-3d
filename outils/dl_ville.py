@@ -14,15 +14,30 @@ def get(url, path, tries=5):
             open(path, 'wb').write(d); return
         except Exception as e: print('retry', path, e, flush=True); time.sleep(4 + 4 * a)
     raise SystemExit('failed ' + path)
+def wms_box(layer, fmt, x0, y0, size, px):
+    b = f'{x0},{y0},{x0 + size},{y0 + size}'
+    return 'https://data.geopf.fr/wms-r?' + urllib.parse.urlencode(dict(
+        SERVICE='WMS', VERSION='1.3.0', REQUEST='GetMap', LAYERS=layer,
+        CRS='EPSG:2154', BBOX=b, WIDTH=px, HEIGHT=px, FORMAT=fmt, STYLES=''))
+
 def wms(layer, fmt, i, j, px):
-    b = f'{XMIN + i * 2000},{YMIN + j * 2000},{XMIN + (i + 1) * 2000},{YMIN + (j + 1) * 2000}'
-    return 'https://data.geopf.fr/wms-r?' + urllib.parse.urlencode(dict(SERVICE='WMS', VERSION='1.3.0', REQUEST='GetMap', LAYERS=layer, CRS='EPSG:2154', BBOX=b, WIDTH=px, HEIGHT=px, FORMAT=fmt, STYLES=''))
+    return wms_box(layer, fmt, XMIN + i * 2000, YMIN + j * 2000, 2000, px)
+
 jobs = []
 for i in range(3):
     for j in range(3):
         for k in ('MNT', 'MNH'):
             jobs.append((wms(f'IGNF_LIDAR-HD_{k}_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93', 'image/geotiff', i, j, 1000), f'{OUT}/{k.lower()}_{i}_{j}.tif'))
         jobs.append((wms('HR.ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg', i, j, 4096), f'{OUT}/ortho_{i}_{j}.jpg'))
+
+# Le MNH officiel est fourni au pas de 50 cm. On télécharge des dalles WMS
+# de 1 km à 2 000 px : 0,5 m/pixel. Le MNH 2 m reste utilisé pour les arbres.
+for i in range(6):
+    for j in range(6):
+        x0, y0 = XMIN + i * 1000, YMIN + j * 1000
+        jobs.append((wms_box('IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93',
+                             'image/geotiff', x0, y0, 1000, 2000),
+                     f'{OUT}/mnh_hd_{i}_{j}.tif'))
 def wfs(layer, props, out, sortby='cleabs'):
     if os.path.exists(out): return
     feats = []; start = 0
