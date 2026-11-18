@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: feat/appart-studio-runtime-lidar-vegetation
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -40,7 +40,7 @@ jobs:
           fi
           git commit -m "Génère les données de végétation de Paris"
           for attempt in 1 2 3; do
-            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            git pull --rebase origin feat/appart-studio-runtime-lidar-vegetation && git push origin HEAD:feat/appart-studio-runtime-lidar-vegetation && exit 0
             echo "Échec push, essai $attempt/3"
             sleep $((attempt * 5))
           done
