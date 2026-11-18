@@ -27,7 +27,8 @@ function makeWindows(plan, fr) {
     let n = [-e[1], e[0]];
     const mid = [(w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2];
     if ((center[0] - mid[0]) * n[0] + (center[1] - mid[1]) * n[1] > 0) n = [-n[0], -n[1]];
-    const width = Number(o.largeur) || 1.2, height = Number(o.hauteur) || 2.1, sill = Number(o.allege ?? 0.9);
+    const width = Number(o.largeur) || 1.2, sill = Number(o.allege ?? 0.9), requestedHeight = Number(o.hauteur) || 2.1;
+    const height = Math.max(0.1, Math.min(requestedHeight, (Number(plan.settings?.ceilingHeight) || fr.H) - sill - 0.18));
     const thickness = Math.max(0.15, Number(plan.settings?.facadeThickness ?? w.epaisseur) || 0.35);
     const along = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
     // Les points de départ sont sur le nu intérieur ; chaque rayon doit traverser toute l'embrasure.
