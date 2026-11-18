@@ -27,7 +27,10 @@ MNT = mosaic('mnt'); MNH = mosaic('mnh')
 # MNH LiDAR HD haute résolution : 36 dalles de 1 km au pas officiel de 50 cm.
 # Le raster 2 m reste en mémoire pour la détection des arbres et sert de repli
 # uniquement si la dalle haute résolution ne contient pas assez d'échantillons.
+MNH_HD_TILES_LOADED = 0
+
 def mosaic_mnh_hd():
+    global MNH_HD_TILES_LOADED
     path = os.path.join(D, 'mnh_hd_0_0.tif')
     if not os.path.exists(path):
         print('MNH 50 cm absent : toitures en mode repli MNH 2 m')
@@ -45,7 +48,8 @@ def mosaic_mnh_hd():
                 raise ValueError(f'{path}: raster attendu 2000x2000, reçu {tile.shape}')
             a[(5-j)*2000:(6-j)*2000, i*2000:(i+1)*2000] = tile
             loaded += 1
-    print('MNH 50 cm tiles', loaded, '/ 36; pixels', int(np.isfinite(a).sum()))
+    MNH_HD_TILES_LOADED = loaded
+    print('MNH 50 cm tiles', loaded, '/ 36; valid height pixels', int(np.count_nonzero(np.isfinite(a) & (a > 0.5))))
     return a if loaded else None
 
 MNH_HD = mosaic_mnh_hd()
@@ -346,7 +350,7 @@ nb = 0; gables = 0; FOOT = []
 ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"reasons":{},
               "source_resolution_m":0.5 if MNH_HD is not None else 2.0,
               "source":"IGN LiDAR HD MNH 50 cm" if MNH_HD is not None else "IGN LiDAR HD MNH WMS 2 m",
-              "high_resolution_tiles_loaded":36 if MNH_HD is not None else 0}
+              "high_resolution_tiles_loaded":MNH_HD_TILES_LOADED,"resolution_usage_m":{}}
 for f in B:
     p = f['properties']; g = shape(f['geometry'])
     polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
@@ -435,6 +439,8 @@ for f in B:
                              "hauteur_faitage_m":round(roof_est["ridge"],2),
                              "triangles_toit":int(len(roof_idx)//3), "pas_maillage_m":round(float(roof_step),2)})
             ROOF_STATS["lidar"] += 1
+            resolution_key = f"{roof_resolution:g}"
+            ROOF_STATS["resolution_usage_m"][resolution_key] = ROOF_STATS["resolution_usage_m"].get(resolution_key, 0) + 1
             ROOF_STATS["triangles"] += int(len(roof_idx)//3)
             ROOF_STATS["vertices"] += int(len(roof_pos))
         else:
