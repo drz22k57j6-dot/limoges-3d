@@ -1,7 +1,9 @@
 // Appart Studio — interface : adresse → arrivée face à l'immeuble → plan.
 import { locateApartment, geocode, orientationName } from './locate.js';
 import { createFacadeView } from './view.js';
-import { createPlanEditor } from './planEditor.js';
+import { createPlanEditor, ROOM_TYPES } from './planEditor.js';
+import { createApartment } from './buildApartment.js';
+import { createCam3d } from './cam3d.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -55,6 +57,27 @@ body.as-mode #as-launch{display:none!important}
 #as-dbg{display:none;margin-top:10px;font:11px/1.45 ui-monospace,Menlo,monospace;color:#9fb0c4;white-space:pre-wrap}
 #as-dbg.on{display:block}
 @media(min-width:760px){#as-bar{left:50%;right:auto;width:460px;transform:translateX(-50%)}}
+
+/* vue 3D */
+#as-3d{position:fixed;inset:0;z-index:88;display:none;pointer-events:none}
+#as-3d.on{display:block}
+#as3-touch{position:absolute;inset:0;pointer-events:auto;touch-action:none}
+#as3-top{position:absolute;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));display:flex;gap:8px;align-items:center;pointer-events:auto}
+#as3-top button{width:46px;height:46px;border-radius:14px;border:1px solid #ffffff2a;background:#10161fe0;font-size:19px;flex:0 0 auto;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#as3-title{flex:1;min-width:0;background:#10161fe0;border:1px solid #ffffff22;border-radius:14px;padding:6px 12px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#as3-title b{display:block;font-size:14px}#as3-title span{display:block;font-size:11px;color:#aeb8c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#as3-bottom{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));pointer-events:auto}
+#as3-modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#10161fe8;border:1px solid #ffffff22;border-radius:18px;padding:6px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#as3-modes button{height:52px;border-radius:13px;border:0;background:none;font-weight:800;font-size:14px}
+#as3-modes button.on{background:#ff4d63}
+#as3-win{display:none;align-items:center;gap:8px;margin-bottom:8px}
+#as3-win.on{display:flex}
+#as3-win button{width:52px;height:46px;border-radius:14px;border:1px solid #ffffff2a;background:#10161fe8;font-size:20px;font-weight:800}
+#as3-win span{flex:1;text-align:center;background:#10161fe8;border:1px solid #ffffff22;border-radius:14px;height:46px;line-height:46px;font-weight:700;font-size:14px}
+#as3-help{text-align:center;font-size:12px;color:#e8edf5;text-shadow:0 1px 3px #000;margin-bottom:8px}
+#as3-joy{position:absolute;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
+#as3-joy.on{display:block}
+#as3-joy div{position:absolute;left:33px;top:33px;width:46px;height:46px;border-radius:50%;background:#ffffffd0;box-shadow:0 2px 10px #0008}
 /* éditeur */
 #as-editor{position:fixed;inset:0;z-index:95;background:#0d121a;display:none;flex-direction:column}
 #as-editor.on{display:flex}
@@ -100,6 +123,12 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     <div id="as-err"></div>
     <div id="as-tests"><span class="as-lbl">Adresses de test</span><div></div></div>
   </div></section>
+  <section id="as-3d" class="as-ui">
+    <div id="as3-top"><button id="as3-back" aria-label="Retour au plan">←</button><div id="as3-title"><b>Mon appartement</b><span></span></div><button id="as3-quit" aria-label="Quitter">✕</button></div>
+    <div id="as3-bottom"><div id="as3-help"></div>
+      <div id="as3-win"><button id="as3-wp">‹</button><span id="as3-wl"></span><button id="as3-wn">›</button></div>
+      <div id="as3-modes"><button data-m="maquette">Maquette</button><button data-m="visite">Visite</button><button data-m="fenetre">Fenêtres</button></div></div>
+  </section>
   <section id="as-loading" class="as-ui"><div class="box"><div id="as-spin"></div><b>On trouve votre immeuble…</b><span id="as-step">Recherche de l'adresse</span></div></section>
   <section id="as-bar" class="as-ui">
     <div class="t" id="as-bt"></div><div class="s" id="as-bs"></div><div class="warn" id="as-bw"></div>
@@ -109,7 +138,46 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     <div id="as-dbg"></div>
   </section>`);
   const $ = id => document.getElementById(id);
-  const editor = createPlanEditor({ onBack: () => $('as-bar').classList.add('on') });
+  const apt = createApartment(ctx), cam3 = createCam3d(ctx);
+  cam3.mount($('as-3d'));
+  const editor = createPlanEditor({ onBack: () => $('as-bar').classList.add('on'), onView3D: () => open3d() });
+  const HELP = { maquette: 'Glisse pour tourner autour · pince pour zoomer', visite: 'Joystick pour marcher · glisse à droite pour regarder', fenetre: 'Ta vraie vue · glisse pour regarder autour' };
+  const TYPE_N = Object.fromEntries(ROOM_TYPES.map(([k, n]) => [k, n]));
+  function setMode3d(m) {
+    apt.setDollhouse(m === 'maquette');
+    cam3.setMode(m);
+    document.querySelectorAll('#as3-modes button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+    $('as3-help').textContent = HELP[m];
+    $('as3-win').classList.toggle('on', m === 'fenetre'); if (m === 'fenetre') winLabel();
+  }
+  function winLabel() {
+    const ws = cam3.windows(), plan = state.plan3d, w = ws[cam3.win];
+    const room = w && plan.pieces.find(r => r.polygone && pointIn(w.centre, r.polygone, 0.45));
+    $('as3-wl').textContent = 'Fenêtre ' + (cam3.win + 1) + '/' + ws.length + (room?.type ? ' · ' + TYPE_N[room.type] : '');
+  }
+  function pointIn(c, poly, tol) {   // la fenêtre est sur le bord : on teste un point légèrement à l'intérieur de chaque côté
+    for (const [dx, dy] of [[0, tol], [0, -tol], [tol, 0], [-tol, 0]]) { const p = [c[0] + dx, c[1] + dy]; let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) ins = !ins; } if (ins) return true; }
+    return false;
+  }
+  function open3d() {
+    const r = state.res; if (!r) return;
+    const plan = editor.getPlan(); state.plan3d = plan;
+    const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
+    const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
+    const H = Math.max(2.4, Math.min(3.6, lvl - 0.25));
+    const fr = { F, u, v, floorY: view.floorY(r), H };
+    view.suspend();
+    apt.build(plan, fr, { dollhouse: true });
+    $('as3-title').querySelector('span').textContent = (r.housenumber ? r.housenumber + ' ' : '') + (r.street || r.address) + ' · ' + floorName(r.floorData.floor) + ' · ' + plan.pieces.reduce((s, p) => s + p.surface, 0).toFixed(1).replace('.', ',') + ' m²';
+    $('as-3d').classList.add('on');
+    cam3.start(apt.info, plan, 'maquette'); setMode3d('maquette');
+  }
+  function close3d() { cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
+  document.querySelectorAll('#as3-modes button').forEach(b => b.onclick = () => setMode3d(b.dataset.m));
+  $('as3-wp').onclick = () => { cam3.nextWindow(-1); winLabel(); };
+  $('as3-wn').onclick = () => { cam3.nextWindow(1); winLabel(); };
+  $('as3-back').onclick = () => { close3d(); $('as-draw').onclick(); };
+  setInterval(() => { if ($('as-3d').classList.contains('on')) apt.tick(0.5); }, 500);
 
   // le bouton n'apparaît qu'une fois le jeu lancé (écran de chargement fermé)
   const showLaunch = setInterval(() => { if (!$('loader')) { $('as-launch').style.display = ''; clearInterval(showLaunch); } }, 500);
@@ -151,13 +219,14 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   // ouverture / fermeture
   const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
   function quit() {
-    view.hide(); editor.close();
-    for (const id of ['as-start', 'as-loading', 'as-bar']) $(id).classList.remove('on');
+    cam3.stop(); apt.hide(); view.hide(); editor.close();
+    for (const id of ['as-start', 'as-loading', 'as-bar', 'as-3d']) $(id).classList.remove('on');
     document.body.classList.remove('as-mode'); state.res = null;
   }
   $('as-launch').onclick = enter;
   $('as-x').onclick = () => { if (state.res) { $('as-start').classList.remove('on'); $('as-bar').classList.add('on'); } else quit(); };
   $('as-quit').onclick = quit;
+  $('as3-quit').onclick = quit;
   $('as-change').onclick = () => { $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
 
   // localisation
@@ -224,5 +293,5 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     state.frame = { F, u, v, floorY: view.floorY(r) };
   };
 
-  Object.assign(state, { open: enter, quit, tests: TESTS, editor, view });
+  Object.assign(state, { open: enter, quit, tests: TESTS, editor, view, apt, cam3, open3d, setMode3d });
 }

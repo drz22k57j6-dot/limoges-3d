@@ -98,6 +98,8 @@ export function createFacadeView({ THREE, scene, camera, drone, ground }) {
     },
     refresh() { if (st.res) { build(st.res); st.t0 -= 3; } },
     onSnap(f) { st.onSnap = f; },
+    suspend() { if (st.group) st.group.visible = false; if (window.__camOverride === hook) window.__camOverride = null; },
+    resume() { if (st.group) st.group.visible = true; if (st.cam) { window.__camOverride = hook; st.t0 = performance.now() / 1000 - 3; } },
     debugSnap() { try { return { r: snapFromFacades(st.res), chk: st.chk, has: !!st.res?.snap }; } catch (e) { return { err: String(e) }; } },
     hide() { clear(); st.cam = null; if (window.__camOverride === hook) window.__camOverride = null; },
     floorY, floorH,

@@ -18,7 +18,7 @@ const OPEN_DEF = { fenetre: { w: 1.2, allege: 0.9, h: 2.3 }, porte: { w: 0.83, a
 const fmt = x => x.toFixed(2).replace('.', ',');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function createPlanEditor({ onBack }) {
+export function createPlanEditor({ onBack, onView3D }) {
   const root = document.createElement('section');
   root.id = 'as-editor'; root.className = 'as-ui';
   root.innerHTML = `
@@ -28,7 +28,7 @@ export function createPlanEditor({ onBack }) {
   <div id="ase-hint"></div>
   <div id="ase-sheet"></div>
   <footer id="ase-bottom">
-    <button id="ase-3d" disabled>Voir en 3D <small>bientôt</small></button>
+    <button id="ase-3d">Voir en 3D ✦</button>
     <nav id="ase-tools">
       <button data-tool="piece"><i>✋</i>Pièces</button><button data-tool="mur"><i>▬</i>Mur</button>
       <button data-tool="fenetre"><i>▭</i>Fenêtre</button><button data-tool="porte"><i>◜</i>Porte</button>
@@ -337,6 +337,11 @@ export function createPlanEditor({ onBack }) {
   root.querySelector('#ase-undo').onclick = () => { if (hist.length > 1) { fut.push(hist.pop()); restore(hist[hist.length - 1]); } };
   root.querySelector('#ase-redo').onclick = () => { if (fut.length) { const j = fut.pop(); hist.push(j); restore(j); } };
   root.querySelector('#ase-back').onclick = () => { close(); onBack?.(); };
+  root.querySelector('#ase-3d').onclick = () => {
+    if (!rooms.length) { flash('Dessine au moins une pièce fermée'); return; }
+    if (rooms.some(r => !r.type)) { flash('Nomme d\'abord chaque « Pièce ? »'); return; }
+    close(); onView3D?.();
+  };
   window.addEventListener('resize', () => { if (P && root.classList.contains('on')) { fit(); draw(); } });
 
   function close() { root.classList.remove('on'); closeSheet(); }
