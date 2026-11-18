@@ -280,13 +280,13 @@ Le dépôt ne contient pas de dépendance Playwright, de configuration Playwrigh
 
 ### Jeton et sécurité
 
-Créer un jeton Cesium ion dédié avec le seul scope public `assets:read`, restreint à l'asset `2275207` et aux URL du domaine de démo. Un jeton client reste visible par un utilisateur déterminé ; les restrictions d'URL et d'asset limitent les abus. L'ancien jeton codé en dur est supprimé du code courant, mais peut rester dans l'historique Git : le révoquer et en créer un nouveau est recommandé.
+Créer un jeton Cesium ion dédié avec le seul scope public `assets:read`, restreint à l'asset `2275207` et aux URL du domaine de démo. Les restrictions d'URL exigent un en-tête Referer ; vérifier la politique Referrer du site. Un jeton client reste visible par un utilisateur déterminé ; les restrictions d'URL et d'asset limitent les abus. L'ancien jeton codé en dur est supprimé du code courant, mais peut rester dans l'historique Git : le révoquer et en créer un nouveau est recommandé (si c'était le jeton par défaut, le régénérer dans le tableau de bord ion).
 
 ### Conditions d'utilisation, cache, quota et coût (vérifiés le 18/11/2026)
 
 - Google Map Tiles : visualisation seulement. Pas de préchargement, extraction, indexation, stockage ou redistribution des tuiles, pas d'analyse d'image, détection d'objets, extraction/revente de géodonnées ni usage hors ligne. Respecter `Cache-Control` et `ETag` ; aucun cache persistant n'est ajouté.
-- L'attribution Google Maps et celles des fournisseurs doivent rester visibles. Les données de bâtiments utilisées par l'app restent indépendantes (IGN).
-- Cette intégration utilise l'asset Cesium ion `2275207`, pas une clé Google Cloud directe. Cesium ion Community : gratuit pour usage personnel/non commercial, 1 000 root tiles/mois ; Commercial individuel : 149 USD/mois et 5 000 root tiles/mois ; Premium individuel : 499 USD/mois et 10 000 root tiles/mois. Les droits commerciaux doivent être confirmés avant une démo YC publique ou une exploitation.
+- L'attribution Google Maps et toutes les attributions fournisseurs restent visibles en une ligne agrégée ; la mention IGN des contours/appartement est séparée, pour éviter toute confusion entre fond Google et données propres. Le texte « Google Maps » est utilisé en format compact mobile (autorisé lorsque l'espace manque). Les données de bâtiments utilisées par l'app restent indépendantes (IGN).
+- Cette intégration utilise l'asset Cesium ion `2275207`, pas une clé Google Cloud directe. Cesium ion Community : gratuit pour usage personnel/non commercial, 1 000 root tiles/mois ; Commercial individuel : 149 USD/mois et 5 000 root tiles/mois ; Premium individuel : 499 USD/mois et 10 000 root tiles/mois. Community permet aussi le développement commercial exploratoire ; un compte payant est requis notamment si l'entreprise dépasse 50 000 USD de revenus annuels ou de financement. L'intégration dans un produit distribué hors de l'organisation peut nécessiter une licence d'intégration distincte : contacter Cesium avant commercialisation.
 - Les quotas et prix Google directs ne s'appliquent pas à ce chemin via ion ; ils ne seraient pertinents qu'en cas de migration vers une clé Google Map Tiles directe.
 
 Sources : [Google Map Tiles Policies](https://developers.google.com/maps/documentation/tile/policies), [Google 3D Tiles](https://developers.google.com/maps/documentation/tile/3d-tiles), [Google Usage & Billing](https://developers.google.com/maps/documentation/tile/usage-and-billing), [Cesium ion Pricing](https://cesium.com/platform/cesium-ion/pricing/), [Cesium ion Tokens](https://cesium.com/learn/ion/cesium-ion-access-tokens/).
@@ -325,3 +325,20 @@ Sources : [Google Map Tiles Policies](https://developers.google.com/maps/documen
 - Le toucher direct d'un bâtiment dans la vue photo n'est pas relié à un point WFS ; le flux passe par BAN et les candidats IGN.
 - Le choix côté rue / côté cour / autre rue d'un immeuble d'angle n'est pas encore interactif : l'arête la plus proche reste la proposition orange.
 - Aucun jeton réel, aucun chargement navigateur/iPhone, aucun quota 403/429 et aucune capture n'ont été testés.
+
+ 
+## Étape B — étage sur la vue photo
+
+- Après confirmation de l'emprise, le slider d'étage est affiché au-dessus du fond photo.
+- Chaque changement appelle `view.setFloor` et met à jour la bande sur la façade IGN retenue ; la géométrie de bande est conservée et seule sa transformation verticale est mise à jour.
+- Test hors réseau : `node --test appart-studio/floorBand.test.mjs`. Pas d'essai tactile Safari/iPhone revendiqué.
+
+## Étape C — appartement automatique
+
+- Le bouton « Valider l'étage et entrer » génère le plan standard dans l'emprise sûre, plafonne la profondeur à `min(8 m, profondeur disponible)` (avec un seuil pratique de 1,5 m), et bascule sur la ville IGN avant d'ouvrir la vue fenêtre en première personne.
+- La fenêtre centrale est choisie comme vue initiale. Le soleil est initialisé à la fraction correspondant à l'heure réelle actuelle à Paris, pas au milieu de la journée.
+- La largeur utilise la largeur sûre de façade ; le séjour est côté façade. Le nombre de fenêtres est une estimation à partir d'une trame indicative de 3,2 m, puis les fenêtres sont réparties au centre des travées estimées. Les dimensions Haussmann / standard et le bouton de personnalisation existants sont conservés.
+- « Modifier le plan » ramène à l'éditeur ; les réglages des fenêtres restent disponibles avant l'entrée.
+- Test hors réseau : `node --test appart-studio/apartmentDefaults.test.mjs`. La trame 3,2 m n'est pas une détection des travées architecturales réelles.
+
+**Non testé :** aucun runtime Node, navigateur Safari/iPhone, capture, validation de géométrie sur les cinq adresses ou vérification réelle du rendu soleil/fenêtre.

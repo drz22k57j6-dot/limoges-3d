@@ -64,7 +64,8 @@
   #go { background:#fff; color:#000; border:0; }
   #help { display:none; }
   #credits { position:fixed; left:50%; bottom:4px; transform:translateX(-50%); font-size:10px; opacity:.55; z-index:5; pointer-events:none; white-space:nowrap; }
-  #photoAttribution { display:none; position:fixed; z-index:14; left:50%; bottom:calc(5px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(96vw,900px); padding:4px 8px; border-radius:6px; background:rgba(0,0,0,.58); color:#fff; font:10px/1.3 Arial,sans-serif; text-align:center; pointer-events:none; white-space:normal; text-shadow:0 1px 2px #000; }
+  #photoAttribution { display:none; position:fixed; z-index:14; left:50%; bottom:calc(5px + env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(96vw,900px); padding:4px 8px; border-radius:6px; background:rgba(0,0,0,.58); color:#fff; font:11px/1.35 Arial,sans-serif; text-align:center; pointer-events:none; white-space:normal; text-shadow:0 1px 2px #000; }
+  .photo-world #credits { bottom:calc(32px + env(safe-area-inset-bottom)); width:min(96vw,900px); white-space:normal; text-align:center; font-size:9px; line-height:1.25; padding:3px 6px; border-radius:5px; background:rgba(0,0,0,.52); }
   #flash { position:fixed; inset:0; pointer-events:none; z-index:3; box-shadow:inset 0 0 0 rgba(255,40,20,0); transition:box-shadow .15s; }
   #toast { top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); font-size:15px; font-weight:600; opacity:0; transition:opacity .3s; background:var(--glass); padding:5px 14px; border-radius:14px; }
 </style>
@@ -1652,7 +1653,7 @@ setInterval(() => { const b = $('fCar'); if (b) b.classList.toggle('near', mode 
 // ---------------- photorealistic city (Google 3D Tiles through Cesium ion) ----------------
 const TILE_ERR = [2, 5, 12]; // lower = sharper photo city
 const ORIGIN={lat:CITY.lat,lon:CITY.lon,ellHeight:0};
-let tiles=null,tilesRoot=null,cityMode='ign',tilesCalib={t:0,n:0},tilesLoading=false,photoModelLoaded=false;
+let tiles=null,tilesRoot=null,cityMode='ign',tilesCalib={t:0,n:0},tilesLoading=false,photoModelLoaded=false,photoAttributionT=0;
 const raycaster=new THREE.Raycaster();
 function readCesiumIonToken(){try{return tokenFromSettingsJSON(localStorage.getItem('reglages-dev-v1'));}catch(e){return '';}}
 function updatePhotoAttribution(){const el=$('photoAttribution');if(!el)return;let values=[];try{values=tiles?.getAttributions?.([])||[];}catch(e){console.warn('attributions photoréalistes',e);}const sources=formatPhotoAttributions(values);el.textContent=sources?'Google Maps · '+sources:'Google Maps · attribution des fournisseurs en chargement';}
@@ -1672,6 +1673,7 @@ async function startGoogleCity(){
     tiles.addEventListener('load-model',({scene:sc})=>{photoModelLoaded=true;sc.traverse(o=>{if(!o.isMesh)return;const old=o.material;o.material=new THREE.MeshBasicMaterial({map:old.map||null,color:old.map?0xffffff:old.color,fog:true,toneMapped:false});if(o.material.map)o.material.map.anisotropy=renderer.capabilities.getMaxAnisotropy();old.dispose();});updatePhotoAttribution();if(WORLD.mode==='photo')setCity('google');});
     tiles.addEventListener('load-root-tileset',updatePhotoAttribution);
     tiles.addEventListener('load-tileset',updatePhotoAttribution);
+    tiles.addEventListener('needs-update',updatePhotoAttribution);
     tiles.addEventListener('load-error',({tile,error})=>{console.warn('Google photoréaliste : chargement impossible',error);if(!tile||!tiles?.root)fallbackPhotoCity('Carte photoréaliste indisponible (clé, quota ou réseau) — retour à la vue IGN.');});
     tilesRoot=new THREE.Group();tilesRoot.rotation.y=Math.PI;tilesRoot.add(tiles.group);scene.add(tilesRoot);
     tiles.setCamera(camera);tiles.setResolutionFromRenderer(camera,renderer);
@@ -1969,7 +1971,7 @@ function loop(now) {
     cityTiles.errorTarget = Math.max(0.5, 3.5 * H / k);
   }
   if (cityTiles) { cityTiles.group.visible = cityMode !== 'google'; if (cityTiles.group.visible) { camera.updateMatrixWorld(); cityTiles.setResolutionFromRenderer(camera, renderer); cityTiles.update(); } }
-  if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
+  if (tiles) { camera.updateMatrixWorld(); tiles.setResolutionFromRenderer(camera, renderer); tiles.update(); if ((photoAttributionT -= dt) < 0) { photoAttributionT = 0.5; if (cityMode === 'google') updatePhotoAttribution(); } if ((tilesCalib.t -= dt) < 0) { tilesCalib.t = tilesCalib.n < 5 ? 1.5 : 4; calibrateTiles(F); } }
   // HUD
   const kmh = Math.round(Math.abs(mode === 'plane' ? PL.spd : mode === 'foot' ? FT.spd : S.vf) * 3.6);
   $('spd').firstChild.nodeValue = kmh;

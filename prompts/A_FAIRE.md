@@ -58,7 +58,8 @@ Pour chacune : `cleabs`, nb de candidats, façade retenue, profondeur disponible
 ---
 
 ## Statut
-- [x] Lot 0 — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/21 · contrôles corrigés : calque caméra sous l’UI, zones pointer-events limitées aux blocs UI, cibles ≥ 44 px, champs décimaux, feuilles/panneaux défilables, script touch-qa.js ajouté (exécution navigateur/iPhone encore à faire)
-- [ ] Lot 1 — PR : en cours · anneaux Polygon/MultiPolygon, enveloppe sûre et garde-fou 3D ajoutés ; sélection interactive multi-bâtiments, façade garantie côté voie et comparaison WFS/tuiles restent à compléter.
-- [ ] Lot 2 — PR : en cours · test d'intégration géométrique ajouté ; suite complète Node et parcours 38 rue Cler non exécutés.
-- [ ] Non testé : node --test, recette réelle 5 av. de Choisy / tour Olympiades / angle 11e / fond de cour Marais, Safari iPhone, correspondance WFS–tuiles.
+
+- [x] Lot 0 — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/21 · correction CSS/événements et script `touch-qa.js` ajoutés. Non validé sur navigateur : le script `elementFromPoint` et les vrais gestes tactiles n'ont pas été exécutés.
+- [ ] Lot 1 — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/22 · géométrie Polygon/MultiPolygon, cours, enveloppe sûre, découpe/refus conservateur et garde-fou sous toiture ajoutés. La sélection A/B et les contours candidats sont ensuite amorcés par la PR #24. Restent le choix de façade par voie (rue/cour/angle), la comparaison métrique WFS/tuiles et la recette des adresses.
+- [ ] Lot 2 — PR : https://github.com/drz22k57j6-dot/limoges-3d/pull/23 · tests d'intégration géométrique ajoutés. La suite complète Node et le parcours réel 38 rue Cler ne sont pas exécutés ; aucun statut « tous verts » n'est revendiqué.
+- [ ] Non testé : `node --test appart-studio/*.test.mjs`, recette 38 rue Cler / 5 av. de Choisy / tour Olympiades / angle 11e / fond de cour Marais, Safari iPhone, captures, correspondance WFS–tuiles.
