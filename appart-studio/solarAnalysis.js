@@ -41,7 +41,7 @@ function makeBvh(THREE, scene, center, radius = 250) {
   scene.traverse(o => {
     if (!o.isMesh || !o.geometry || o.userData?.appartStudioOwn || ['appart-studio-3d','appart-studio-solar-trees','appart-studio-express-windows'].includes(o.parent?.name)) return;
     const materials=Array.isArray(o.material)?o.material:[o.material];
-    if(materials.length&&materials.every(m=>m?.transparent&&m.opacity<0.99)) return;
+    if(materials.length&&materials.every(m=>m?.transparent)) return;
     let visible=true; for(let p=o;p;p=p.parent) if(!p.visible){visible=false;break;} if(!visible) return;
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     if (!o.geometry.boundingBox) return;
