@@ -7,6 +7,7 @@ import { createCam3d } from './cam3d.js';
 import { sunPosition, sunDirection } from './sun.js';
 import { calculateSolarReport, verifySolarAt } from './solarAnalysis.js';
 import { scoreSoleil } from './solarScore.js';
+import { findSafeRectangle, footprintArea, floorFitsBuilding } from './footprint.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -383,7 +384,11 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   function open3d() {
     const r = state.res; if (!r) return;
     state.solarReport = null;
-    const plan = editor.getPlan(); state.plan3d = plan;
+    const plan = editor.getPlan(), bounds=computeApartmentBounds(r);
+    if(!bounds){$('as-bw').textContent='Aucune emprise sûre ne peut contenir cet appartement.';return;}
+    const Hcheck=Math.max(2.2,Math.min(4,Number(plan.settings?.ceilingHeight)||2.8));
+    if(!floorFitsBuilding(r.floorData,Hcheck)){$('as-bw').textContent='Étage refusé : plancher + hauteur sous plafond dépassent le toit du bâtiment IGN.';return;}
+    plan.footprint=bounds.footprint; state.plan3d = plan;
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
     const H = Math.max(2.2, Math.min(4, Number(plan.settings?.ceilingHeight) || Math.max(2.4, Math.min(3.6, lvl - 0.25))));
@@ -484,7 +489,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const fd = res.floorData, street = res.street || res.address.replace(/^\d+\w?\s+/, '').replace(/\s+\d{5}.*$/, '');
     $('as-bt').textContent = (res.housenumber ? res.housenumber + ' ' : '') + (street || res.address);
     $('as-bs').textContent = floorName(fd.floor) + ' · façade ' + orientationName(res.local.bearing) + ' · rue de ' + Math.round(res.gap ?? 0) + ' m' + (res.snap ? ' · calé sur les fenêtres ✓' : '');
-    $('as-bw').textContent = res.matchMode !== 'adresse exacte' ? 'Immeuble choisi par proximité : vérifie que c’est le bon.' : '';
+    $('as-bw').textContent = res.candidateCount>1 ? 'Attention : '+res.candidateCount+' emprises crédibles pour cette adresse ; le choix affiché est provisoire (distance BAN), à confirmer.' : res.matchMode !== 'adresse exacte' ? 'Immeuble choisi par proximité : vérifie que c’est le bon.' : '';
     $('as-floor-live').classList.add('on');syncFloorControls();renderDbg();
   }
   function renderDbg() {
@@ -504,6 +509,9 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       'RDC ' + fd.hRDC.toFixed(2) + ' m · étage ' + fd.hEtage.toFixed(2) + ' m' + (fd.haussmann ? ' · haussmannien' : ''),
       (r.snap ? 'Plancher calé sur la façade : ' + r.snap.y.toFixed(2) + ' m alt. · niveau ' + r.snap.h.toFixed(2) + ' m' : 'Plancher estimé : ' + fd.offset.toFixed(2) + ' m au-dessus du sol') + ' · correction ' + (r.adjust >= 0 ? '+' : '') + r.adjust.toFixed(2),
       'Façade : ' + Math.round(r.local.bearing) + '° · adresse → façade ' + r.facade.distance.toFixed(1) + ' m · rue ' + (r.gap ?? 0).toFixed(1) + ' m',
+      'Diagnostic emprise : '+r.matchMode+' · candidats crédibles '+(r.candidateCount??1)+' · surface IGN '+(computeApartmentBounds(r)?.footprintArea?.toFixed(1)??'—')+' m²',
+      'Profondeur sûre : '+(computeApartmentBounds(r)?.safeBounds?.v1?.toFixed(2)??'—')+' m · hauteur bâtiment / plancher : '+fd.height.toFixed(1)+' / '+fd.offset.toFixed(1)+' m',
+      'Écart volume affiché / emprise : non mesuré (aucune correspondance métrique vérifiée entre tuiles 3D et WFS).',
       'Soleil : azimut ' + sp.az.toFixed(1) + '° · élévation ' + sp.el.toFixed(1) + '° · incidence façade ' + incidence.toFixed(1) + '° · soleil sur la façade : ' + (facadeSun ? 'oui' : 'non'),
       scoreText,
       'Programmes WebGL : ' + (renderer.info.programs?.length ?? 'indisponible'),
@@ -512,16 +520,11 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     if ($('as3-dbg-text')) $('as3-dbg-text').textContent = $('as-dbg').textContent;
   }
   function computeApartmentBounds(r){
-    const {F,A,B,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]];
-    const pu=P=>(P[0]-F[0])*u[0]+(P[1]-F[1])*u[1];
-    const north=[-u[1],-v[1]],span=[pu(A),pu(B)].sort((a,b)=>a-b);
-    const footprint=r.local.ring.map(P=>{const dx=P[0]-F[0],dz=P[1]-F[1];return [dx*u[0]+dz*u[1],dx*v[0]+dz*v[1]];});
-    const inside=P=>{let hit=false;for(let i=0,j=footprint.length-1;i<footprint.length;j=i++){const a=footprint[i],b=footprint[j];if((a[1]>P[1])!==(b[1]>P[1])&&P[0]<(b[0]-a[0])*(P[1]-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;};
-    const u0=span[0]+0.15,u1=span[1]-0.15;let minDepth=Infinity;
-    for(let x=u0;x<=u1;x+=0.15){let depth=0;for(let y=0.05;y<=40;y+=0.05){if(inside([x,y]))depth=y;else if(depth>0)break;}if(depth<=0){minDepth=0;break;}minDepth=Math.min(minDepth,depth);}
-    const safeBounds={u0,u1,v1:Math.min(20,minDepth-0.2)};
-    if(u1-u0<1.5||safeBounds.v1<1.5)return null;
-    return {F,u,v,north,span,safeBounds};
+    const {F,A,B,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]],pu=P=>(P[0]-F[0])*u[0]+(P[1]-F[1])*u[1];
+    const north=[-u[1],-v[1]],span=[pu(A),pu(B)].sort((a,b)=>a-b),source=r.local.footprints||[[r.local.ring]];
+    const footprint=source.map(poly=>poly.map(ring=>ring.map(P=>{const dx=P[0]-F[0],dz=P[1]-F[1];return [dx*u[0]+dz*u[1],dx*v[0]+dz*v[1]];})));
+    const safe=findSafeRectangle(footprint,span,{frontMargin:0.15,sideMargin:0.15,maxDepth:20,minWidth:1.5,minDepth:1.5,step:0.05});
+    if(!safe)return null;return {F,u,v,north,span,safeBounds:{u0:safe.u0,u1:safe.u1,v1:safe.v1},footprint,footprintArea:footprintArea(footprint)};
   }
   function makeSettingsPlan(r){
     const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise IGN trop étroite pour calculer un appartement.');
@@ -542,7 +545,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     button.disabled=true;button.textContent='Calcul…';out.textContent='Calcul des fenêtres, embrasures et masques…';disposeSolarTrees();state.solarReport=null;
     try{
       const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise IGN trop étroite pour calculer un appartement.');
-      const plan=makeSettingsPlan(r),fr={F:bounds.F,u:bounds.u,v:bounds.v,floorY:view.floorY(r),H:plan.settings.ceilingHeight};
+      const plan=makeSettingsPlan(r);plan.footprint=bounds.footprint;const fr={F:bounds.F,u:bounds.u,v:bounds.v,floorY:view.floorY(r),H:plan.settings.ceilingHeight};
+      if(!floorFitsBuilding(r.floorData,fr.H))throw new Error('Étage refusé : plancher + hauteur sous plafond dépassent le toit du bâtiment IGN.');
       const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan,fr,onProgress:p=>{out.textContent=p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' fenêtres/dates…':'Préparation des obstacles et arbres…';}});
       state.solarReport=result;state.solarTreeGroup=result.treeGroup;renderDbg();
       const score=scoreSoleil(result.rooms),keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};

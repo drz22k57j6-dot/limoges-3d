@@ -4,6 +4,7 @@
 // donc on voit l'intérieur et, par les fenêtres, la vraie rue et les vrais immeubles d'en face.
 
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { constrainToFootprint } from './footprint.js';
 
 const TEX = {};
 function canvasTex(THREE, key, size, draw, repeatMeters) {
@@ -124,6 +125,7 @@ export function createApartment({ THREE, scene, renderer }) {
 
   // ---------- construction ----------
   function build(plan, fr, opts = {}) {
+    if(plan.footprint) plan=constrainToFootprint(plan,plan.footprint,0.05);
     dispose(); M ||= materials(THREE);
     const { F, u, v, floorY } = fr, H = fr.H;
     const W = (pu, pv) => [F[0] + u[0] * pu + v[0] * pv, F[1] + u[1] * pu + v[1] * pv];
