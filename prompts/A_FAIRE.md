@@ -1,36 +1,64 @@
-# Tâche en cours pour ChatGPT / Codex
+# Tâche en cours — Fiabilité de la localisation et de l'interface (tout Paris)
 
-> Fichier écrit par Claude. Exécuter la tâche, puis remplir « Statut » en bas dans la PR.
+> Écrit par Claude. Exécuter dans l'ordre, une PR par lot (0, 1, 2), puis remplir « Statut ».
 
-Repo drz22k57j6-dot/limoges-3d, base : `feat/appart-studio-window-settings-floor-slider-v2` (PR #20). Règles : ne pas modifier `appart-studio/sun.js` ni `sun.test.mjs`, ne pas toucher au mode drone, une PR, dire ce qui n'a pas été testé.
+**Repo** `drz22k57j6-dot/limoges-3d` · **Base** `feat/appart-studio-window-settings-floor-slider-v2` (PR #20)
+**Interdits** : modifier `appart-studio/sun.js` ou `sun.test.mjs`, toucher au mode drone, inventer un résultat de test ou une capture.
+**Obligatoire** : chaque PR liste ce qui a été testé, comment, et ce qui ne l'a pas été.
 
-## Bug signalé sur iPhone
-**5 avenue de Choisy, 75013** : l'appartement 3D dépasse de l'immeuble.
+---
 
+## Lot 0 — Contrôles non cliquables sur iPhone (bloquant)
+**Symptôme** : plusieurs paramètres (fenêtres, épaisseur de mur, hauteur sous plafond, slider d'étage, boutons − / +) ne réagissent pas au doigt.
 
-## 0. URGENT — Les paramètres ne répondent pas au toucher (iPhone)
-Signalé par l'utilisateur : certains boutons / champs des paramètres (fenêtres, épaisseur de mur, hauteur sous plafond, slider d'étage, − / +) ne sont pas cliquables sur iPhone.
-Causes probables à vérifier : un calque transparent par-dessus (ex. `#as3-touch`, `#as-3d` en `pointer-events:auto`, bandeau, panneau soleil), z-index, `pointer-events:none` hérité d'un parent, `touch-action`, `preventDefault()` sur `pointerdown`/`touchstart` dans les gestes de caméra, zones de toucher < 44 px, éléments hors écran sous la barre Safari.
-Correction : tous les contrôles des paramètres cliquables au doigt, zones ≥ 44 px, aucun calque invisible au-dessus, défilement possible si le panneau est plus haut que l'écran. Lister dans la PR chaque contrôle testé (même en simulation tactile Chrome mobile).
+**Diagnostic attendu (écrire le résultat dans la PR)** :
+1. Lister chaque contrôle et l'élément réellement touché à son centre : `document.elementFromPoint(x, y)` en simulation mobile (390×844, `hasTouch`). Tout résultat ≠ le contrôle = calque parasite.
+2. Suspects : `#as3-touch`, `#as-3d`, `#as3-bottom`, panneau soleil, bandeau, feuille d'éditeur ; `z-index`, `pointer-events` hérité, `touch-action:none` sur un parent, `preventDefault()` dans les gestes caméra (`pointerdown`/`touchstart`), `setPointerCapture` qui vole les événements, contrôles sous la barre Safari (safe-area).
 
-## 1. D'abord rendre le problème VISIBLE (mode Détails)
-En 3D, quand « Détails » est ouvert, dessiner au niveau du plancher :
-- en **vert** : le polygone de l'emprise IGN du bâtiment retenu (cleabs affiché) ;
-- en **rouge** : le contour de l'appartement (murs extérieurs) ;
-- en **orange** : la façade retenue (arête + flèche vers la rue).
-Afficher aussi : surface de l'emprise, profondeur disponible depuis la façade, nombre de bâtiments IGN portant cette adresse, mode de correspondance (adresse exacte / proximité).
+**Correction** :
+- Règle unique : calque de gestes caméra **sous** toute l'UI ; l'UI en `pointer-events:auto` uniquement sur ses blocs, jamais sur des conteneurs plein écran.
+- Zones de toucher ≥ 44×44 px, champs numériques en `inputmode="decimal"`, panneaux défilables (`overflow:auto`, `-webkit-overflow-scrolling:touch`) s'ils dépassent l'écran, respect de `env(safe-area-inset-*)`.
+- Ajouter un test automatisé (Playwright si disponible, sinon script documenté) qui touche chaque contrôle et vérifie que sa valeur change.
 
-## 2. Causes probables à vérifier une par une (écrire le résultat dans la PR)
-a) **Mauvais bâtiment** : grands ensembles = plusieurs bâtiments IGN pour une adresse. Vérifier lequel est retenu. Si plusieurs candidats, proposer un choix à l'utilisateur (« Votre immeuble : A / B », avec surlignage 3D) au lieu de choisir seul.
-b) **Contrainte d'emprise absente d'un chemin** : la contrainte de la PR #17 doit s'appliquer PARTOUT où l'appartement est construit : éditeur de plan, mode paramètres fenêtres (PR #20, appartement par défaut), et `buildApartment.js` lui-même en dernier rempart (couper tout mur hors de l'emprise, profondeur max = distance façade → fond de l'emprise, largeur max = longueur de l'arête de façade).
-c) **Écart entre le volume affiché et l'emprise** : hors des rues habillées par moteur_facades, le bâtiment affiché vient des tuiles 3D ; vérifier que son contour au sol coïncide avec le polygone WFS utilisé (même cleabs, même projection, même origine X0/Y0). Mesurer l'écart en mètres et l'afficher.
-d) **Étage au-dessus du toit** : si le plancher dépasse la hauteur du bâtiment affiché, bloquer et avertir.
+---
 
-## 3. Correction + test hors réseau
-- Ajouter à `phase4b.test.mjs` (ou un nouveau test node) : un polygone d'emprise en L et un appartement plus grand que l'emprise → après contrainte, tous les murs sont dans l'emprise (tolérance 5 cm).
-- Décrire le comportement attendu au 5 avenue de Choisy et au 38 rue Cler.
+## Lot 1 — L'appartement dépasse de l'immeuble (5 av. de Choisy, et partout dans Paris)
+**Objectif** : sur **n'importe quelle adresse parisienne**, l'appartement est toujours entièrement **dans le bon bâtiment**, sur **la bonne façade**, **sous le toit**. Pas de correctif au cas par cas.
+
+### 1.1 Rendre l'erreur visible (mode Détails, 3D et vue façade)
+Au niveau du plancher : emprise IGN retenue en **vert** (+ `cleabs`), contour de l'appartement en **rouge**, façade retenue en **orange** (flèche vers la rue), autres bâtiments candidats en **gris**. Afficher : mode de correspondance, nb de candidats, surface d'emprise, profondeur disponible, écart volume affiché / emprise (m), hauteur du bâtiment vs plancher.
+
+### 1.2 Corriger la chaîne adresse → bâtiment → façade (cas génériques)
+- **Plusieurs bâtiments pour une adresse** (grands ensembles, cours, annexes, tours du 13e) : ne jamais choisir en silence. Si > 1 candidat crédible (distance au point BAN < 15 m ou même adresse dans l'identité IGN) → demander « Votre immeuble » avec surlignage 3D de chaque candidat.
+- **Point BAN dans une cour, sur une dalle ou loin de la voie** : retenir la façade qui donne sur **la voie de l'adresse** (géométrie de la rue via la BD TOPO « troncon_de_route » ou le géocodeur inverse), pas simplement l'arête la plus proche.
+- **Immeuble d'angle / plusieurs voies** : proposer le choix de la rue.
+- **Emprises complexes** (polygones en L, U, avec trous, multipolygones) : utiliser le polygone complet, gérer les anneaux intérieurs (cours).
+- **Bâtiment hors des rues habillées par moteur_facades** : vérifier que le volume affiché (tuiles 3D, `_BATCHID`) et le polygone WFS coïncident (même `cleabs`, même projection Lambert-93, même origine X0/Y0) ; si l'écart > 1 m, le signaler en Détails et utiliser la géométrie des tuiles comme référence d'affichage.
+
+### 1.3 Contrainte d'emprise appliquée PARTOUT (défense en profondeur)
+- Une seule fonction `constrainToFootprint(plan, footprint, facade)` utilisée par : l'éditeur de plan, l'appartement par défaut (paramètres fenêtres), `buildApartment.js` (dernier rempart : tout mur hors emprise est coupé à l'emprise, tolérance 5 cm).
+- Profondeur max = distance façade → limite opposée de l'emprise **le long de la normale**, largeur max = portion de l'arête de façade, jamais au-delà d'un mur mitoyen.
+- **Étage** : plancher + hauteur sous plafond ≤ hauteur du bâtiment affiché ; sinon bloquer avec un message clair.
+
+### 1.4 Tests hors réseau (node --test, dans `appart-studio/`)
+- Emprise rectangulaire, en L, en U, avec cour intérieure, multipolygone ; appartement plus grand que l'emprise → après contrainte, 100 % des murs dans l'emprise (tolérance 5 cm).
+- Point d'adresse dans une cour → la façade retenue est celle qui fait face à la voie fournie.
+- Étage au-dessus du toit → refusé.
+
+### 1.5 Recette sur adresses réelles (dans la PR : capture du mode Détails si possible, sinon valeurs)
+38 rue Cler (7e) · **5 avenue de Choisy (13e)** · une tour des Olympiades (13e) · un immeuble d'angle du 11e · une adresse en fond de cour du Marais.
+Pour chacune : `cleabs`, nb de candidats, façade retenue, profondeur disponible, résultat OK/KO.
+
+---
+
+## Lot 2 — Non-régression
+- `node --test appart-studio/*.test.mjs` : tous verts (dont `sun.test.mjs`, inchangé).
+- Le parcours complet (adresse → étage → plan → 3D → soleil) fonctionne toujours au 38 rue Cler.
+
+---
 
 ## Statut
-- [ ] PR créée : (lien)
-- [ ] Cause réelle trouvée au 5 av. de Choisy : (a / b / c / d)
+- [ ] Lot 0 — PR : (lien) · contrôles corrigés : (liste)
+- [ ] Lot 1 — PR : (lien) · cause réelle au 5 av. de Choisy : (…)
+- [ ] Lot 2 — tests : (résultat)
 - [ ] Non testé : (liste)
