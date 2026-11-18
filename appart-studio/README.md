@@ -325,3 +325,20 @@ Sources : [Google Map Tiles Policies](https://developers.google.com/maps/documen
 - Le toucher direct d'un bâtiment dans la vue photo n'est pas relié à un point WFS ; le flux passe par BAN et les candidats IGN.
 - Le choix côté rue / côté cour / autre rue d'un immeuble d'angle n'est pas encore interactif : l'arête la plus proche reste la proposition orange.
 - Aucun jeton réel, aucun chargement navigateur/iPhone, aucun quota 403/429 et aucune capture n'ont été testés.
+
+ 
+## Étape B — étage sur la vue photo
+
+- Après confirmation de l'emprise, le slider d'étage est affiché au-dessus du fond photo.
+- Chaque changement appelle `view.setFloor` et met à jour la bande sur la façade IGN retenue ; la géométrie de bande est conservée et seule sa transformation verticale est mise à jour.
+- Test hors réseau : `node --test appart-studio/floorBand.test.mjs`. Pas d'essai tactile Safari/iPhone revendiqué.
+
+## Étape C — appartement automatique
+
+- Le bouton « Valider l'étage et entrer » génère le plan standard dans l'emprise sûre, plafonne la profondeur à `min(8 m, profondeur disponible)` (avec un seuil pratique de 1,5 m), et bascule sur la ville IGN avant d'ouvrir la vue fenêtre en première personne.
+- La fenêtre centrale est choisie comme vue initiale. Le soleil est initialisé à la fraction correspondant à l'heure réelle actuelle à Paris, pas au milieu de la journée.
+- La largeur utilise la largeur sûre de façade ; le séjour est côté façade. Le nombre de fenêtres est une estimation à partir d'une trame indicative de 3,2 m, puis les fenêtres sont réparties au centre des travées estimées. Les dimensions Haussmann / standard et le bouton de personnalisation existants sont conservés.
+- « Modifier le plan » ramène à l'éditeur ; les réglages des fenêtres restent disponibles avant l'entrée.
+- Test hors réseau : `node --test appart-studio/apartmentDefaults.test.mjs`. La trame 3,2 m n'est pas une détection des travées architecturales réelles.
+
+**Non testé :** aucun runtime Node, navigateur Safari/iPhone, capture, validation de géométrie sur les cinq adresses ou vérification réelle du rendu soleil/fenêtre.
