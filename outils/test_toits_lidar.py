@@ -48,7 +48,7 @@ class LidarRoofSyntheticTests(unittest.TestCase):
 
     def test_height_guard_falls_back_to_bd_topo(self):
         roof=np.full((self.n,self.n),18.0,dtype=np.float32)
-        got=self._estimate(self.poly,roof,self.xmin,self.ymax,8.0,resolution=self.res)
+        got=estimate_roof(self.poly,roof,self.xmin,self.ymax,8.0,resolution=self.res)
         self.assertFalse(got["valid"])
         self.assertIn("écart",got["reason"])
 
