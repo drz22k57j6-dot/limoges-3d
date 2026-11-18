@@ -281,7 +281,7 @@ export function createApartment({ THREE, scene, renderer }) {
     const us = walls.flatMap(w => [w.a[0], w.b[0]]), vs = walls.flatMap(w => [w.a[1], w.b[1]]);
     const box = { u0: Math.min(...us) - 0.15, u1: Math.max(...us) + 0.15, v0: -0.45, v1: Math.max(...vs) + 0.15 };
     const c3 = W((box.u0 + box.u1) / 2, (box.v0 + box.v1) / 2);
-    info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W };
+    info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W, drawCalls: group.children.filter(o => o.isMesh).length };
     renderer.localClippingEnabled = true;
     clip = makeClip(fr, box, opts.dollhouse ? 400 : H + 0.32); // six plans créés une seule fois pour toute la session 3D
     applyClip();
