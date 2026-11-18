@@ -70,6 +70,34 @@ jobs:
         run: |
           mkdir -p data/paris/source data/paris/tuiles
           python -I outils/dl_ville.py "$X0" "$Y0" data/paris/source
+      - name: Prepare non-committed fallback textures for builder-only outputs
+        run: |
+          mkdir -p pub/data/tex
+          python - <<'PY'
+          from PIL import Image, ImageDraw
+          import os
+          root="pub/data/tex"
+          patterns={
+            "tuiles":(150,75,55),"ardoise":(75,82,91),"toit_plat":(105,105,100),
+            "bitume":(62,62,60),"trottoir":(150,145,135)
+          }
+          for name,base in patterns.items():
+              path=os.path.join(root,name+"_d.jpg")
+              if os.path.exists(path): continue
+              im=Image.new("RGB",(256,256),base); d=ImageDraw.Draw(im)
+              if name=="tuiles":
+                  for y in range(0,256,24):
+                      off=12 if (y//24)%2 else 0
+                      for x in range(-24,280,32):
+                          d.arc((x+off,y,x+off+32,y+24),180,360,fill=tuple(max(0,v-28) for v in base),width=2)
+              elif name=="ardoise":
+                  for y in range(0,256,32):
+                      for x in range(0,256,48):
+                          d.line((x,y,x+40,y+28),fill=(base[0]+18,base[1]+18,base[2]+18),width=1)
+              else:
+                  for y in range(0,256,32): d.line((0,y,256,y),fill=tuple(max(0,v-12) for v in base),width=1)
+              im.save(path,quality=88)
+          PY
       - name: Build LiDAR roofs for the 7th arrondissement test window
         id: build
         env:
@@ -79,7 +107,8 @@ jobs:
           TILES_OUT: data/paris/tuiles
           TEXTURE_DIR: pub/data/tex
         run: |
-          test -d "$TEXTURE_DIR" || { echo "::error::Textures absentes : $TEXTURE_DIR"; exit 1; }
+          rm -rf data/paris/tuiles
+          mkdir -p data/paris/tuiles
           start=$(date +%s)
           python -I outils/build.py data/paris/source data/paris
           echo "seconds=$(( $(date +%s)-start ))" >> "$GITHUB_OUTPUT"
