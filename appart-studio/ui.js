@@ -370,7 +370,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       await drone.teleport(F[0] + n[0] * 8, F[1] + n[1] * 8, { nom: res.address, dist: 0, alt: 25 });
       $('as-step').textContent = 'Calcul de votre étage';
       const v = await view.show(res);
-      state.res = res; res.gap = v.gap;
+      disposeSolarTrees(); state.solarReport = null; state.expressReport = null; state.res = res; res.gap = v.gap;
       view.onSnap(() => { if (state.res === res) showBar(res); });
       showBar(res);
       $('as-loading').classList.remove('on'); $('as-bar').classList.add('on');
