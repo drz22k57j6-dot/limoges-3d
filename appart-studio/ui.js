@@ -1,5 +1,5 @@
 // Appart Studio — interface : adresse → arrivée face à l'immeuble → plan.
-import { locateApartment, geocode, orientationName } from './locate.js';
+import { locateApartment, geocode, orientationName, setApartmentFloor } from './locate.js';
 import { createFacadeView } from './view.js';
 import { createPlanEditor, ROOM_TYPES } from './planEditor.js';
 import { createApartment } from './buildApartment.js';
@@ -35,9 +35,12 @@ body.as-mode #as-launch{display:none!important}
 #as-sug{margin:6px 0 0;border-radius:14px;overflow:hidden;background:#1b2330;border:1px solid #ffffff1a;display:none}
 #as-sug.on{display:block}#as-sug button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #ffffff10;background:none;padding:12px 14px}
 #as-sug button small{display:block;color:#8b97a8;font-size:12px}
-#as-floors{display:flex;gap:7px;overflow-x:auto;padding:2px 0 4px;margin-top:16px;scrollbar-width:none}#as-floors::-webkit-scrollbar{display:none}
-#as-floors button{flex:0 0 auto;min-width:52px;height:46px;border-radius:12px;border:1px solid #ffffff22;background:#1b2330;font-weight:700}
-#as-floors button.on{background:#ff4d63;border-color:#ff4d63}
+#as-floor-control{display:flex;align-items:center;gap:14px;margin:12px 0 4px}
+#as-floor-control input,#as-floor-live input{flex:1;min-width:0;width:100%;accent-color:#ff4d63;height:34px;touch-action:pan-y}
+#as-floor-value,#as-floor-live-value{min-width:112px;text-align:right;font-size:20px;font-weight:850;white-space:nowrap;font-variant-numeric:tabular-nums}
+#as-floor-live{display:none;align-items:center;gap:10px;margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:#1b2330}
+#as-floor-live.on{display:flex}
+#as-floor-live-value{font-size:17px;min-width:92px}
 #as-go{width:100%;margin-top:18px;height:56px;border-radius:16px;border:0;background:linear-gradient(135deg,#ff4d63,#c8233a);font-weight:800;font-size:17px;box-shadow:0 8px 24px #ff4d6340}
 #as-go:disabled{opacity:.45}
 #as-err{color:#ff8a9a;font-size:13px;min-height:18px;margin-top:10px}
@@ -55,13 +58,19 @@ body.as-mode #as-launch{display:none!important}
 #as-bar .adj{flex:0 0 auto;width:58px;height:50px;border-radius:14px;border:1px solid #ffffff22;background:#1b2330;font-weight:800;font-size:18px}
 #as-bar .adjl{align-self:center;color:#8b97a8;font-size:12px;text-align:center;flex:0 0 64px}
 #as-draw{flex:1;height:50px;border-radius:14px;border:0;background:linear-gradient(135deg,#ff4d63,#c8233a);font-weight:800}
-#as-express{flex:1;height:50px;border-radius:14px;border:1px solid #ffffff25;background:#24536a;font-weight:800;font-size:12px}
-#as-express-ui{display:none;margin-top:8px;padding:10px;border:1px solid #ffffff24;border-radius:14px;background:#10161ff2}
-#as-express-ui.on{display:block}
-#as-express-ui .row{margin-top:8px}
-#as-express-ui button{flex:1;min-height:40px;border-radius:10px;border:1px solid #ffffff22;background:#202a38;font-weight:700;font-size:12px}
-#as-express-status,#as-express-results{font-size:12px;color:#d8e2ee;white-space:pre-wrap;margin-top:6px}
-#as-express-results{max-height:180px;overflow:auto}
+#as-window-calc{flex:1;height:50px;border-radius:14px;border:1px solid #ffffff25;background:#24536a;font-weight:800;font-size:14px}
+#as-window-settings{margin-top:10px;padding:11px;border:1px solid #ffffff24;border-radius:14px;background:#10161ff2}
+#as-window-settings .row{display:flex;align-items:center;gap:7px;margin:7px 0}
+#as-window-settings .row>label{flex:1;min-width:0;font-size:11px;color:#aeb8c7}
+#as-window-settings input,#as-window-settings select{box-sizing:border-box;width:100%;margin-top:4px;padding:8px;border:1px solid #ffffff22;border-radius:9px;background:#1b2330;color:#fff;font:14px -apple-system,Arial}
+#as-window-settings .count-btn,#as-personalize{min-width:38px;height:38px;border-radius:10px;border:1px solid #ffffff22;background:#202a38;font-weight:800}
+#as-personalize{padding:0 10px;font-size:12px}
+#as-win-custom{display:none;margin-top:8px}
+#as-win-custom.on{display:block}
+#as-win-custom details{padding:8px 0;border-top:1px solid #ffffff18}
+#as-win-custom summary{font-weight:700;font-size:12px;padding:5px}
+#as-win-custom .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#as-window-results{font-size:12px;color:#d8e2ee;white-space:pre-wrap;margin-top:8px;max-height:180px;overflow:auto}
 #as-bar .links{display:flex;justify-content:space-between;margin-top:10px}
 #as-bar .links button{border:0;background:none;color:#8b97a8;font-size:13px;padding:4px 2px}
 #as-dbg{display:none;margin-top:10px;font:11px/1.45 ui-monospace,Menlo,monospace;color:#9fb0c4;white-space:pre-wrap}
@@ -139,7 +148,7 @@ body.as-mode #as-launch{display:none!important}
 
 export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, drone, ground }) {
   if (window.__appartStudio?.mounted) return;
-  const state = { mounted: true, res: null, picked: null, floor: 2 };
+  const state = { mounted: true, res: null, picked: null, floor: 2, floorMax: 15, settingsTouched: false, windowSettings: null };
   window.__appartStudio = state;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   const ctx = { THREE, scene, camera, renderer, CITY, drone, ground };
@@ -155,7 +164,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     <input id="as-addr" type="text" inputmode="text" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Ex. 38 rue Cler">
     <div id="as-sug"></div>
     <span class="as-lbl" style="margin-top:16px">Étage</span>
-    <div id="as-floors"></div>
+    <div id="as-floor-control"><input id="as-floor-range" type="range" min="0" max="15" value="2" step="1"><output id="as-floor-value">2e étage / 15</output></div>
     <button id="as-go" disabled>Voir mon immeuble</button>
     <div id="as-err"></div>
     <div id="as-tests"><span class="as-lbl">Adresses de test</span><div></div></div>
@@ -169,13 +178,61 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   <section id="as-loading" class="as-ui"><div class="box"><div id="as-spin"></div><b>On trouve votre immeuble…</b><span id="as-step">Recherche de l'adresse</span></div></section>
   <section id="as-bar" class="as-ui">
     <div class="t" id="as-bt"></div><div class="s" id="as-bs"></div><div class="warn" id="as-bw"></div>
+    <div id="as-floor-live"><input id="as-floor-range-live" type="range" min="0" max="15" value="2" step="1"><output id="as-floor-live-value">2e étage / 15</output></div>
     <div class="row"><button class="adj" id="as-m">−</button><div class="adjl">Ajuster<br>la hauteur</div><button class="adj" id="as-p">+</button></div>
-    <div class="row" id="as-draw-actions"><button id="as-express">Résultat express (30 s)</button><button id="as-draw">Dessiner mon plan (effet wouah)</button></div>
-    <div id="as-express-ui"><b>Mode express · touchez vos fenêtres réelles sur la façade</b><div id="as-express-status">Aucune fenêtre sélectionnée.</div><div class="row"><button id="as-express-calc" disabled>Calculer le soleil</button><button id="as-express-cancel">Retour</button></div><div id="as-express-results"></div></div>
+    <div id="as-window-settings">
+      <div class="row"><b style="flex:1">Fenêtres côté rue</b><button class="count-btn" id="as-count-minus">−</button><b id="as-window-count">1</b><button class="count-btn" id="as-count-plus">+</button><button id="as-personalize">Personnaliser</button></div>
+      <div class="row">
+        <label>Largeur (m)<input id="as-win-width" type="number" min="0.5" max="4" step="0.05" value="1.20"></label>
+        <label>Hauteur (m)<input id="as-win-height" type="number" min="0.5" max="3.5" step="0.05" value="2.10"></label>
+      </div>
+      <div class="row">
+        <label>Allège (m)<input id="as-win-sill" type="number" min="0" max="2" step="0.05" value="0.90"></label>
+        <label>Mur façade (m)<input id="as-win-thickness" type="number" min="0.15" max="1.2" step="0.05" value="0.35"></label>
+        <label>Plafond (m)<input id="as-win-ceiling" type="number" min="2.2" max="4" step="0.05" value="2.80"></label>
+      </div>
+      <div id="as-win-custom"></div><div id="as-window-results"></div>
+    </div>
+    <div class="row" id="as-draw-actions"><button id="as-window-calc">Calculer</button><button id="as-draw">Dessiner mon plan</button></div>
     <div class="links"><button id="as-change">← Changer d'adresse</button><button id="as-dbgb">Détails</button><button id="as-quit">Quitter</button></div>
     <div id="as-dbg"></div>
   </section>`);
   const $ = id => document.getElementById(id);
+  const defaultWindowSettings = haussmann => ({
+    count:1,width:1.2,height:haussmann?2.4:2.1,sill:haussmann?0.5:0.9,
+    facadeThickness:haussmann?0.5:0.35,ceilingHeight:haussmann?3.0:2.8,customize:false,windows:[]
+  });
+  state.windowSettings=defaultWindowSettings(false);
+  function ensureWindowSettings(){
+    const s=state.windowSettings;s.count=Math.max(1,Math.min(8,Number(s.count)||1));s.windows||=[];
+    while(s.windows.length<s.count){const i=s.windows.length;s.windows.push({width:s.width,height:s.height,sill:s.sill,positionMode:'distance',distance:6*(i+1)/(s.count+1)});}
+    s.windows.length=s.count;return s;
+  }
+  function settingsForPlan(){const s=ensureWindowSettings();return {count:s.count,width:s.width,height:s.height,sill:s.sill,facadeThickness:s.facadeThickness,ceilingHeight:s.ceilingHeight,customize:!!s.customize,windows:s.customize?s.windows.map(w=>({...w})):[]};}
+  function renderWindowSettings(){
+    const s=ensureWindowSettings();$('as-window-count').textContent=s.count;
+    $('as-win-width').value=s.width;$('as-win-height').value=s.height;$('as-win-sill').value=s.sill;
+    $('as-win-thickness').value=s.facadeThickness;$('as-win-ceiling').value=s.ceilingHeight;
+    $('as-personalize').textContent=s.customize?'Masquer':'Personnaliser';
+    const custom=$('as-win-custom');custom.classList.toggle('on',!!s.customize);
+    custom.innerHTML=s.customize?s.windows.map((w,i)=>`<details><summary>Fenêtre ${i+1}</summary><div class="fields">
+      <label>Largeur (m)<input type="number" min="0.5" max="4" step="0.05" data-wi="${i}" data-wf="width" value="${w.width}"></label>
+      <label>Hauteur (m)<input type="number" min="0.5" max="3.5" step="0.05" data-wi="${i}" data-wf="height" value="${w.height}"></label>
+      <label>Allège (m)<input type="number" min="0" max="2" step="0.05" data-wi="${i}" data-wf="sill" value="${w.sill}"></label>
+      <label>Position<select data-wi="${i}" data-wf="positionMode"><option value="left" ${w.positionMode==='left'?'selected':''}>Gauche</option><option value="center" ${w.positionMode==='center'?'selected':''}>Centre</option><option value="right" ${w.positionMode==='right'?'selected':''}>Droite</option><option value="distance" ${w.positionMode==='distance'?'selected':''}>Distance depuis gauche</option></select></label>
+      <label>Distance (m)<input type="number" min="0" max="20" step="0.05" data-wi="${i}" data-wf="distance" value="${w.distance}"></label>
+    </div></details>`).join(''):'';
+  }
+  function floorText(f,max){return f===0?'RDC / '+max:floorName(f)+' / '+max;}
+  function syncFloorControls(){
+    for(const [rid,vid] of [['as-floor-range','as-floor-value'],['as-floor-range-live','as-floor-live-value']]){
+      $(rid).max=state.floorMax;$(rid).value=state.floor;$(vid).textContent=floorText(state.floor,state.floorMax);
+    }
+  }
+  function setFloor(f){
+    state.floor=Math.max(0,Math.min(state.floorMax,Math.round(Number(f)||0)));syncFloorControls();
+    if(state.res){const fd=setApartmentFloor(state.res,state.floor);view.setFloor(fd);showBar(state.res);}
+  }
   const apt = createApartment(ctx), cam3 = createCam3d(ctx);
   cam3.mount($('as-3d'));
   const joy = document.getElementById('as3-joy');
@@ -184,6 +241,21 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   const bottomObserver = new ResizeObserver(placeJoy); bottomObserver.observe(bottom);
   window.addEventListener('resize', placeJoy); placeJoy();
   const editor = createPlanEditor({ onBack: () => $('as-bar').classList.add('on'), onView3D: () => open3d() });
+  renderWindowSettings();
+  for(const [id,key,min,max] of [['as-win-width','width',0.5,4],['as-win-height','height',0.5,3.5],['as-win-sill','sill',0,2],['as-win-thickness','facadeThickness',0.15,1.2],['as-win-ceiling','ceilingHeight',2.2,4]]){
+    $(id).onchange=e=>{state.windowSettings[key]=Math.max(min,Math.min(max,Number(e.target.value)||min));state.settingsTouched=true;renderWindowSettings();};
+  }
+  $('as-count-minus').onclick=()=>{state.windowSettings.count=Math.max(1,state.windowSettings.count-1);ensureWindowSettings();renderWindowSettings();state.settingsTouched=true;};
+  $('as-count-plus').onclick=()=>{state.windowSettings.count=Math.min(8,state.windowSettings.count+1);ensureWindowSettings();renderWindowSettings();state.settingsTouched=true;};
+  $('as-personalize').onclick=()=>{state.windowSettings.customize=!state.windowSettings.customize;ensureWindowSettings();renderWindowSettings();state.settingsTouched=true;};
+  $('as-win-custom').addEventListener('change',e=>{
+    const i=Number(e.target.dataset.wi),key=e.target.dataset.wf;if(!Number.isInteger(i)||!key||!state.windowSettings.windows[i])return;
+    state.windowSettings.windows[i][key]=key==='positionMode'?e.target.value:Number(e.target.value);state.settingsTouched=true;
+  });
+  $('as-floor-range').oninput=e=>setFloor(e.target.value);
+  $('as-floor-range-live').oninput=e=>setFloor(e.target.value);
+  syncFloorControls();
+
   const HELP = { maquette: 'Glisse pour tourner autour · pince pour zoomer', visite: 'Joystick pour marcher · glisse à droite pour regarder', fenetre: 'Ta vraie vue · glisse pour regarder autour' };
   const TYPE_N = Object.fromEntries(ROOM_TYPES.map(([k, n]) => [k, n]));
   let helpTimer = 0;
@@ -308,7 +380,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const plan = editor.getPlan(); state.plan3d = plan;
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
-    const H = Math.max(2.4, Math.min(3.6, lvl - 0.25));
+    const H = Math.max(2.2, Math.min(4, Number(plan.settings?.ceilingHeight) || Math.max(2.4, Math.min(3.6, lvl - 0.25)));
     const fr = { F, u, v, floorY: view.floorY(r), H, buildingId: r.feature.properties?.cleabs };
     sunUI.target = [F[0], fr.floorY + H / 2, F[1]];
     view.suspend();
@@ -328,11 +400,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   // le bouton n'apparaît qu'une fois le jeu lancé (écran de chargement fermé)
   const showLaunch = setInterval(() => { if (!$('loader')) { $('as-launch').style.display = ''; clearInterval(showLaunch); } }, 500);
 
-  // étages
-  $('as-floors').innerHTML = Array.from({ length: 16 }, (_, f) => `<button data-f="${f}">${f === 0 ? 'RDC' : f}</button>`).join('');
-  const setFloor = f => { state.floor = f; document.querySelectorAll('#as-floors button').forEach(b => b.classList.toggle('on', Number(b.dataset.f) === f)); };
-  document.querySelectorAll('#as-floors button').forEach(b => b.onclick = () => setFloor(Number(b.dataset.f)));
-  setFloor(2);
+  // Le slider reste à 15 tant que l'immeuble n'est pas identifié.
+  state.floorMax=15;setFloor(2);
 
   // tests cachés : appui long sur le titre
   $('as-tests').querySelector('div').innerHTML = TESTS.map((t, i) => `<button data-t="${i}">${esc(t[0].replace(/, 750\d\d Paris/, ''))}<br><small>${floorName(t[1])}</small></button>`).join('');
@@ -345,6 +414,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   let sugT = 0, sugN = 0;
   $('as-addr').addEventListener('input', () => {
     state.picked = null; $('as-err').textContent = '';
+    state.floorMax=15;state.res=null;syncFloorControls();
     const q = $('as-addr').value.trim(); $('as-go').disabled = q.length < 4;
     clearTimeout(sugT);
     if (q.length < 3) { $('as-sug').classList.remove('on'); return; }
@@ -365,7 +435,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   // ouverture / fermeture
   const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
   function quit() {
-    stopExpress(); stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
+    stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
     for (const id of ['as-start', 'as-loading', 'as-bar', 'as-3d']) $(id).classList.remove('on');
     document.body.classList.remove('as-mode'); state.res = null;
   }
@@ -382,12 +452,17 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     $('as-start').classList.remove('on'); $('as-loading').classList.add('on'); $('as-step').textContent = 'Recherche de l\'adresse';
     try {
       const res = await locateApartment(q, state.floor, ctx, state.picked);
+      state.floorMax=Math.max(0,(Number(res.floorData.floors)||16)-1);
+      if(state.floor>state.floorMax)setApartmentFloor(res,state.floorMax);
+      state.floor=res.floorData.floor;
+      if(!state.settingsTouched){state.windowSettings=defaultWindowSettings(res.floorData.haussmann);renderWindowSettings();}
+      syncFloorControls();
       $('as-step').textContent = 'Chargement du quartier';
       const F = res.local.F, n = res.local.n;
       await drone.teleport(F[0] + n[0] * 8, F[1] + n[1] * 8, { nom: res.address, dist: 0, alt: 25 });
       $('as-step').textContent = 'Calcul de votre étage';
       const v = await view.show(res);
-      disposeSolarTrees(); state.solarReport = null; state.expressReport = null; state.res = res; res.gap = v.gap;
+      disposeSolarTrees(); state.solarReport = null; state.res = res; res.gap = v.gap;
       view.onSnap(() => { if (state.res === res) showBar(res); });
       showBar(res);
       $('as-loading').classList.remove('on'); $('as-bar').classList.add('on');
@@ -403,8 +478,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const fd = res.floorData, street = res.street || res.address.replace(/^\d+\w?\s+/, '').replace(/\s+\d{5}.*$/, '');
     $('as-bt').textContent = (res.housenumber ? res.housenumber + ' ' : '') + (street || res.address);
     $('as-bs').textContent = floorName(fd.floor) + ' · façade ' + orientationName(res.local.bearing) + ' · rue de ' + Math.round(res.gap ?? 0) + ' m' + (res.snap ? ' · calé sur les fenêtres ✓' : '');
-    $('as-bw').textContent = fd.floor > fd.topFloor ? 'Attention : selon l\'IGN, cet immeuble a ' + (fd.topFloor + 1) + ' niveaux (RDC compris).' : (res.matchMode !== 'adresse exacte' ? 'Immeuble choisi par proximité : vérifie que c\'est le bon.' : '');
-    renderDbg();
+    $('as-bw').textContent = res.matchMode !== 'adresse exacte' ? 'Immeuble choisi par proximité : vérifie que c’est le bon.' : '';
+    $('as-floor-live').classList.add('on');syncFloorControls();renderDbg();
   }
   function renderDbg() {
     const r = state.res; if (!r) return;
@@ -430,94 +505,32 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     ].join('\n');
     if ($('as3-dbg-text')) $('as3-dbg-text').textContent = $('as-dbg').textContent;
   }
-  // Mode express : fenêtres réellement générées par le moteur de façades, sans construire l'appartement.
-  const expressRaycaster = new THREE.Raycaster(), expressPointer = new THREE.Vector2();
-  function clearExpressOverlay() {
-    if (state.expressGroup) {
-      scene.remove(state.expressGroup);
-      state.expressGroup.traverse(o => { o.geometry?.dispose?.(); if (o.material) for (const m of [].concat(o.material)) m.dispose?.(); });
-      state.expressGroup = null;
+  function makeSettingsPlan(){
+    const s=settingsForPlan(),u0=-3,u1=3,depth=4.5,span=u1-u0;
+    const murs=[{id:'F',a:[u0,0],b:[u1,0],epaisseur:s.facadeThickness,facade:true},
+      {id:'E',a:[u1,0],b:[u1,depth],epaisseur:0.25,ext:true},{id:'S',a:[u1,depth],b:[u0,depth],epaisseur:0.25,ext:true},{id:'W',a:[u0,depth],b:[u0,0],epaisseur:0.25,ext:true}];
+    const ouvertures=[];
+    for(let i=0;i<s.count;i++){
+      const c=s.customize?s.windows[i]:null,width=Number(c?.width??s.width)||1.2,mode=c?.positionMode||'distance',dist=Number(c?.distance);
+      const along=mode==='left'?width/2+0.2:mode==='center'?span/2:mode==='right'?span-width/2-0.2:Number.isFinite(dist)&&dist>0?dist:span*(i+1)/(s.count+1);
+      const center=Math.max(width/2+0.2,Math.min(span-width/2-0.2,along));
+      ouvertures.push({id:'w'+(i+1),murId:'F',type:'fenetre',centre:[u0+center,0],largeur:width,hauteur:Number(c?.height??s.height)||2.1,allege:Number(c?.sill??s.sill)});
     }
-    state.expressTargets = []; state.expressWindows = []; state.expressSelected = new Set();
+    return {murs,ouvertures,pieces:[{id:'r0',type:'sejour',polygone:[[u0,0],[u1,0],[u1,depth],[u0,depth]],surface:span*depth}],settings:s};
   }
-  function stopExpress() {
-    state.expressMode = false;
-    renderer.domElement.removeEventListener('pointerdown', expressPick, true);
-    clearExpressOverlay(); disposeSolarTrees();
-    $('as-express-ui')?.classList.remove('on');
-    if ($('as-draw-actions')) $('as-draw-actions').style.display = '';
-  }
-  function expressPick(e) {
-    if (!state.expressMode) return;
-    e.preventDefault(); e.stopImmediatePropagation();
-    const rect=renderer.domElement.getBoundingClientRect();
-    expressPointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
-    camera.updateMatrixWorld(); expressRaycaster.setFromCamera(expressPointer,camera);
-    const hit=expressRaycaster.intersectObjects(state.expressTargets,false)[0];
-    if (!hit) return;
-    const id=hit.object.userData.windowId;
-    if (state.expressSelected.has(id)) state.expressSelected.delete(id); else state.expressSelected.add(id);
-    for(const mesh of state.expressTargets){
-      const on=state.expressSelected.has(mesh.userData.windowId);
-      mesh.material.color.setHex(on?0xffa23a:0x35c7ff); mesh.material.opacity=on ? 0.62 : 0.28;
-    }
-    $('as-express-status').textContent=state.expressSelected.size+' fenêtre(s) sélectionnée(s). Touchez une fenêtre pour ajouter/retirer.';
-    $('as-express-calc').disabled=!state.expressSelected.size;
-  }
-  function startExpress() {
-    stopExpress();
-    const r=state.res; if(!r) return;
-    state.solarReport=null;
-    const list=window.__facadeEtages?.get(r.feature.properties?.cleabs)||[];
-    const F=r.local.F; let best=null,bd=Infinity;
-    for(const e of list){
-      const dx=e.b[0]-e.a[0],dz=e.b[1]-e.a[1],l2=dx*dx+dz*dz||1;
-      const t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2));
-      const d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t);
-      if(d<bd){bd=d;best=e;}
-    }
-    if(!best||bd>6||!best.windows?.length){
-      $('as-bw').textContent='Les fenêtres exactes de cette façade ne sont pas encore chargées. Restez quelques secondes face à l’immeuble puis réessayez.';
-      return;
-    }
-    const floorIndex=best.ent&&r.floorData.floor>=1?r.floorData.floor+1:r.floorData.floor;
-    const windows=best.windows.filter(w=>w.floor===floorIndex);
-    if(!windows.length){$('as-bw').textContent='Aucune baie vitrée exploitable n’a été publiée pour cet étage.';return;}
-    const dx=best.b[0]-best.a[0],dz=best.b[1]-best.a[1],L=Math.hypot(dx,dz)||1,e=[dx/L,dz/L],n=[-e[1],e[0]];
-    const group=new THREE.Group();group.name='appart-studio-express-windows';state.expressGroup=group;
-    state.expressTargets=[];state.expressWindows=[];
-    for(const w of windows){
-      const id='facade-'+best.k+'-'+w.floor+'-'+w.bay;
-      const cx=best.a[0]+e[0]*w.x+n[0]*(w.surfaceZ??0.06),cz=best.a[1]+e[1]*w.x+n[1]*(w.surfaceZ??0.06),cy=best.y0+w.y;
-      const plane=new THREE.Mesh(new THREE.PlaneGeometry(w.width,w.height),new THREE.MeshBasicMaterial({color:0x35c7ff,transparent:true,opacity:.28,depthWrite:false,depthTest:false,side:THREE.DoubleSide}));
-      plane.position.set(cx+n[0]*.02,cy,cz+n[1]*.02);plane.rotation.y=Math.atan2(n[0],n[1]);plane.renderOrder=30;plane.userData.windowId=id;group.add(plane);state.expressTargets.push(plane);
-      const points=[[0,0],[-.38,-.32],[.38,-.32],[-.38,.32],[.38,.32]].map(([a,b])=>[cx+n[0]*.08+e[0]*a*w.width,cy+b*w.height*.34,cz+n[1]*.08+e[1]*a*w.width]);
-      state.expressWindows.push({id,index:state.expressWindows.length,points,normal:[n[0],0,n[1]],roomId:null,roomType:'façade sans plan'});
-    }
-    scene.add(group);state.expressMode=true;renderer.domElement.addEventListener('pointerdown',expressPick,true);
-    $('as-draw-actions').style.display='none';$('as-express-ui').classList.add('on');
-    $('as-express-status').textContent=windows.length+' fenêtre(s) réelle(s) trouvée(s) à cet étage. Touchez celles que vous souhaitez analyser.';
-    $('as-express-results').textContent='';$('as-express-calc').disabled=true;
-    $('as-bw').textContent='';
-  }
-  $('as-express').onclick=startExpress;
-  $('as-express-cancel').onclick=stopExpress;
-  $('as-express-calc').onclick=async()=>{
-    const selected=state.expressWindows.filter(w=>state.expressSelected.has(w.id));
-    if(!selected.length)return;
-    const button=$('as-express-calc'),out=$('as-express-results');disposeSolarTrees();button.disabled=true;button.textContent='Calcul en cours…';out.textContent='Calcul des fenêtres sélectionnées…';
+  $('as-window-calc').onclick=async()=>{
+    const r=state.res;if(!r)return;const button=$('as-window-calc'),out=$('as-window-results');
+    button.disabled=true;button.textContent='Calcul…';out.textContent='Calcul des fenêtres, embrasures et masques…';disposeSolarTrees();state.solarReport=null;
     try{
-      const r=state.res,{F,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]],fr={F,u,v,floorY:view.floorY(r),H:view.floorH(r)};
-      const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan:{murs:[],ouvertures:[],pieces:[]},fr,windowsOverride:selected,onProgress:p=>{out.textContent=p.stage==='calcul'?'Calcul express '+p.done+'/'+p.total+'…':'Chargement des arbres et préparation…';}});
-      state.solarTreeGroup=result.treeGroup;state.expressReport=result;
-      const keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};
-      const totals={};
-      for(const key of keys){const series=result.windows.map(w=>w.byDate[key].minutes);let minutes=0;for(let i=0;i<(series[0]?.length||0);i++)minutes+=Math.max(0,...series.map(a=>a[i]?.frac||0))*15;totals[key]=minutes/60;}
-      out.textContent='RÉSULTAT EXPRESS · '+selected.length+' fenêtre(s)\nTotal sans double comptage : '+keys.map(k=>labels[k]+' '+totals[k].toFixed(1)+' h').join(' · ')+'\nScore Soleil : disponible après dessin du plan (séjour/chambre requis)\nsoleil direct simulé, hors météo\n\n'+result.windows.map(w=>{const h=w.byDate;return w.id+' : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
-    }catch(e){out.textContent='Calcul express impossible : '+e.message;}
-    finally{button.disabled=false;button.textContent='Recalculer la sélection';}
+      const plan=makeSettingsPlan(),fr={F:r.local.F,u:[-r.local.n[1],r.local.n[0]],v:[-r.local.n[0],-r.local.n[1]],floorY:view.floorY(r),H:plan.settings.ceilingHeight};
+      const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan,fr,onProgress:p=>{out.textContent=p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' fenêtres/dates…':'Préparation des obstacles et arbres…';}});
+      state.solarReport=result;state.solarTreeGroup=result.treeGroup;renderDbg();
+      const score=scoreSoleil(result.rooms),keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};
+      out.textContent='SCORE SOLEIL : '+(score.grade||'—')+(score.grade?' · '+score.winterHours.toFixed(1)+' h hiver · '+score.summerHours.toFixed(1)+' h été':' · pièce non classée')+
+        '\nSoleil direct simulé, hors météo\n\n'+result.windows.map((w,i)=>{const h=w.byDate;return 'Fenêtre '+(i+1)+' : '+keys.map(k=>labels[k]+' '+h[k].hours.toFixed(1)+' h').join(' · ');}).join('\n');
+    }catch(e){out.textContent='Calcul impossible : '+(e.message||e);}
+    finally{button.disabled=false;button.textContent='Recalculer';}
   };
-  renderer.domElement.addEventListener('pointerdown',expressPick,true);
   setInterval(() => { if ($('as-dbg').classList.contains('on')) renderDbg(); }, 1000);
   $('as-dbgb').onclick = () => $('as-dbg').classList.toggle('on');
   $('as3-details-btn').onclick = () => { $('as3-details').classList.toggle('on'); renderDbg(); };
@@ -568,8 +581,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const facadeWindows = facade && facadeDistance <= 6 ? (facade.windows || []).filter(w => w.floor === floorIndex).map(w => { const wx=facade.a[0]+facadeAxis[0]*w.x, wz=facade.a[1]+facadeAxis[1]*w.x; return { id:'facade-'+facade.k+'-'+w.floor+'-'+w.bay, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, height:w.height, allege:facade.y0+w.y-w.height/2-view.floorY(r) }; }) : [];
     $('as-bar').classList.remove('on');
     editor.open({
-      key: r.address + '|' + r.floorData.floor, title: r.address + ' · ' + floorName(r.floorData.floor),
-      street: r.street, orient: orientationName(r.local.bearing), north, facadeSpan: span, safeBounds, facadeWindows,
+      key:r.address+'|'+r.floorData.floor,title:r.address+' · '+floorName(r.floorData.floor),
+      street:r.street,orient:orientationName(r.local.bearing),north,facadeSpan:span,safeBounds,settings:settingsForPlan(),
     });
     state.frame = { F, u, v, floorY: view.floorY(r) };
   };
