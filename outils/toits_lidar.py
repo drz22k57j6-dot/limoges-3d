@@ -121,7 +121,7 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
     step = max(1.0, float(resolution))
     result = None
     for _ in range(7):
-        positions, indices = [], []
+        positions, indices, vertex_map = [], [], {}
         minx, miny, maxx, maxy = poly.bounds
         gx0 = math.floor(minx/step)*step
         gy0 = math.floor(miny/step)*step
@@ -146,13 +146,18 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
                     zrel = np.clip(zrel, max(0.0, eave-0.2), mesh_max)
                     ground = np.asarray(ground_sampler(verts[:,0], verts[:,1]), dtype=float)
                     xyz = np.column_stack([verts[:,0], verts[:,1], ground+zrel])
-                    offset = sum(len(p) for p in positions)
-                    positions.append(xyz)
-                    indices.append(tri.reshape(-1)+offset)
+                    local = np.empty(len(xyz), dtype=np.uint32)
+                    for vi, point in enumerate(xyz):
+                        key = (round(float(point[0]), 3), round(float(point[1]), 3))
+                        if key not in vertex_map:
+                            vertex_map[key] = len(positions)
+                            positions.append(point)
+                        local[vi] = vertex_map[key]
+                    indices.append(local[tri.reshape(-1)])
                 y += step
             x += step
-        if positions:
-            p = np.vstack(positions); idx = np.concatenate(indices)
+        if positions and indices:
+            p = np.asarray(positions, dtype=float); idx = np.concatenate(indices)
             result = (p, idx)
             if len(idx)//3 <= triangle_budget:
                 break
