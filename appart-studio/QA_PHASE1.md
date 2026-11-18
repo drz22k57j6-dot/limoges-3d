@@ -11,3 +11,17 @@
 | 5 | 8 avenue de France, 75013 Paris | 10 | À exécuter | À exécuter | À joindre |
 
 **Critères de réussite :** géocodage exact, rattachement BAN exact (ou secours clairement signalé), polygone BD TOPO présent, façade sélectionnée, repère rouge visible au bon étage, ±10 cm sans rechargement. Ne pas marquer cette recette comme validée tant que les cinq captures réelles n'ont pas été ajoutées.
+
+
+## QA — emprise IGN et fenêtres réelles (PR dédiée)
+
+### Comment tester sur iPhone
+1. Ouvrir **38 rue Cler, 2e** : vérifier l'emprise grise, les côtés hachurés et les fenêtres en pointillé.
+2. Tirer les poignées au-delà du polygone ; poser une fenêtre sur la façade et vérifier ses dimensions verrouillées.
+3. Glisser le long de la façade, passer en Maquette et vérifier que le parement extérieur reste visible.
+
+### Limites connues
+- La contrainte échantillonne les côtés du contour rectangulaire ; les empreintes concaves complexes nécessitent un test manuel renforcé.
+- Les travées sont disponibles uniquement si le moteur de façades a généré l'immeuble.
+- Si le géocodeur inverse ne renvoie pas de nom de rue exploitable, la façade la plus proche de l'adresse BAN reste utilisée.
+- La validation visuelle sur iPhone reste à effectuer.

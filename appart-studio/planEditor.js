@@ -41,7 +41,10 @@ export function createPlanEditor({ onBack, onView3D }) {
   let hist = [], fut = [], drag = null, sel = null, storeKey = '';
 
   // ---------- données ----------
-  const fresh = () => ({ o: { u0: -2.5, u1: 2.5, v1: 4 }, walls: [], ops: [], labels: [{ p: [0, 2], type: 'sejour' }], n: 1 });
+  const fresh = () => {
+    const start = ctxInfo?.facadeWindows?.slice().sort((a, b) => Math.abs(a.u) - Math.abs(b.u))[0]?.u ?? 0;
+    return { o: { u0: start - 2.5, u1: start + 2.5, v1: 4 }, walls: [], ops: [], labels: [{ p: [start, 2], type: 'sejour' }], n: 1 };
+  };
   function outline() {
     const { u0, u1, v1 } = P.o;
     return [{ id: 'F', a: [u0, 0], b: [u1, 0], ext: true, facade: true }, { id: 'E', a: [u1, 0], b: [u1, v1], ext: true },
@@ -112,6 +115,24 @@ export function createPlanEditor({ onBack, onView3D }) {
     text((ctxInfo.street || 'LA RUE').toUpperCase(), [(u0 + u1) / 2, -2.4], { size: 12, bold: true, col: '#7f8ba0' });
     // façade réelle de l'immeuble (étendue IGN)
     if (ctxInfo.facadeSpan) line([ctxInfo.facadeSpan[0], 0], [ctxInfo.facadeSpan[1], 0], Math.max(3, 0.16 * s), '#4a5568');
+    if (ctxInfo.footprint?.length) {
+      const fp = ctxInfo.footprint;
+      ctx.beginPath(); fp.forEach((p, i) => { const [x,y] = toScr(p); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }); ctx.closePath();
+      ctx.fillStyle = '#dce5ef18'; ctx.fill(); ctx.strokeStyle = '#c8d2df'; ctx.lineWidth = 2; ctx.stroke();
+      for (let i = 0; i < fp.length - 1; i++) {
+        const a = fp[i], b = fp[i+1], edge = ctxInfo.facadeEdge;
+        const isFacade = edge && (Math.hypot(a[0]-edge[0][0],a[1]-edge[0][1]) + Math.hypot(b[0]-edge[1][0],b[1]-edge[1][1]) < 0.3 || Math.hypot(a[0]-edge[1][0],a[1]-edge[1][1]) + Math.hypot(b[0]-edge[0][0],b[1]-edge[0][1]) < 0.3);
+        if (isFacade) continue;
+        const L = Math.hypot(b[0]-a[0],b[1]-a[1]), n = Math.max(1, Math.floor(L*3));
+        ctx.strokeStyle = '#a8b4c4'; ctx.lineWidth = 1; ctx.beginPath();
+        for (let k=0;k<=n;k++) { const t=k/n, p=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t], q=[p[0]+0.18,p[1]+0.18]; const [x,y]=toScr(p),[xx,yy]=toScr(q); ctx.moveTo(x,y);ctx.lineTo(xx,yy); }
+        ctx.stroke();
+      }
+    }
+    if (ctxInfo.facadeWindows?.length) for (const w of ctxInfo.facadeWindows) {
+      const [x,y] = toScr([w.u, 0]); const ww = w.width * s;
+      ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle = '#5fd4ff'; ctx.lineWidth = 2; ctx.strokeRect(x-ww/2,y-7,ww,14); ctx.restore();
+    }
     // pièces
     for (const rm of rooms) {
       const t = rm.type ? TYPE[rm.type] : null;
@@ -188,6 +209,35 @@ export function createPlanEditor({ onBack, onView3D }) {
     return n;
   }
   function clampIn(p) { const { u0, u1, v1 } = P.o; return [Math.max(u0, Math.min(u1, p[0])), Math.max(0, Math.min(v1, p[1]))]; }
+  function rectFits(o) {
+    const poly = ctxInfo?.footprint; if (!poly?.length) return true;
+    const { u0, u1, v1 } = o, pts = [];
+    for (let i = 0; i <= 8; i++) { const t = i / 8; pts.push([u0 + (u1-u0)*t, 0.025], [u0 + (u1-u0)*t, Math.max(0.025,v1-0.025)], [u0+0.025, v1*t], [u1-0.025, v1*t]); }
+    return pts.every(p => pointInPoly(p, poly));
+  }
+  function constrainRect(next, current) {
+    if (rectFits(next)) return next;
+    let t = 0.9;
+    while (t > 0.01) {
+      const candidate = { u0: current.u0 + (next.u0-current.u0)*t, u1: current.u1 + (next.u1-current.u1)*t, v1: current.v1 + (next.v1-current.v1)*t };
+      if (rectFits(candidate)) return candidate;
+      t *= 0.75;
+    }
+    return current;
+  }
+  function fitInitial() {
+    if (!ctxInfo?.footprint?.length) return;
+    const o = P.o, center = (o.u0 + o.u1) / 2;
+    for (let i = 0; i < 80 && !rectFits(o); i++) {
+      const half = Math.max(0.75, (o.u1 - o.u0) * 0.46);
+      o.u0 = center - half; o.u1 = center + half; o.v1 = Math.max(1.2, o.v1 * 0.92);
+    }
+    if (!rectFits(o)) {
+      const xs = ctxInfo.footprint.map(p => p[0]), ys = ctxInfo.footprint.map(p => p[1]).filter(y => y > 0);
+      o.u0 = Math.min(...xs) + 0.08; o.u1 = Math.max(...xs) - 0.08; o.v1 = Math.max(1.2, Math.max(...ys) - 0.08);
+      if (!rectFits(o)) { o.u0 = center - 0.75; o.u1 = center + 0.75; o.v1 = 1.2; }
+    }
+  }
   const g10 = x => Math.round(x * 10) / 10;
   function snap(p, start = null) {
     p = p.slice();
@@ -242,6 +292,7 @@ export function createPlanEditor({ onBack, onView3D }) {
     if (tool === 'piece') {
       const h = handles().find(h => pxd(h.p, p) < 26);
       if (h) { drag = { kind: 'handle', k: h.k }; closeSheet(); return; }
+      if (ctxInfo.facadeWindows?.length && Math.abs(p[1]) < 0.24) { drag = { kind: 'slide', x0: p[0], center0: (P.o.u0 + P.o.u1) / 2, origin: JSON.stringify(P) }; closeSheet(); return; }
     }
     const op = hitOpening(p);
     if (op && tool !== 'mur') { sel = { op: op.id }; drag = { kind: 'op', id: op.id, moved: false }; openOpSheet(op); draw(); return; }
@@ -250,11 +301,18 @@ export function createPlanEditor({ onBack, onView3D }) {
       const w = hitWall(p, 30); if (!w) { flash('Touche un mur'); return; }
       const d = OPEN_DEF[tool], L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
       if (L < 0.7) { flash('Mur trop court'); return; }
-      const nop = { id: 'o' + P.n++, wall: w.id, p: projectOn(w, p), w: Math.min(d.w, L - 0.2), type: tool, allege: d.allege, h: d.h };
+      let snapBay = null;
+      if (tool === 'fenetre' && w.facade && ctxInfo.facadeWindows?.length) {
+        const projected = projectOn(w, p)[0];
+        snapBay = ctxInfo.facadeWindows.reduce((best, x) => !best || Math.abs(x.u - projected) < Math.abs(best.u - projected) ? x : best, null);
+        if (snapBay && P.ops.some(o => o.traveeId === snapBay.id)) { flash('Cette travée possède déjà une fenêtre'); return; }
+      }
+      const nop = { id: 'o' + P.n++, wall: w.id, p: snapBay ? [snapBay.u, 0] : projectOn(w, p), w: snapBay ? snapBay.width : Math.min(d.w, L - 0.2), type: tool, allege: snapBay ? snapBay.allege : d.allege, h: snapBay ? snapBay.height : d.h, traveeId: snapBay?.id || null };
       // pas de chevauchement : on décale la nouvelle ouverture à côté de sa voisine (50 cm de trumeau)
       const e = [(w.b[0] - w.a[0]) / L, (w.b[1] - w.a[1]) / L], tOf = q => (q[0] - w.a[0]) * e[0] + (q[1] - w.a[1]) * e[1];
       let t = tOf(nop.p);
-      for (let k = 0; k < 6; k++) {
+      if (snapBay && P.ops.some(o => o.wall === w.id && Math.abs(tOf(o.p) - t) < (o.w + nop.w) / 2 + 0.5)) { flash('La travée réelle est déjà occupée'); return; }
+      if (!snapBay) for (let k = 0; k < 6; k++) {
         const hit = P.ops.find(o => o.wall === w.id && Math.abs(tOf(o.p) - t) < (o.w + nop.w) / 2 + 0.5);
         if (!hit) break;
         const to = tOf(hit.p); t = to + Math.sign(t - to || 1) * ((hit.w + nop.w) / 2 + 0.5);
@@ -275,13 +333,19 @@ export function createPlanEditor({ onBack, onView3D }) {
     const p = evPt(e);
     if (drag.kind === 'handle') {
       const o = P.o, k = drag.k;
-      if (k.includes('E')) o.u1 = Math.max(o.u0 + 1.5, g10(p[0]));
-      if (k === 'W') o.u0 = Math.min(o.u1 - 1.5, g10(p[0]));
-      if (k.includes('S')) o.v1 = Math.max(1.5, g10(p[1]));
-      recompute(); draw();
+      const next = { ...o };
+      if (k.includes('E')) next.u1 = Math.max(o.u0 + 1.5, g10(p[0]));
+      if (k === 'W') next.u0 = Math.min(o.u1 - 1.5, g10(p[0]));
+      if (k.includes('S')) next.v1 = Math.max(1.5, g10(p[1]));
+      Object.assign(o, constrainRect(next, o)); recompute(); draw();
     } else if (drag.kind === 'op') {
       const op = P.ops.find(o => o.id === drag.id), w = op && wallById(op.wall);
       if (w) { op.p = projectOn(w, p); drag.moved = true; draw(); }
+    } else if (drag.kind === 'slide') {
+      const origin = JSON.parse(drag.origin), target = drag.center0 + (p[0] - drag.x0);
+      const bay = ctxInfo.facadeWindows.reduce((best, x) => !best || Math.abs(x.u-target) < Math.abs(best.u-target) ? x : best, null);
+      const delta = bay.u - drag.center0, next = { ...origin.o, u0: origin.o.u0 + delta, u1: origin.o.u1 + delta };
+      if (rectFits(next)) { P = origin; P.o = next; P.walls.forEach(w => { w.a[0] += delta; w.b[0] += delta; }); P.ops.forEach(o => { o.p[0] += delta; }); P.labels.forEach(l => { l.p[0] += delta; }); recompute(); draw(); }
     } else if (drag.kind === 'draw') { drag.b = snap(p, drag.a); draw(); }
   });
   const end = e => {
@@ -292,6 +356,7 @@ export function createPlanEditor({ onBack, onView3D }) {
       if (L >= 0.3) { P.walls.push({ id: 'p' + P.n++, a: d.a, b: d.b }); commit(); const nb = rooms.length, todo = rooms.some(r => !r.type); flash(nb + (nb > 1 ? ' pièces' : ' pièce') + (todo ? ' · outil Pièces pour nommer « Pièce ? »' : '')); }
       else draw();
     } else if (d.kind === 'handle') { commit(); fit(); draw(); }
+    else if (d.kind === 'slide') commit();
     else if (d.kind === 'op' && d.moved) commit();
   };
   cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
@@ -309,8 +374,8 @@ export function createPlanEditor({ onBack, onView3D }) {
   }
   function openOpSheet(op) {
     const name = op.type === 'fenetre' ? 'Fenêtre' : 'Porte';
-    sheet.innerHTML = `<b>${name} · <span id="ase-w">${fmt(op.w)}</span> m</b><div class="ase-row">
-      <button id="ase-wm">− 10 cm</button><button id="ase-wp">+ 10 cm</button><button id="ase-del" class="ase-danger">Supprimer</button><button id="ase-ok">OK</button></div>`;
+    sheet.innerHTML = `<b>${name} · <span id="ase-w">${fmt(op.w)}</span> m</b>${op.traveeId ? '<small>Dimensions et position de la fenêtre réelle verrouillées</small>' : ''}<div class="ase-row">
+      <button id="ase-wm" ${op.traveeId ? 'disabled' : ''}>− 10 cm</button><button id="ase-wp" ${op.traveeId ? 'disabled' : ''}>+ 10 cm</button><button id="ase-del" class="ase-danger">Supprimer</button><button id="ase-ok">OK</button></div>`;
     sheet.classList.add('on');
     const setW = dw => { op.w = Math.max(0.5, Math.min(4, Math.round((op.w + dw) * 10) / 10)); sheet.querySelector('#ase-w').textContent = fmt(op.w); commit(); };
     sheet.querySelector('#ase-wm').onclick = () => setW(-0.1);
@@ -351,6 +416,7 @@ export function createPlanEditor({ onBack, onView3D }) {
       ctxInfo = info; storeKey = 'as-plan:' + info.key;
       let saved = null; try { saved = JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) {}
       P = saved && saved.o ? saved : fresh();
+      fitInitial();
       hist = [JSON.stringify(P)]; fut = []; sel = null;
       root.querySelector('#ase-title span').textContent = info.title;
       root.classList.add('on'); recompute(); setTool('piece');
@@ -364,7 +430,7 @@ export function createPlanEditor({ onBack, onView3D }) {
     getPlan() {
       return {
         murs: allWalls().map(w => ({ id: w.id, a: w.a, b: w.b, epaisseur: w.facade ? 0.4 : w.ext ? 0.25 : 0.15, facade: !!w.facade })),
-        ouvertures: P.ops.map(o => { const sp = opSpan(o); return { id: o.id, murId: o.wall, type: o.type, centre: sp?.c, largeur: sp?.width ?? o.w, allege: o.allege, hauteur: o.h }; }),
+        ouvertures: P.ops.map(o => { const sp = opSpan(o); return { id: o.id, murId: o.wall, type: o.type, centre: sp?.c, largeur: sp?.width ?? o.w, allege: o.allege, hauteur: o.h, traveeId: o.traveeId || null }; }),
         pieces: rooms.map((r, i) => ({ id: 'r' + i, type: r.type, polygone: r.poly, surface: r.area })),
       };
     },

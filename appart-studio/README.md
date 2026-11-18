@@ -55,3 +55,12 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - Phase 4 (soleil réel, heures d'ensoleillement par pièce) non commencée.
 - Pas encore de meubles.
 - Hors des rues habillées par le moteur de façades, l'étage reste une estimation IGN (corrigeable ±10 cm).
+
+
+## Correctif géométrie Appart Studio (PR séparée)
+
+- Le moteur de façades expose désormais les travées par niveau : position, largeur, allège et hauteur.
+- L'éditeur projette l'emprise IGN dans le repère u/v, l'affiche en gris et contraint les poignées dans le polygone.
+- Les fenêtres réelles sont affichées en pointillé et les ouvertures reprennent leurs dimensions.
+- Le plan peut être déplacé le long de la façade par travée.
+- Le doublage intérieur est déplacé derrière le parement réel ; la découpe commence côté intérieur.
