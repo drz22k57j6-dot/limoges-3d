@@ -251,11 +251,11 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
           const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan:state.plan3d,fr:apt.info.fr,onProgress:p=>{
             report.textContent=p.stage==='arbres'?'Chargement des arbres…':p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' · fenêtre '+p.window+' · '+p.date:'Finalisation…';
           }});
-          state.solarReport=result; window.__appartStudioSolarReport=result;
+          state.solarReport=result; state.solarTreeGroup=result.treeGroup; window.__appartStudioSolarReport=result;
           const names={sejour:'Séjour',chambre:'Chambre',bureau:'Bureau',dressing:'Dressing',cuisine:'Cuisine',entree:'Entrée',sdb:'Salle de bain',wc:'WC'};
-          report.textContent='Arbres pris en compte : '+result.trees+'\n'+result.rooms.map(room=>{
-            const h=room.hours; return (names[room.type]||room.type||'Pièce')+' · '+room.windows.length+' fenêtre(s)\nHiver '+h.winter.toFixed(1)+' h · Printemps '+h.spring.toFixed(1)+' h\nÉté '+h.summer.toFixed(1)+' h · Aujourd’hui '+h.today.toFixed(1)+' h';
-          }).join('\n\n');
+          const roomText=result.rooms.map(room=>{const h=room.hours;return (names[room.type]||room.type||'Pièce')+' · '+room.windows.length+' fenêtre(s) · hiver '+h.winter.toFixed(1)+' h · printemps '+h.spring.toFixed(1)+' h · été '+h.summer.toFixed(1)+' h · aujourd’hui '+h.today.toFixed(1)+' h';}).join('\n');
+          const winText=result.windows.map(w=>{const h=w.byDate;return 'Fenêtre '+w.id+' ('+(names[w.roomType]||w.roomType)+') : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
+          report.textContent='Arbres 3D pris en compte : '+result.trees+'\n\nPIÈCES\n'+roomText+'\n\nFENÊTRES\n'+winText;
         } catch(e) { report.textContent='Analyse indisponible : '+e.message; }
         finally { button.disabled=false; button.textContent='Recalculer le soleil par pièce'; }
       };
