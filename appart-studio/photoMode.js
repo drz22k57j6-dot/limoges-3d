@@ -1,0 +1,2 @@
+export function tokenFromSettingsJSON(raw){try{const settings=JSON.parse(raw||'{}');const value=settings['monde.ionToken'];return typeof value==='string'?value.trim():'';}catch{return '';}}
+export function formatPhotoAttributions(items){const counts=new Map();for(const item of items||[]){const value=String(item?.value??'').trim();if(value)counts.set(value,(counts.get(value)||0)+1);}return [...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(([value])=>value).join('; ');}

@@ -117,7 +117,7 @@ export function setApartmentFloor(res, floor) {
   return res.floorData;
 }
 
-export async function locateApartment(address, floor, ctx, picked=null) {
+export async function locateApartment(address, floor, ctx, picked=null, selectedBuildingId=null) {
   const {CITY,drone}=ctx;
   if(CITY?.id!=='paris') throw new Error('Appart Studio est actuellement limité à Paris.');
   const q=address.trim();
@@ -128,26 +128,20 @@ export async function locateApartment(address, floor, ctx, picked=null) {
   const [lx,lz]=drone.ll(lon,lat), point=[lx+CITY.X0,CITY.Y0-lz];
   const label=hit.properties?.label||q;
   const [exacts,near]=await Promise.all([exactIdentities(label,point[0],point[1],CITY),fetchNearby(point)]);
+  const candidateMap=new Map();
+  for(const item of near)if(item.distance<15){const id=item.feature.properties?.cleabs;if(id)candidateMap.set(id,{id,feature:item.feature,distance:item.distance});}
+  for(const item of exacts.slice(0,4))if(!candidateMap.has(item.id)){try{const f=await fetchFeatureById(item.id);if(f)candidateMap.set(item.id,{id:item.id,feature:f,distance:distToFeature(point,f)});}catch(e){console.warn('candidat IGN',item.id,e);}}
+  const candidateFeatures=[...candidateMap.values()].sort((a,b)=>a.distance-b.distance).slice(0,4);
   let feature=null,matchMode='bâtiment le plus proche',exact=null,fallbackDistance=0;
-  if(exacts.length){
-    // plusieurs bâtiments peuvent porter la même adresse (cour, annexes) : on garde celui qui touche la rue au point BAN
-    const ids=new Map(exacts.map(e=>[e.id,e]));
-    const cand=near.filter(n=>ids.has(n.feature.properties?.cleabs));
-    if(cand.length){ feature=cand[0].feature; exact=ids.get(feature.properties.cleabs); fallbackDistance=cand[0].distance; }
-    else { exact=exacts.slice().sort((a,b)=>(Number(b.record.etages)||0)-(Number(a.record.etages)||0))[0]; feature=await fetchFeatureById(exact.id); }
-    if(feature) matchMode='adresse exacte';
-  }
-  if(!feature){
-    if(!near.length) throw new Error('Aucun bâtiment IGN trouvé à moins de 35 m de cette adresse.');
-    feature=near[0].feature; fallbackDistance=near[0].distance; exact=null;
-  }
+  if(selectedBuildingId){let selected=candidateFeatures.find(c=>c.id===selectedBuildingId);if(!selected){const f=await fetchFeatureById(selectedBuildingId);if(f){selected={id:selectedBuildingId,feature:f,distance:distToFeature(point,f)};candidateFeatures.push(selected);}}if(!selected)throw new Error('Le bâtiment sélectionné n’est plus disponible dans l’emprise IGN.');feature=selected.feature;exact=exacts.find(e=>e.id===selected.id)||null;fallbackDistance=selected.distance;matchMode='bâtiment choisi';}
+  if(!feature&&exacts.length){const ids=new Map(exacts.map(e=>[e.id,e])),cand=near.filter(n=>ids.has(n.feature.properties?.cleabs));if(cand.length){feature=cand[0].feature;exact=ids.get(feature.properties.cleabs);fallbackDistance=cand[0].distance;}else{exact=exacts.slice().sort((a,b)=>(Number(b.record.etages)||0)-(Number(a.record.etages)||0))[0];feature=await fetchFeatureById(exact.id);}if(feature)matchMode='adresse exacte';}
+  if(!feature){if(!near.length)throw new Error('Aucun bâtiment IGN trouvé à moins de 35 m de cette adresse.');feature=near[0].feature;fallbackDistance=near[0].distance;exact=null;}
   const props=feature.properties||{};
   const polygons=polygonsOf(feature);
   if(!polygons.length) throw new Error('Le bâtiment IGN ne contient pas de polygone exploitable.');
   const facade=facadeFor(point,polygons);
   const identity=exact?.record||{};
-  const candidateIds=new Set(exacts.map(e=>e.id));for(const item of near)if(item.distance<15)candidateIds.add(item.feature.properties?.cleabs);
-  const candidateCount=[...candidateIds].filter(Boolean).length;
+  const candidateCount=candidateFeatures.length||1;
   const floorData=floorModel(props,identity,floor);
   // repère local du jeu : x = Est, z = -Nord
   const toLocal=P=>[P[0]-CITY.X0,-(P[1]-CITY.Y0)];
@@ -156,7 +150,7 @@ export async function locateApartment(address, floor, ctx, picked=null) {
   const bearing=((Math.atan2(facade.outward[0],facade.outward[1])*180/Math.PI)+360)%360;
   return {address:label,street:hit.properties?.street||'',housenumber:hit.properties?.housenumber||'',lon,lat,point,
     feature,identity,exact,matchMode,fallbackDistance,facade,floorData,adjust:0,
-    local:{F,A,B,n,bearing,ring:polygons[0][0].map(toLocal),footprints:polygons.map(poly=>poly.map(ring=>ring.map(toLocal)))},candidateCount};
+    local:{F,A,B,n,bearing,ring:polygons[0][0].map(toLocal),footprints:polygons.map(poly=>poly.map(ring=>ring.map(toLocal)))},candidateCount,candidateFeatures};
 }
 export function orientationName(b){
   return ['Nord','Nord-Est','Est','Sud-Est','Sud','Sud-Ouest','Ouest','Nord-Ouest'][Math.round(b/45)%8];

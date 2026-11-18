@@ -26,7 +26,13 @@ body.as-mode #as-launch{display:none!important}
 .as-ui input,.as-ui select{font:inherit;min-height:44px;box-sizing:border-box;-webkit-user-select:text;user-select:text}
 .as-ui input[type=range]{min-height:44px;touch-action:pan-y}
 #as-launch{position:fixed;z-index:80;left:calc(14px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#e2364d,#b51f32);border:1px solid #ffffff40;border-radius:16px;padding:13px 18px;font-weight:800;letter-spacing:.04em;box-shadow:0 8px 28px #0009}
-#as-start,#as-loading{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#05080dcc;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:18px}
+#as-start,#as-loading{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(5,8,12,.22);-webkit-backdrop-filter:none;backdrop-filter:none;padding:18px}
+#as-loading{background:rgba(5,8,12,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#as-candidates{display:none;margin:10px 0;padding:10px;border:1px solid #ffffff22;border-radius:12px;background:#0d141edb}
+#as-candidates.on{display:block}#as-candidates .choices{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+#as-candidates button,#as-confirm{border:1px solid #ffffff2a;background:#263343;border-radius:10px;padding:9px 12px;font-weight:700}
+#as-confirm-step{display:none;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:10px;border-radius:12px;background:#1b2330}
+#as-confirm-step.on{display:flex}#as-confirm-step span{font-size:13px;font-weight:700}
 #as-start.on,#as-loading.on{display:flex}
 #as-card{width:min(440px,100%);max-height:calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#121822f2;border:1px solid #ffffff22;border-radius:24px;padding:24px 20px 20px;box-shadow:0 20px 60px #000a;position:relative}
 #as-card h1{margin:0;font-size:26px;letter-spacing:-.02em}#as-card h1 em{font-style:normal;color:#ff4d63}
@@ -153,7 +159,7 @@ body.as-mode #as-launch{display:none!important}
 
 export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, drone, ground }) {
   if (window.__appartStudio?.mounted) return;
-  const state = { mounted: true, res: null, picked: null, floor: 2, floorMax: 15, settingsTouched: false, windowSettings: null };
+  const state = { mounted: true, res: null, picked: null, selectedBuildingId: null, buildingConfirmed: false, floor: 2, floorMax: 15, settingsTouched: false, windowSettings: null };
   window.__appartStudio = state;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   const ctx = { THREE, scene, camera, renderer, CITY, drone, ground };
@@ -182,7 +188,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   </section>
   <section id="as-loading" class="as-ui"><div class="box"><div id="as-spin"></div><b>On trouve votre immeuble…</b><span id="as-step">Recherche de l'adresse</span></div></section>
   <section id="as-bar" class="as-ui">
-    <div class="t" id="as-bt"></div><div class="s" id="as-bs"></div><div class="warn" id="as-bw"></div>
+    <div class="t" id="as-bt"></div><div class="s" id="as-bs"></div><div class="warn" id="as-bw"></div><div id="as-candidates"></div>
+    <div id="as-confirm-step"><span>C’est bien cet immeuble ?</span><button id="as-confirm">Oui, continuer</button></div>
     <div id="as-floor-live"><input id="as-floor-range-live" type="range" min="0" max="15" value="2" step="1"><output id="as-floor-live-value">2e étage / 15</output></div>
     <div class="row"><button class="adj" id="as-m">−</button><div class="adjl">Ajuster<br>la hauteur</div><button class="adj" id="as-p">+</button></div>
     <div id="as-window-settings">
@@ -444,7 +451,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   $('as-addr').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('as-go').disabled) go(); });
 
   // ouverture / fermeture
-  const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
+  const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); window.__setWorld?.('photo'); setTimeout(() => $('as-addr').focus(), 250); };
   function quit() {
     stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
     for (const id of ['as-start', 'as-loading', 'as-bar', 'as-3d']) $(id).classList.remove('on');
@@ -454,15 +461,15 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   $('as-x').onclick = () => { if (state.res) { $('as-start').classList.remove('on'); $('as-bar').classList.add('on'); } else quit(); };
   $('as-quit').onclick = quit;
   $('as3-quit').onclick = quit;
-  $('as-change').onclick = () => { $('as-floor-live').classList.remove('on'); state.res=null; state.floorMax=15; syncFloorControls(); $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
+  $('as-change').onclick = () => { $('as-floor-live').classList.remove('on'); $('as-confirm-step').classList.remove('on'); state.res=null;state.selectedBuildingId=null;state.buildingConfirmed=false;state.floorMax=15;syncFloorControls();$('as-bar').classList.remove('on');$('as-start').classList.add('on'); };
 
   // localisation
   async function go() {
-    $('as-sug').classList.remove('on'); $('as-err').textContent = '';
+    $('as-sug').classList.remove('on'); $('as-err').textContent = '';state.buildingConfirmed=false;
     const q = $('as-addr').value.trim(); if (!q) return;
     $('as-start').classList.remove('on'); $('as-loading').classList.add('on'); $('as-step').textContent = 'Recherche de l\'adresse';
     try {
-      const res = await locateApartment(q, state.floor, ctx, state.picked);
+      const res = await locateApartment(q, state.floor, ctx, state.picked, state.selectedBuildingId);
       state.floorMax=Math.max(0,(Number(res.floorData.floors)||16)-1);
       if(state.floor>state.floorMax)setApartmentFloor(res,state.floorMax);
       state.floor=res.floorData.floor;
@@ -484,13 +491,19 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     }
   }
   $('as-go').onclick = go;
+  $('as-confirm').onclick=()=>{state.buildingConfirmed=true;$('as-confirm-step').classList.remove('on');$('as-floor-live').classList.add('on');syncFloorControls();};
+  $('as-addr').addEventListener('input',()=>{state.picked=null;state.selectedBuildingId=null;});
 
   function showBar(res) {
     const fd = res.floorData, street = res.street || res.address.replace(/^\d+\w?\s+/, '').replace(/\s+\d{5}.*$/, '');
     $('as-bt').textContent = (res.housenumber ? res.housenumber + ' ' : '') + (street || res.address);
     $('as-bs').textContent = floorName(fd.floor) + ' · façade ' + orientationName(res.local.bearing) + ' · rue de ' + Math.round(res.gap ?? 0) + ' m' + (res.snap ? ' · calé sur les fenêtres ✓' : '');
-    $('as-bw').textContent = res.candidateCount>1 ? 'Attention : '+res.candidateCount+' emprises crédibles pour cette adresse ; le choix affiché est provisoire (distance BAN), à confirmer.' : res.matchMode !== 'adresse exacte' ? 'Immeuble choisi par proximité : vérifie que c’est le bon.' : '';
-    $('as-floor-live').classList.add('on');syncFloorControls();renderDbg();
+    $('as-bw').textContent = res.matchMode !== 'adresse exacte' && res.matchMode !== 'bâtiment choisi' ? 'Immeuble proposé par proximité BAN : vérifie le contour avant de continuer.' : '';
+    const candidates=res.candidateFeatures||[],$c=$('as-candidates');
+    if(candidates.length>1){$c.classList.add('on');$c.innerHTML='<b>Plusieurs bâtiments proches — choisis le bon</b><div class="choices">'+candidates.map((c,i)=>'<button data-candidate="'+esc(c.id)+'">Bâtiment '+String.fromCharCode(65+i)+' · '+Math.round(c.distance)+' m</button>').join('')+'</div>';$c.querySelectorAll('[data-candidate]').forEach(b=>b.onclick=()=>{state.selectedBuildingId=b.dataset.candidate;go();});}
+    else{$c.classList.remove('on');$c.innerHTML='';}
+    $('as-confirm-step').classList.toggle('on',!state.buildingConfirmed);
+    $('as-floor-live').classList.toggle('on',state.buildingConfirmed);syncFloorControls();renderDbg();
   }
   function renderDbg() {
     const r = state.res; if (!r) return;

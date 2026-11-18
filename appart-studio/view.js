@@ -1,12 +1,23 @@
 // Appart Studio — vue d'arrivée : caméra posée dans la rue, face à l'immeuble, étage surligné.
 // La caméra est imposée via window.__camOverride (hook de la boucle de rendu d'index.html).
 
-export function createFacadeView({ THREE, scene, camera, drone, ground }) {
-  const st = { group: null, cam: null, t: 0, res: null };
+export function createFacadeView({ THREE, scene, camera, drone, ground, CITY }) {
+  const st = { group: null, candidateGroup: null, cam: null, t: 0, res: null };
 
   function clear() {
     if (st.group) { scene.remove(st.group); st.group.traverse(o => { o.geometry?.dispose?.(); o.material?.dispose?.(); }); }
     st.group = null;
+    if(st.candidateGroup){scene.remove(st.candidateGroup);st.candidateGroup.traverse(o=>{o.geometry?.dispose?.();o.material?.dispose?.();});st.candidateGroup=null;}
+  }
+
+  function drawCandidates(res){
+    const group=new THREE.Group(),selectedId=res.feature?.properties?.cleabs;
+    const candidates=(res.candidateFeatures?.length?res.candidateFeatures:[{id:selectedId,feature:res.feature}]);
+    if(!candidates.some(c=>c.id===selectedId))candidates.push({id:selectedId,feature:res.feature});
+    for(const candidate of candidates){const g=candidate.feature?.geometry;if(!g)continue;const polygons=g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[];const color=candidate.id===selectedId?0x37f58a:0xaab2bd;
+      for(const poly of polygons)for(const ring of poly.slice(0,1)){const pts=ring.map(P=>{const x=P[0]-CITY.X0,z=-(P[1]-CITY.Y0);return new THREE.Vector3(x,(Number(ground(x,z))||0)+0.28,z);});const geo=new THREE.BufferGeometry().setFromPoints(pts),mat=new THREE.LineBasicMaterial({color,transparent:true,opacity:candidate.id===selectedId?0.95:0.55,depthTest:false});const line=new THREE.LineLoop(geo,mat);line.renderOrder=18;line.frustumCulled=false;group.add(line);}
+    }
+    const A=res.local.A,B=res.local.B,y=(Number(ground(res.local.F[0],res.local.F[1]))||0)+0.48,geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(A[0],y,A[1]),new THREE.Vector3(B[0],y,B[1])]),line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xffa12b,depthTest:false}));line.renderOrder=19;group.add(line);scene.add(group);st.candidateGroup=group;
   }
 
   // distance libre devant la façade (largeur de rue) : on avance jusqu'à toucher l'immeuble d'en face
@@ -92,11 +103,12 @@ export function createFacadeView({ THREE, scene, camera, drone, ground }) {
     async show(res) {
       st.res = res;
       build(res);
+      drawCandidates(res);
       window.__camOverride = hook;
       drone.facades?.(res.local.F[0], res.local.F[1], true);
       return { gap: st.cam.gap };
     },
-    refresh() { if (st.res) { build(st.res); st.t0 -= 3; } },
+    refresh() { if (st.res) { build(st.res); drawCandidates(st.res); st.t0 -= 3; } },
     setFloor(floorData) {
       if (!st.res || !st.group) return;
       st.res.floorData = floorData;

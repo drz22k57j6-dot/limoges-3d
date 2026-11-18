@@ -267,3 +267,32 @@ Le dépôt ne contient pas de dépendance Playwright, de configuration Playwrigh
 - Le parcours manuel 38 rue Cler reste à exécuter : adresse → étage → plan → 3D → soleil. Vérifier aussi les vues Maquette / Visite / Fenêtres.
 
 **Statut réel dans cette session : non validé.** Aucun runtime Node ni navigateur iPhone n'a été exécuté ici. Ne pas considérer la suite complète comme verte tant que la commande ci-dessus et le parcours manuel ne sont pas passés. Le test de référence `sun.test.mjs` n'a pas été modifié.
+
+ 
+## Étape A — entrée photoréaliste et sélection IGN (première tranche)
+
+- L'écran Appart Studio s'ouvre au-dessus de la ville en demandant le monde photoréaliste. Le panneau d'adresse est translucide ; la vue IGN reste disponible en repli.
+- Le jeton est lu exclusivement depuis `Réglages > Monde > Jeton Cesium ion` (stockage local `reglages-dev-v1`). Aucun jeton n'est codé en dur. L'entrée est masquée.
+- Sans jeton, en cas d'échec du root tileset ou si aucun modèle ne charge, retour automatique à la ville IGN.
+- Après recherche BAN, les bâtiments IGN proches sont proposés A/B ; leurs contours WFS IGN sont surlignés (gris candidats, vert choix, orange façade). Confirmation « C'est bien cet immeuble ? » avant le slider.
+- Les contours proviennent uniquement du WFS BD TOPO IGN. Aucun maillage Google n'est raycasté, numérisé, analysé ou utilisé pour extraire une géométrie. La photoréalité sert de fond visuel ; le soleil dynamique n'est appliqué qu'au moteur IGN de l'appartement.
+- Attributions dynamiques récupérées par `TilesRenderer.getAttributions()`, agrégées et triées par fréquence. Sur mobile, « Google Maps » sert d'attribution compacte avec les fournisseurs.
+
+### Jeton et sécurité
+
+Créer un jeton Cesium ion dédié avec le seul scope public `assets:read`, restreint à l'asset `2275207` et aux URL du domaine de démo. Un jeton client reste visible par un utilisateur déterminé ; les restrictions d'URL et d'asset limitent les abus. L'ancien jeton codé en dur est supprimé du code courant, mais peut rester dans l'historique Git : le révoquer et en créer un nouveau est recommandé.
+
+### Conditions d'utilisation, cache, quota et coût (vérifiés le 18/11/2026)
+
+- Google Map Tiles : visualisation seulement. Pas de préchargement, extraction, indexation, stockage ou redistribution des tuiles, pas d'analyse d'image, détection d'objets, extraction/revente de géodonnées ni usage hors ligne. Respecter `Cache-Control` et `ETag` ; aucun cache persistant n'est ajouté.
+- L'attribution Google Maps et celles des fournisseurs doivent rester visibles. Les données de bâtiments utilisées par l'app restent indépendantes (IGN).
+- Cette intégration utilise l'asset Cesium ion `2275207`, pas une clé Google Cloud directe. Cesium ion Community : gratuit pour usage personnel/non commercial, 1 000 root tiles/mois ; Commercial individuel : 149 USD/mois et 5 000 root tiles/mois ; Premium individuel : 499 USD/mois et 10 000 root tiles/mois. Les droits commerciaux doivent être confirmés avant une démo YC publique ou une exploitation.
+- Les quotas et prix Google directs ne s'appliquent pas à ce chemin via ion ; ils ne seraient pertinents qu'en cas de migration vers une clé Google Map Tiles directe.
+
+Sources : [Google Map Tiles Policies](https://developers.google.com/maps/documentation/tile/policies), [Google 3D Tiles](https://developers.google.com/maps/documentation/tile/3d-tiles), [Google Usage & Billing](https://developers.google.com/maps/documentation/tile/usage-and-billing), [Cesium ion Pricing](https://cesium.com/platform/cesium-ion/pricing/), [Cesium ion Tokens](https://cesium.com/learn/ion/cesium-ion-access-tokens/).
+
+### Limites A / non testé
+
+- Le toucher direct d'un bâtiment dans la vue photo n'est pas relié à un point WFS ; le flux passe par BAN et les candidats IGN.
+- Le choix côté rue / côté cour / autre rue d'un immeuble d'angle n'est pas encore interactif : l'arête la plus proche reste la proposition orange.
+- Aucun jeton réel, aucun chargement navigateur/iPhone, aucun quota 403/429 et aucune capture n'ont été testés.

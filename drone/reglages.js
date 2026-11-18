@@ -188,6 +188,7 @@ function init(D, X) {
     ] },
     { id: 'monde', name: 'Monde', items: () => [
       seg('monde.type', 'Paris', [['3d', 'Paris 3D (IGN)'], ['photo', 'Paris photoréaliste']], () => X.world(), v => X.setWorld(v), 'Les deux ne se mélangent pas'),
+      {t:'token',k:'monde.ionToken',label:'Jeton Cesium ion',note:'Jeton public assets:read limité à l’asset 2275207 et à ton domaine. Stocké localement dans ce navigateur.'},
       sec('Heure et soleil'),
       seg('monde.time', 'Moment', X.times.map((n, i) => [i, cap(n)]), () => X.time(), v => X.setTime(v)),
       sl('monde.elev', 'Hauteur du soleil', -12, 85, 1, () => X.sun().elev, v => X.setSun(v, X.sun().az), v => v + '°'),
@@ -274,6 +275,18 @@ Façades : ${d.facades ? `${d.facades.cellules} cellules, rayon ${d.facades.rayo
     const note = it.note ? `<small>${esc(it.note)}</small>` : '';
     if (it.t === 'sec') { el.className = 'rgSec'; el.textContent = it.label; return el; }
     if (it.t === 'act') { el.className = 'rgRow'; el.innerHTML = `<span>${esc(it.label)}${note}</span>`; const b = document.createElement('button'); b.className = 'rgBtn2'; b.textContent = 'OK'; b.onclick = () => it.fn(); el.appendChild(b); return el; }
+    if (it.t === 'token') {
+      el.style.cssText='display:block;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)';
+      const label=document.createElement('div');label.style.cssText='font-size:15px;margin-bottom:6px';label.innerHTML=esc(it.label)+(it.note?'<small style="display:block;font-size:12px;opacity:.6;margin-top:3px">'+esc(it.note)+'</small>':'');
+      const input=document.createElement('input');input.className='rgIn';input.type='password';input.autocomplete='off';input.spellcheck=false;input.placeholder='Colle le jeton Cesium ion';input.value=String(SAVE[it.k]||'');input.setAttribute('aria-label',it.label);
+      const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;margin-top:8px';
+      const save=document.createElement('button');save.className='rgBtn2';save.textContent='Enregistrer';
+      const clear=document.createElement('button');clear.className='rgBtn2';clear.textContent='Effacer';
+      const status=document.createElement('small');status.className='rgNote';status.style.display='block';status.style.marginTop='6px';
+      save.onclick=()=>{const value=input.value.trim();persist(it.k,value);status.textContent=value?'Jeton enregistré localement. Chargement de la vue photo…':'Jeton vide : vue IGN.';safe(()=>X.setWorld(value?'photo':'3d'));};
+      clear.onclick=()=>{input.value='';persist(it.k,'');status.textContent='Jeton effacé.';safe(()=>X.setWorld('3d'));};
+      row.append(save,clear);el.append(label,input,row,status);return el;
+    }
     if (it.t === 'tog') {
       el.className = 'rgRow'; el.innerHTML = `<span>${esc(it.label)}${note}</span>`; const b = document.createElement('button'); b.className = 'rgTog'; b.setAttribute('aria-label', it.label);
       const paint = () => b.classList.toggle('on', !!safe(it.get)); paint();

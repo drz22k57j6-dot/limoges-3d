@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {tokenFromSettingsJSON,formatPhotoAttributions} from './photoMode.js';
+test('Cesium token read from Monde settings only',()=>{assert.equal(tokenFromSettingsJSON(JSON.stringify({'monde.ionToken':' token '})),'token');assert.equal(tokenFromSettingsJSON('{}'),'');assert.equal(tokenFromSettingsJSON('{broken'),'');assert.equal(tokenFromSettingsJSON(JSON.stringify({'monde.ionToken':42})),'');});
+test('attributions deduplicated and sorted by frequency',()=>{assert.equal(formatPhotoAttributions([{value:'Landsat'},{value:'Data SIO'},{value:'Data SIO'},{value:'Copernicus'}]),'Data SIO; Copernicus; Landsat');assert.equal(formatPhotoAttributions([{value:''},{value:null},{}]),'');});
