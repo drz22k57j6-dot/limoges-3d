@@ -61,8 +61,21 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - Les vitres de l'appartement ont `castShadow = false` ; aucune modification de géométrie n'a été nécessaire pour ce point.
 - **Non validé sur iPhone à ce stade** : le positionnement réel, les ombres visibles au sol, les performances et les captures restent à vérifier sur appareil.
 
+## Phase 4B — heures de soleil par fenêtre et par pièce
+
+- `solarAnalysis.js` échantillonne les 4 dates (21 décembre, 21 mars, 21 juin, aujourd'hui) à 15 minutes avec `daySamples`.
+- Chaque fenêtre du plan est représentée par 5 points extérieurs ; le calcul appelle `windowSunHours`.
+- Les obstacles de scène dans un rayon de 250 m sont préfiltrés par un BVH AABB hiérarchique puis testés avec le raycaster Three.js.
+- Les arbres sont chargés par `fetchTrees(lon, lat, 150)`, représentés par des troncs et des sphères de houppier instanciés, puis pris en compte via `rayHitsCrown` et `leafTransmission`.
+- Les résultats sont affichés par fenêtre et par pièce. Le total d'une pièce prend le maximum des fractions de fenêtres à chaque pas de 15 minutes : plusieurs fenêtres simultanément éclairées ne doublent pas le temps.
+- Le calcul cède la main après des tranches d'environ 30 ms via `requestIdleCallback` (ou `setTimeout` sur Safari), avec progression visible.
+- Test hors réseau ajouté : `node --test appart-studio/phase4b.test.mjs`. Il couvre le masque de 30° sur une façade Est et le résultat sans obstacle.
+
 ## Limites
 
+- Les tests B n'ont pas été exécutés dans cette session ; le script est livré pour exécution locale/CI.
+- Le BVH porte sur les meshes actuellement chargés dans la scène : les bâtiments encore non streamés ne peuvent pas bloquer les rayons.
+- Les résultats arbres dépendent des données Open Data disponibles ; en cas d'échec réseau, le calcul continue sans arbres et le signale dans la console.
 - Le calcul d'angle de masque de l'immeuble opposé au 38 rue Cler n'est pas documenté ici : il manque une hauteur IGN vérifiée du bâtiment en face et l'altitude exacte de la fenêtre du logement de démonstration. Aucune hauteur ne doit être supposée. Une fois ces deux valeurs établies, appliquer `atan((H_{face}-altitude_{fenêtre})/13)` et calculer les minutes où l'élévation solaire dépasse cet angle, avec azimut dans [−21°, 159°].
 - Phase 4B (heures d'ensoleillement par fenêtre et par pièce, BVH et arbres) à venir.
 - Pas encore de meubles.
