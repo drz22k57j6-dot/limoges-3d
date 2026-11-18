@@ -123,8 +123,12 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
     for _ in range(7):
         positions, indices, vertex_map = [], [], {}
         minx, miny, maxx, maxy = poly.bounds
-        gx0 = math.floor(minx/step)*step
-        gy0 = math.floor(miny/step)*step
+        # Aligner la grille sur les centres MNH (et non sur des multiples arbitraires
+        # de zéro) pour conserver les émergences visibles à la résolution LiDAR.
+        x_anchor = xmin + resolution/2
+        y_anchor = ymax - resolution/2
+        gx0 = x_anchor + math.floor((minx-x_anchor)/step)*step
+        gy0 = y_anchor - math.ceil((y_anchor-miny)/step)*step
         x = gx0
         while x < maxx:
             y = gy0
