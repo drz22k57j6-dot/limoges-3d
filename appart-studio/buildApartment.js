@@ -102,7 +102,7 @@ export function createApartment({ THREE, scene, renderer }) {
   function isOurs(o) { for (let p = o; p; p = p.parent) if (p === group) return true; return false; }
   function isTargetMesh(o, bounds) {
     const id = info?.fr?.buildingId;
-    if (!id || !o.isMesh || !o.geometry || isOurs(o)) return false;
+    if (!id || !o.isMesh || !o.geometry || o.userData?.appartClipTarget || isOurs(o)) return false;
     // Les tuiles porteuses d'identifiants sont retenues uniquement si elles contiennent l'ID BAN/IGN cible.
     const ids = o.userData?.ids;
     if (Array.isArray(ids)) return ids.includes(id);
@@ -142,9 +142,9 @@ export function createApartment({ THREE, scene, renderer }) {
     targetGeometry.computeBoundingBox(); targetGeometry.computeBoundingSphere();
     o.updateMatrix();
     const targetMesh = new THREE.Mesh(targetGeometry, clippedMaterial(o.material));
-    targetMesh.name = 'appart-clip-target:' + id;
+    targetMesh.name = 'appart-clip-target:' + id; targetMesh.userData.appartClipTarget = true;
     targetMesh.position.copy(o.position); targetMesh.quaternion.copy(o.quaternion); targetMesh.scale.copy(o.scale);
-    targetMesh.matrixAutoUpdate = o.matrixAutoUpdate; targetMesh.updateMatrix();
+    targetMesh.matrixAutoUpdate = o.matrixAutoUpdate; if (o.matrixAutoUpdate) targetMesh.updateMatrix(); else targetMesh.matrix.copy(o.matrix);
     targetMesh.castShadow = false; targetMesh.receiveShadow = o.receiveShadow; targetMesh.renderOrder = o.renderOrder;
     o.geometry = restGeometry; o.parent?.add(targetMesh);
     return { isolated:true, originalGeometry, targetMesh };
