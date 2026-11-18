@@ -63,7 +63,7 @@ jobs:
           bytes=0
           if [[ -d data/paris/tuiles ]]; then bytes=$(du -sb data/paris/tuiles | cut -f1); fi
           echo "bytes=$bytes" >> "$GITHUB_OUTPUT"
-      - name: Download IGN MNT/MNH and source data around rue Cler
+      - name: Download IGN MNT/MNH 2m + MNH LiDAR HD 50cm and source data around rue Cler
         env:
           X0: ${{ steps.address.outputs.x }}
           Y0: ${{ steps.address.outputs.y }}
@@ -126,6 +126,13 @@ jobs:
             echo "| Durée | ${{ steps.build.outputs.seconds }} secondes |"
             echo "### Statistiques toits"
             cat data/paris/toits_lidar_stats.json
+            echo "### Vérification MNH 50 cm"
+            python - <<'PY'
+            import json
+            p=json.load(open("data/paris/toits_lidar_stats.json"))
+            print(f"Dalles 50 cm chargées : {p.get('high_resolution_tiles_loaded',0)}/36")
+            print("Toitures réellement calculées par résolution :", p.get("resolution_usage_m",{}))
+            PY
             echo "Soleil au 38 rue Cler, 2e étage : non mesuré par ce job (21 décembre / 21 juin)."
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Commit generated tiles and statistics
