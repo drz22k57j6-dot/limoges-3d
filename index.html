@@ -1673,6 +1673,7 @@ async function startGoogleCity(){
     tiles.addEventListener('load-model',({scene:sc})=>{photoModelLoaded=true;sc.traverse(o=>{if(!o.isMesh)return;const old=o.material;o.material=new THREE.MeshBasicMaterial({map:old.map||null,color:old.map?0xffffff:old.color,fog:true,toneMapped:false});if(o.material.map)o.material.map.anisotropy=renderer.capabilities.getMaxAnisotropy();old.dispose();});updatePhotoAttribution();});
     tiles.addEventListener('load-root-tileset',()=>{if(WORLD.mode==='photo')setCity('google');updatePhotoAttribution();});
     tiles.addEventListener('load-tileset',updatePhotoAttribution);
+    tiles.addEventListener('needs-update',updatePhotoAttribution);
     tiles.addEventListener('load-error',({tile,error})=>{console.warn('Google photoréaliste : chargement impossible',error);if(!tile||!tiles?.root)fallbackPhotoCity('Carte photoréaliste indisponible (clé, quota ou réseau) — retour à la vue IGN.');});
     tilesRoot=new THREE.Group();tilesRoot.rotation.y=Math.PI;tilesRoot.add(tiles.group);scene.add(tilesRoot);
     tiles.setCamera(camera);tiles.setResolutionFromRenderer(camera,renderer);
