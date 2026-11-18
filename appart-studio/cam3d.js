@@ -9,14 +9,26 @@ export function createCam3d({ THREE, camera, drone }) {
   const fwdOf = (yaw, pitch) => new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
   const yawOf = (dx, dz) => Math.atan2(dx, -dz);
 
-  // collision : cercle de 25 cm contre les segments de murs
-  function collide(p) {
-    for (let it = 0; it < 3; it++) for (const [a, b] of st.info.solids) {
+  // Collision capsule contre les rectangles de murs : rayon caméra + demi-épaisseur du mur.
+  // Le test de distance au segment correspond à l'expansion du rectangle par le rayon de la caméra.
+  function clearPosition(p) {
+    for (const [a, b, thickness = 0.15] of st.info.solids) {
       const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz || 1;
       const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / L2));
-      const qx = a[0] + dx * t, qz = a[1] + dz * t, ex = p[0] - qx, ez = p[1] - qz, d = Math.hypot(ex, ez), R = 0.32;
-      if (d < R && d > 1e-6) { p[0] = qx + ex / d * R; p[1] = qz + ez / d * R; }
+      const qx = a[0] + dx * t, qz = a[1] + dz * t;
+      if (Math.hypot(p[0] - qx, p[1] - qz) < 0.32 + thickness / 2) return false;
     }
+    return true;
+  }
+  function moveColliding(p, dx, dz) {
+    const start = p.slice(), distance = Math.hypot(dx, dz), steps = Math.max(1, Math.ceil(distance / 0.05));
+    let last = start;
+    for (let i = 1; i <= steps; i++) {
+      const candidate = [start[0] + dx * i / steps, start[1] + dz * i / steps];
+      if (!clearPosition(candidate)) break;
+      last = candidate;
+    }
+    p[0] = last[0]; p[1] = last[1];
     return p;
   }
 
@@ -57,8 +69,9 @@ export function createCam3d({ THREE, camera, drone }) {
     } else {
       if (st.mode === 'visite' && (st.joy[0] || st.joy[1])) {
         const sp = 1.6 * dt, f = [Math.sin(st.yaw), -Math.cos(st.yaw)], r = [Math.cos(st.yaw), Math.sin(st.yaw)];
-        st.pos[0] += (f[0] * -st.joy[1] + r[0] * st.joy[0]) * sp; st.pos[1] += (f[1] * -st.joy[1] + r[1] * st.joy[0]) * sp;
-        collide(st.pos);
+        const dx = (f[0] * -st.joy[1] + r[0] * st.joy[0]) * sp;
+        const dz = (f[1] * -st.joy[1] + r[1] * st.joy[0]) * sp;
+        moveColliding(st.pos, dx, dz);
       }
       const y = I.fr.floorY + (st.mode === 'fenetre' ? 1.5 : 1.62);
       st.tgtPos.set(st.pos[0], y, st.pos[1]);

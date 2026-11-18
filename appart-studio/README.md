@@ -138,3 +138,16 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
   2. Essayer d'agrandir le contour au-delà des limites IGN ; vérifier qu'il reste contenu dans l'emprise.
   3. Ajouter une fenêtre sur la façade : elle doit se caler sur une baie réelle, puis revenir en vue Maquette et regarder depuis la rue.
 - **Limites connues / non testé** : aucun test iPhone ni rendu depuis la rue n'a été exécuté. Les emprises très étroites ou concaves sont refusées si un rectangle intérieur sûr ne peut pas être calculé. Le choix explicite du nom de rue pour un immeuble d'angle n'est pas encore implémenté : la façade initiale reste celle retenue par la BAN/IGN.
+
+
+## Phase 5.4 — collisions non traversables
+
+- Chaque segment solide de collision transporte désormais l'épaisseur réelle du mur.
+- La caméra est traitée comme une capsule de rayon 32 cm ; la collision teste la distance au segment augmentée de la demi-épaisseur du mur.
+- Chaque déplacement est découpé en sous-pas de 5 cm. Au premier sous-pas invalide, la caméra revient à la dernière position valide et le mouvement s'arrête.
+- Les ouvertures de portes restent des passages : seules les portions de mur pleines alimentent les segments de collision.
+- **Comment tester sur iPhone (3 étapes)** :
+  1. Entrer dans **Visite** dans un appartement avec plusieurs cloisons et portes.
+  2. Pousser le joystick contre chaque mur, puis essayer de longer les angles et les encadrements.
+  3. Essayer de traverser les portes : les murs doivent bloquer, les ouvertures de porte doivent rester franchissables.
+- **Limites connues / non testé** : aucune session iPhone n'a été réalisée. Les collisions sont calculées sur les segments de murs fournis par le plan ; les meubles et objets décoratifs ne sont pas des obstacles. Le rayon caméra de 32 cm reste à valider en situation réelle.

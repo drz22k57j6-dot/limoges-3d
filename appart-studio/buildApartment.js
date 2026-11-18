@@ -167,7 +167,7 @@ export function createApartment({ THREE, scene, renderer }) {
         // mur extérieur : deux couches (intérieur peint / extérieur pierre)
         if (w.facade) { slab(P(s0), P(s1), t * 0.25, y0, y1, mat, off + Math.sign(off) * t * 0.375, true); slab(P(s0), P(s1), t * 0.75, y0, y1, matOut, off - Math.sign(off) * t * 0.125, true); }
         else slab(P(s0), P(s1), t, y0, y1, mat, off, true);
-        if (solid) { const nrm = [-e[1], e[0]]; solids.push([W(P(s0)[0] + nrm[0] * off, P(s0)[1] + nrm[1] * off), W(P(s1)[0] + nrm[0] * off, P(s1)[1] + nrm[1] * off)]); }
+        if (solid) { const nrm = [-e[1], e[0]]; solids.push([W(P(s0)[0] + nrm[0] * off, P(s0)[1] + nrm[1] * off), W(P(s1)[0] + nrm[0] * off, P(s1)[1] + nrm[1] * off), t]); }
       };
       let s = 0;
       for (const o of ops) {
