@@ -114,7 +114,12 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   }
   const rooms=plan.pieces.map(room=>{
     const ws=results.filter(w=>w.roomId===room.id);
-    const sums={}; for(const key of DAY_KEYS) sums[key]=ws.reduce((sum,w)=>sum+(w.byDate[key]?.hours||0),0);
+    const sums={}; for(const key of DAY_KEYS) {
+      const series=ws.map(w=>w.byDate[key]?.minutes||[]);
+      const steps=series[0]?.length||0; let totalMinutes=0;
+      for(let i=0;i<steps;i++) totalMinutes+=Math.max(0,...series.map(a=>a[i]?.frac||0))*15;
+      sums[key]=totalMinutes/60;
+    }
     return {id:room.id,type:room.type,windows:ws.map(w=>w.id),hours:sums};
   });
   onProgress({stage:'termine',done:total,total,trees:trees.length});
