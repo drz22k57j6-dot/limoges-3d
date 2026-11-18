@@ -380,7 +380,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const plan = editor.getPlan(); state.plan3d = plan;
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
-    const H = Math.max(2.2, Math.min(4, Number(plan.settings?.ceilingHeight) || Math.max(2.4, Math.min(3.6, lvl - 0.25)));
+    const H = Math.max(2.2, Math.min(4, Number(plan.settings?.ceilingHeight) || Math.max(2.4, Math.min(3.6, lvl - 0.25))));
     const fr = { F, u, v, floorY: view.floorY(r), H, buildingId: r.feature.properties?.cleabs };
     sunUI.target = [F[0], fr.floorY + H / 2, F[1]];
     view.suspend();
@@ -443,7 +443,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   $('as-x').onclick = () => { if (state.res) { $('as-start').classList.remove('on'); $('as-bar').classList.add('on'); } else quit(); };
   $('as-quit').onclick = quit;
   $('as3-quit').onclick = quit;
-  $('as-change').onclick = () => { stopExpress(); $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
+  $('as-change').onclick = () => { $('as-floor-live').classList.remove('on'); state.floorMax=15; syncFloorControls(); $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
 
   // localisation
   async function go() {
@@ -555,7 +555,6 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
 
   // plan
   $('as-draw').onclick = () => {
-    stopExpress();
     const r = state.res; if (!r) return;
     const { F, A, B, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const pu = P => (P[0] - F[0]) * u[0] + (P[1] - F[1]) * u[1];
