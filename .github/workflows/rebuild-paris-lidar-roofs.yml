@@ -1,0 +1,7 @@
+name: Rebuild Paris LiDAR roofs
+on:
+  workflow_dispatch:
+    inputs:
+      whole_paris:
+        type: boolean
+        default: false
