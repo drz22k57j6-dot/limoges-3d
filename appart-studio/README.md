@@ -99,3 +99,16 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - Phase 4B (heures d'ensoleillement par fenêtre et par pièce, BVH et arbres) à venir.
 - Pas encore de meubles.
 - Hors des rues habillées par le moteur de façades, l'étage reste une estimation IGN (corrigeable ±10 cm).
+
+
+## Phase 5.1 — stabilité du passage en 3D
+
+- Les six plans de coupe sont créés à la construction ; le passage Maquette/Visite/Fenêtres ne modifie que la constante du plan supérieur.
+- Le moteur de façades conserve l'identifiant IGN du bâtiment cible jusque dans les meshes fusionnés. La découpe ne s'applique qu'à cet identifiant ; les matériaux sont clonés pour éviter de modifier les matériaux partagés de la ville.
+- Les murs pleins de l'appartement sont fusionnés par matériau. Les textures procédurales de sol sont limitées à 512 × 512 px.
+- La boucle de rescannage périodique des meshes de ville est supprimée. Détails affiche désormais `renderer.info.programs.length` pour surveiller la stabilité des programmes WebGL.
+- **Comment tester sur iPhone (3 étapes)** :
+  1. Ouvrir une adresse de test et choisir **Dessiner mon plan**, puis **Voir en 3D**.
+  2. Passer dix fois de suite Maquette → Visite → Fenêtres → Maquette.
+  3. Ouvrir **Détails** avant et après : comparer « Programmes WebGL » et vérifier l'absence de fermeture Safari.
+- **Limites connues / non testé** : les dix allers-retours et la stabilité mémoire n'ont pas été exécutés sur iPhone ; aucun nombre de programmes ni capture n'est revendiqué. Le ciblage de la découpe dépend du maintien de l'identifiant IGN par le moteur de façades. La stabilité devra être vérifiée sur une adresse dont les façades sont effectivement chargées.

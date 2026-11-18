@@ -304,7 +304,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
     const H = Math.max(2.4, Math.min(3.6, lvl - 0.25));
-    const fr = { F, u, v, floorY: view.floorY(r), H };
+    const fr = { F, u, v, floorY: view.floorY(r), H, buildingId: r.feature.properties?.cleabs };
     sunUI.target = [F[0], fr.floorY + H / 2, F[1]];
     view.suspend();
     apt.build(plan, fr, { dollhouse: true });
@@ -318,7 +318,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   $('as3-wp').onclick = () => { cam3.nextWindow(-1); winLabel(); };
   $('as3-wn').onclick = () => { cam3.nextWindow(1); winLabel(); };
   $('as3-back').onclick = () => { close3d(); $('as-draw').onclick(); };
-  setInterval(() => { if ($('as-3d').classList.contains('on')) apt.tick(0.5); }, 500);
+  // La découpe est appliquée une fois à l'entrée ; aucune boucle de rescannage de la ville en 3D.
 
   // le bouton n'apparaît qu'une fois le jeu lancé (écran de chargement fermé)
   const showLaunch = setInterval(() => { if (!$('loader')) { $('as-launch').style.display = ''; clearInterval(showLaunch); } }, 500);
@@ -420,6 +420,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       'Façade : ' + Math.round(r.local.bearing) + '° · adresse → façade ' + r.facade.distance.toFixed(1) + ' m · rue ' + (r.gap ?? 0).toFixed(1) + ' m',
       'Soleil : azimut ' + sp.az.toFixed(1) + '° · élévation ' + sp.el.toFixed(1) + '° · incidence façade ' + incidence.toFixed(1) + '° · soleil sur la façade : ' + (facadeSun ? 'oui' : 'non'),
       scoreText,
+      'Programmes WebGL : ' + (renderer.info.programs?.length ?? 'indisponible'),
       'FPS : ' + Math.round(window.__fps || 0),
     ].join('\n');
   }
