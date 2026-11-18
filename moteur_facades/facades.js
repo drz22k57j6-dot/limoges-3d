@@ -609,6 +609,7 @@ export function buildBuilding(T, M, o) {
   for (let i = 0; i < 3; i++) add(G['verre' + i], M.verres[i], false);
   add(G.vit, M.vitre, false);
   const byMat = new Map(); for (const [g, m] of extra) { if (!byMat.has(m)) byMat.set(m, []); byMat.get(m).push(g); } for (const [m, a] of byMat) add(a, m);
+  grp.userData.etages = { yF: yF.slice(), F: F.slice(), ent };   // hauteurs réelles des niveaux (Appart Studio : aimantage de l'étage)
   return grp;
 }
 
