@@ -185,10 +185,11 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       const wx=edgeA[0]+edgeDx/edgeLen*w.position, wz=edgeA[1]+edgeDz/edgeLen*w.position;
       return { id: facadeMeta.k+':'+facadeIndex+':'+i, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, allege:w.allege, height:w.height, guardrail:!!w.guardrail };
     });
+    const windowOrder = new Map(plan.ouvertures.filter(o => o.type === 'fenetre').map((o,i) => [o,i]));
     plan.ouvertures = plan.ouvertures.map(o => {
-      if (o.type !== 'fenetre' || !o.centre || !facadeWindows.length) return o;
+      if (o.type !== 'fenetre' || !o.centre) return o;
       const bay=facadeWindows.reduce((best,x)=>!best||Math.abs(x.u-o.centre[0])<Math.abs(best.u-o.centre[0])?x:best,null);
-      return { ...o, guardrail: !!bay?.guardrail };
+      return { ...o, _windowIndex: windowOrder.get(o), guardrail: !!bay?.guardrail };
     });
     let facadeProxy = null;
     if (facadeMeta && edgeA && edgeB) {

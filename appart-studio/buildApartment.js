@@ -207,10 +207,10 @@ export function createApartment({ THREE, scene, renderer }) {
       const y0 = o.allege, y1 = Math.min(H - 0.18, o.allege + o.hauteur), f = 0.06;
       slab(P(o.s0), P(o.s0 + f), 0.08, y0, y1, M.frame, so); slab(P(o.s1 - f), P(o.s1), 0.08, y0, y1, M.frame, so);
       slab(P(o.s0), P(o.s1), 0.08, y0, y0 + f, M.frame, so); slab(P(o.s0), P(o.s1), 0.08, y1 - f, y1, M.frame, so);
-            const mid = (o.s0 + o.s1) / 2, totalW = o.s1 - o.s0;
+            const mid = (o.s0 + o.s1) / 2, totalW = o.s1 - o.s0, windowIndex = Number.isInteger(o._windowIndex) ? o._windowIndex : windowLeaves.length;
       const worldA = W(P(0)[0], P(0)[1]), worldB = W(P(1)[0], P(1)[1]);
       const baseAngle = Math.atan2(-(worldB[1] - worldA[1]), worldB[0] - worldA[0]);
-      const inwardSign = Math.sign(off || 1), windowIndex = windowLeaves.length;
+      const inwardSign = Math.sign(off || 1);
       const leafPivots = [];
       for (let side = 0; side < 2; side++) {
         const leafW = totalW / 2, hingeS = side === 0 ? o.s0 : o.s1;
@@ -225,8 +225,8 @@ export function createApartment({ THREE, scene, renderer }) {
         const vertical = new THREE.Mesh(new THREE.BoxGeometry(.025, Math.max(.03, y1 - y0 - .04), .05), M.frame); vertical.position.set(cx, (y1 - y0) / 2, 0); leaf.add(vertical);
         pivot.add(leaf); group.add(pivot); leafPivots.push(pivot);
       }
-      windowLeaves.push({ left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]], inwardSign });
-      windowStates.push(false);
+      windowLeaves[windowIndex] = { left: leafPivots[0], right: leafPivots[1], width: totalW, wall: w.id, centre: [P(mid)[0], P(mid)[1]], inwardSign };
+      windowStates[windowIndex] = false;
       // Les deux vantaux s'ouvrent vers l'intérieur ; l'animation est pilotée par cam3d.
       windowMeshes.forEach(m => { if (m.userData.windowIndex === windowIndex) m.userData.windowId = windowIndex; });
       // appui intérieur
@@ -255,7 +255,7 @@ export function createApartment({ THREE, scene, renderer }) {
       const dir = [e[0] * Math.cos(ang) + nrm[0] * side * Math.sin(ang), e[1] * Math.cos(ang) + nrm[1] * side * Math.sin(ang)];
       const tip = [hinge[0] + dir[0] * wdt, hinge[1] + dir[1] * wdt];
       const leaf = slab(hinge, tip, 0.04, 0.01, y1 - 0.01, M.door, off + side * t / 2);
-      if (leaf) { const kn = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M.knob); const kp = W(hinge[0] + dir[0] * (wdt - 0.07), hinge[1] + dir[1] * (wdt - 0.07)); kn.position.set(kp[0], floorY + 1.0, kp[1]); group.add(kn); }
+      if (leaf) { addObstacle(hinge, tip, 0.04); const kn = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M.knob); const kp = W(hinge[0] + dir[0] * (wdt - 0.07), hinge[1] + dir[1] * (wdt - 0.07)); kn.position.set(kp[0], floorY + 1.0, kp[1]); group.add(kn); }
     }
 
     // sols par pièce + plafond
