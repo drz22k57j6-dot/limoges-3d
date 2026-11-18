@@ -40,7 +40,7 @@ function makeBvh(THREE, scene, center, radius = 250) {
   const entries = [];
   scene.updateMatrixWorld(true);
   scene.traverse(o => {
-    if (!o.isMesh || !o.geometry || o.userData?.appartStudioOwn) return;
+    if (!o.isMesh || !o.geometry || o.userData?.appartStudioOwn || o.parent?.name === 'appart-studio-solar-trees') return;
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     if (!o.geometry.boundingBox) return;
     const box = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
@@ -107,8 +107,9 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   onProgress({ stage:'arbres', done:0, total:windows.length });
   let trees=[];
   try { trees=makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground); } catch(e) { console.warn('[Appart Studio] arbres indisponibles',e); }
-  const treeGroup=makeTreeVisuals(THREE,trees); scene.add(treeGroup);
+  const treeGroup=makeTreeVisuals(THREE,trees);
   const bvh=makeBvh(THREE,scene,[fr.F[0],fr.floorY+fr.H/2,fr.F[1]],250);
+  scene.add(treeGroup);
   const isBlocked=makeBlocker(THREE,bvh);
   const treeTransmission=(origin,dir,date)=>{
     let transmission=1;
