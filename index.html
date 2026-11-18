@@ -213,6 +213,7 @@ const SKY = createSky(THREE, renderer); const sky = SKY.dome; scene.add(sky);
 renderer.toneMapping = THREE.AgXToneMapping;
 const sun = new THREE.DirectionalLight(0xffffff, 2.2);
 sun.castShadow = true; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
+const DEFAULT_SUN_SHADOW_BIAS = sun.shadow.bias, DEFAULT_SUN_SHADOW_NORMAL_BIAS = sun.shadow.normalBias;
 const sc = sun.shadow.camera; sc.left = -150; sc.right = 150; sc.top = 150; sc.bottom = -150; sc.near = 1; sc.far = 900;   // ombres nettes sur le périmètre de 150 m
 scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x6b6250, 1.15); scene.add(hemi);
@@ -231,6 +232,7 @@ let sunOverride = null;
 function setSunOverride(dir, target) {
   if (!dir || !target) {
     sunOverride = null;
+    sun.shadow.bias = DEFAULT_SUN_SHADOW_BIAS; sun.shadow.normalBias = DEFAULT_SUN_SHADOW_NORMAL_BIAS;
     applyTime();
     sun.shadow.camera.left = sun.shadow.camera.bottom = -150;
     sun.shadow.camera.right = sun.shadow.camera.top = 150;
@@ -244,6 +246,8 @@ function setSunOverride(dir, target) {
     return true;
   }
   sunOverride = { dir: new THREE.Vector3(dir[0], dir[1], dir[2]).normalize(), target: new THREE.Vector3(target[0], target[1], target[2]) };
+  // Bias dédié à la simulation intérieure ; restauré dès que l'override solaire est quitté.
+  sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
   const daylight = THREE.MathUtils.clamp(sunOverride.dir.y * 1.65, 0, 1);
   sun.color.setRGB(1, 0.76 + daylight * 0.22, 0.52 + daylight * 0.42);
   sun.intensity = 3.37 * daylight;

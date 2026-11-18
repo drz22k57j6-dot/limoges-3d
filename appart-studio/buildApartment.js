@@ -155,7 +155,7 @@ export function createApartment({ THREE, scene, renderer }) {
 
     for (const w of walls) {
       const d = [w.b[0] - w.a[0], w.b[1] - w.a[1]], L = Math.hypot(...d), e = [d[0] / L, d[1] / L];
-      const off = inwardOffset(w), t = w.epaisseur;
+      const off = inwardOffset(w), t = Math.max(0.15, Number(w.epaisseur) || 0.15);
       const P = s => [w.a[0] + e[0] * s, w.a[1] + e[1] * s];
       const ops = plan.ouvertures.filter(o => o.murId === w.id && o.centre).map(o => {
         const s = (o.centre[0] - w.a[0]) * e[0] + (o.centre[1] - w.a[1]) * e[1];
@@ -224,10 +224,12 @@ export function createApartment({ THREE, scene, renderer }) {
     for (const r of plan.pieces) {
       const pts = r.polygone.map(p => W(p[0], p[1]));
       const shape = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], -p[1])));
-      const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-      const fl = add(g, M.floor[r.type] || M.floor._, false); fl.position.y = floorY + 0.005;
-      const cg = new THREE.ShapeGeometry(shape); cg.rotateX(-Math.PI / 2);
-      const ce = add(cg, M.ceiling, false); ce.position.y = floorY + H; ce.userData.ceiling = true;
+      // Dalles pleines de 15 cm : la face supérieure du sol est à floorY,
+      // la face supérieure du plafond à floorY + H. Elles participent aux shadow maps.
+      const g = new THREE.ExtrudeGeometry(shape, { depth: 0.15, bevelEnabled: false, steps: 1, curveSegments: 1 }); g.rotateX(-Math.PI / 2);
+      const fl = add(g, M.floor[r.type] || M.floor._, true); fl.position.y = floorY - 0.15;
+      const cg = new THREE.ExtrudeGeometry(shape, { depth: 0.15, bevelEnabled: false, steps: 1, curveSegments: 1 }); cg.rotateX(-Math.PI / 2);
+      const ce = add(cg, M.ceiling, true); ce.position.y = floorY + H - 0.15; ce.userData.ceiling = true;
       // rosace au plafond (séjour / chambre)
       if (r.type === 'sejour' || r.type === 'chambre') {
         const lp = r.polygone.reduce((s, p) => [s[0] + p[0] / r.polygone.length, s[1] + p[1] / r.polygone.length], [0, 0]), c = W(lp[0], lp[1]);
