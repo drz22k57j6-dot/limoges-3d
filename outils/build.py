@@ -434,6 +434,7 @@ for f in B:
 print('buildings', nb, 'gables', gables)
 print('LiDAR roofs', ROOF_STATS)
 json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
+ROOF_STATS["triangle_budget_per_building"] = 400
 json.dump(ROOF_STATS, open(OUTD+'/toits_lidar_stats.json', 'w'), ensure_ascii=False)
 
 BMATS = (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F))
@@ -611,4 +612,12 @@ print('water polys', len(wp))
 
 G.g["scenes"][0]["extras"] = {"origine": "31 allée Le Gréco, 87100 Limoges", "lambert93": [X0, Y0, H0], "rayon_m": R}
 G.write(OUTD+'/ville_objets.glb')
-import os; print([(f, os.path.getsize(OUTD+'/'+f)/1e6) for f in os.listdir(OUTD)])
+import os
+OUT_BYTES = {name: os.path.getsize(os.path.join(OUTD,name)) for name in os.listdir(OUTD) if os.path.isfile(os.path.join(OUTD,name))}
+ROOF_STATS["output_bytes"] = int(sum(OUT_BYTES.values()))
+if TILES and os.path.isdir(TILES):
+    _tile_files = [os.path.join(root,name) for root,_,names in os.walk(TILES) for name in names if name.endswith('.glb')]
+    ROOF_STATS["detailed_tile_bytes"] = int(sum(os.path.getsize(p) for p in _tile_files if '/d_' in p.replace('\\\\','/')))
+    ROOF_STATS["lod_tile_bytes"] = int(sum(os.path.getsize(p) for p in _tile_files if '/l_' in p.replace('\\\\','/')))
+json.dump(ROOF_STATS, open(OUTD+'/toits_lidar_stats.json', 'w'), ensure_ascii=False)
+print('output MB', {k:round(v/1e6,2) for k,v in OUT_BYTES.items()})
