@@ -5,7 +5,7 @@ import { createPlanEditor, ROOM_TYPES } from './planEditor.js';
 import { createApartment } from './buildApartment.js';
 import { createCam3d } from './cam3d.js';
 import { sunPosition, sunDirection } from './sun.js';
-import { calculateSolarReport } from './solarAnalysis.js';
+import { calculateSolarReport, verifySolarAt } from './solarAnalysis.js';
 import { scoreSoleil } from './solarScore.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
@@ -66,6 +66,11 @@ body.as-mode #as-launch{display:none!important}
 #as-bar .links button{border:0;background:none;color:#8b97a8;font-size:13px;padding:4px 2px}
 #as-dbg{display:none;margin-top:10px;font:11px/1.45 ui-monospace,Menlo,monospace;color:#9fb0c4;white-space:pre-wrap}
 #as-dbg.on{display:block}
+#as3-details{display:none;position:absolute;z-index:4;left:10px;right:10px;top:calc(64px + env(safe-area-inset-top));max-height:44vh;overflow:auto;padding:12px;border:1px solid #ffffff28;border-radius:16px;background:#10161ff2;box-shadow:0 12px 36px #000b;pointer-events:auto}
+#as3-details.on{display:block}
+#as3-dbg-text{font:11px/1.5 ui-monospace,Menlo,monospace;color:#c8d5e5;white-space:pre-wrap}
+#as3-verify{width:100%;height:40px;margin-top:8px;border:1px solid #ffffff25;border-radius:10px;background:#24536a;font-weight:800}
+#as3-verify-results{margin-top:8px;font-size:12px;line-height:1.5;white-space:pre-wrap;color:#f0e4c7}
 @media(min-width:760px){#as-bar{left:50%;right:auto;width:460px;transform:translateX(-50%)}}
 
 /* vue 3D */
@@ -156,7 +161,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     <div id="as-tests"><span class="as-lbl">Adresses de test</span><div></div></div>
   </div></section>
   <section id="as-3d" class="as-ui">
-    <div id="as3-top"><button id="as3-back" aria-label="Retour au plan">←</button><div id="as3-title"><b>Mon appartement</b><span></span></div><button id="as3-quit" aria-label="Quitter">✕</button></div>
+    <div id="as3-top"><button id="as3-back" aria-label="Retour au plan">←</button><div id="as3-title"><b>Mon appartement</b><span></span></div><button id="as3-details-btn" aria-label="Détails">ⓘ</button><button id="as3-quit" aria-label="Quitter">✕</button></div><div id="as3-details"><div id="as3-dbg-text"></div><button id="as3-verify">Vérifier à l’heure affichée</button><div id="as3-verify-results"></div></div>
     <div id="as3-bottom"><div id="as3-help"></div>
       <div id="as3-win"><button id="as3-wp">‹</button><span id="as3-wl"></span><button id="as3-wn">›</button></div>
       <div id="as3-modes"><button data-m="maquette">Maquette</button><button data-m="visite">Visite</button><button data-m="fenetre">Fenêtres</button></div></div>
@@ -313,7 +318,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     cam3.start(apt.info, plan, 'maquette'); setMode3d('maquette');
     mountSunControls(r, sunUI.target);
   }
-  function close3d() { stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
+  function close3d() { stopSunDay(); disposeSolarTrees(); $('as3-details').classList.remove('on'); $('as3-verify-results').textContent = ''; drone.setSun(null); cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
   document.querySelectorAll('#as3-modes button').forEach(b => b.onclick = () => setMode3d(b.dataset.m));
   $('as3-wp').onclick = () => { cam3.nextWindow(-1); winLabel(); };
   $('as3-wn').onclick = () => { cam3.nextWindow(1); winLabel(); };
@@ -423,6 +428,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       'Programmes WebGL : ' + (renderer.info.programs?.length ?? 'indisponible'),
       'FPS : ' + Math.round(window.__fps || 0),
     ].join('\n');
+    if ($('as3-dbg-text')) $('as3-dbg-text').textContent = $('as-dbg').textContent;
   }
   // Mode express : fenêtres réellement générées par le moteur de façades, sans construire l'appartement.
   const expressRaycaster = new THREE.Raycaster(), expressPointer = new THREE.Vector2();
@@ -514,6 +520,22 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   renderer.domElement.addEventListener('pointerdown',expressPick,true);
   setInterval(() => { if ($('as-dbg').classList.contains('on')) renderDbg(); }, 1000);
   $('as-dbgb').onclick = () => $('as-dbg').classList.toggle('on');
+  $('as3-details-btn').onclick = () => { $('as3-details').classList.toggle('on'); renderDbg(); };
+  $('as3-verify').onclick = async () => {
+    const out = $('as3-verify-results'), button = $('as3-verify');
+    if (!state.plan3d || !apt.info || !$('as-3d').classList.contains('on')) { out.textContent = 'Entrez d’abord dans la vue 3D.'; return; }
+    const when = sunUI.bounds ? new Date(sunUI.bounds.first + (sunUI.bounds.last - sunUI.bounds.first) * sunUI.fraction) : new Date();
+    const time = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' }).format(when);
+    button.disabled = true; button.textContent = 'Vérification…'; out.textContent = 'Calcul des rayons directs à ' + time + ' (heure de Paris)…';
+    disposeSolarTrees();
+    try {
+      const result = await verifySolarAt({ THREE, scene, drone, ground, res: state.res, plan: state.plan3d, fr: apt.info.fr, date: when });
+      state.solarTreeGroup = result.treeGroup;
+      out.textContent = 'À ' + time + ' (heure de Paris) · ' + result.trees + ' arbres pris en compte\\n' +
+        result.windows.map((w, i) => 'Fenêtre ' + (i + 1) + ' : soleil ' + (w.sun ? 'oui' : 'non') + ' · vitre éclairée ' + Math.round(w.fraction * 100) + ' %').join('\\n');
+    } catch (e) { out.textContent = 'Vérification impossible : ' + e.message; }
+    finally { button.disabled = false; button.textContent = 'Re-vérifier à l’heure affichée'; }
+  };
   const adjust = d => { const r = state.res; if (!r) return; r.adjust = Math.round((r.adjust + d) * 100) / 100; view.refresh(); renderDbg(); };
   $('as-m').onclick = () => adjust(-0.1);
   $('as-p').onclick = () => adjust(0.1);

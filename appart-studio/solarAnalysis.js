@@ -1,6 +1,6 @@
 // Appart Studio — analyse solaire par fenêtre et par pièce.
 // BVH AABB local au voisinage de l'appartement ; aucun appel réseau hors fetchTrees().
-import { daySamples, windowSunHours, fetchTrees, leafTransmission, rayHitsCrown } from './sun.js';
+import { daySamples, windowSunHours, fetchTrees, leafTransmission, rayHitsCrown, sunPosition, sunDirection } from './sun.js';
 
 const DAY_KEYS = ['winter', 'spring', 'summer', 'today'];
 
@@ -144,4 +144,31 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   });
   onProgress({stage:'termine',done:total,total,trees:trees.length});
   return {windows:results,rooms,trees:trees.length,treeGroup,dates:Object.fromEntries(Object.entries(dates).map(([k,d])=>[k,d.toISOString().slice(0,10)]))};
+}
+
+
+// Vérification instantanée : même géométrie de fenêtre, BVH, obstacles et transmission des arbres
+// que le rapport 4B ; seul l'échantillon temporel est remplacé par l'heure affichée.
+export async function verifySolarAt({ THREE, scene, drone, ground, res, plan, fr, date }) {
+  const windows = makeWindows(plan, fr);
+  const position = sunPosition(date, res.lat, res.lon);
+  if (position.el <= 0) return { windows: windows.map(w => ({ id: w.id, index: w.index, fraction: 0, sun: false })), trees: 0, treeGroup: null };
+  let trees = [];
+  try { trees = makeTreeModel(await fetchTrees(res.lon, res.lat, 150), drone, ground); }
+  catch (e) { console.warn('[Appart Studio] arbres indisponibles pour Vérifier', e); }
+  const treeGroup = makeTreeVisuals(THREE, trees);
+  const bvh = makeBvh(THREE, scene, [fr.F[0], fr.floorY + fr.H / 2, fr.F[1]], 250);
+  scene.add(treeGroup);
+  const isBlocked = makeBlocker(THREE, bvh);
+  const treeTransmission = (origin, dir, when) => {
+    let transmission = 1;
+    for (const t of trees) if (rayHitsCrown(origin, dir, t.c, t.r)) transmission *= leafTransmission(t, when);
+    return transmission;
+  };
+  const sample = { date, ...position, dir: sunDirection(position.az, position.el) };
+  const results = windows.map(win => {
+    const fraction = windowSunHours(win, [sample], isBlocked, treeTransmission, 15).minutes[0]?.frac || 0;
+    return { id: win.id, index: win.index, fraction, sun: fraction > 0.2 };
+  });
+  return { windows: results, trees: trees.length, treeGroup };
 }

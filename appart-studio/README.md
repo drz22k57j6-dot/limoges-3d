@@ -151,3 +151,16 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
   2. Pousser le joystick contre chaque mur, puis essayer de longer les angles et les encadrements.
   3. Essayer de traverser les portes : les murs doivent bloquer, les ouvertures de porte doivent rester franchissables.
 - **Limites connues / non testé** : aucune session iPhone n'a été réalisée. Les collisions sont calculées sur les segments de murs fournis par le plan ; les meubles et objets décoratifs ne sont pas des obstacles. Le rayon caméra de 32 cm reste à valider en situation réelle.
+
+
+## Phase 5.5 — Vérifier le soleil à l'heure affichée
+
+- Un panneau **Détails** est accessible dans la vue 3D.
+- Son bouton **Vérifier à l'heure affichée** reprend les cinq points de chaque vitre, le BVH des obstacles, les arbres et la transmission foliaire du calcul 4B.
+- L'heure utilisée est exactement celle du panneau solaire (date + fraction entre lever et coucher, fuseau Europe/Paris). Une fenêtre est déclarée au soleil si plus de 20 % de ses cinq points reçoivent un rayon direct, comme le seuil d'affichage des périodes 4B.
+- Le résultat indique pour chaque fenêtre oui/non et le pourcentage de vitre éclairée.
+- **Comment tester sur iPhone (3 étapes)** :
+  1. Entrer dans la vue 3D, choisir une date et une heure dans le panneau solaire.
+  2. Ouvrir **Détails**, appuyer sur **Vérifier à l'heure affichée**.
+  3. Comparer chaque « soleil : oui/non » aux taches visibles sur le sol à la même heure ; déplacer l'heure et relancer Vérifier.
+- **Limites connues / non testé** : aucune comparaison iPhone n'a été exécutée. Le calcul est une estimation à cinq points par vitre ; les taches peuvent être plus fines que l'échantillonnage. Les données d'arbres peuvent manquer si le réseau Open Data est indisponible. La cohérence visuelle finale doit être validée sur Safari iOS.
