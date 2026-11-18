@@ -56,7 +56,7 @@ export function createFacadeView({ THREE, scene, camera, drone, ground }) {
     for (const m of [band, edge]) { m.renderOrder = 10; g.add(m); }
     g.position.set(cx, y0 + h / 2, cz);
     g.rotation.y = Math.atan2(n[0], n[1]);           // le plan regarde la rue
-    scene.add(g); st.group = g; st.band = band;
+    scene.add(g); st.group = g; st.band = band; st.baseBandHeight = h;
 
     // caméra : dans la rue, à hauteur de l'étage, légèrement de biais
     const gap = freeDistance(F, n, y0 + 1.5);
