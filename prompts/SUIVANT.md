@@ -31,3 +31,11 @@ De la recherche d'adresse à « je suis dans l'appartement face à ma fenêtre �
 - Étape B — à faire : valider sur iPhone que le slider d'étage est visible sur la vue photo et que la bande suit la façade choisie sans rechargement.
 - Étape C — à faire : génération standard automatique puis transition directe en 1re personne face à la fenêtre principale, soleil réel, bouton de modification.
 - Étape D — non commencée, hors périmètre.
+
+ 
+## Statut (18/11/2026)
+
+- Étape A — PR en cours : entrée photoréaliste au-dessus de la ville, jeton Cesium ion lu dans Réglages, repli IGN sans clé/si erreur, attributions dynamiques, candidats IGN A/B et confirmation. Restent le toucher direct du bâtiment, le choix interactif de façade rue/cour/angle et les essais réels.
+- Étape B — à faire : valider sur iPhone que le slider d'étage est visible sur la vue photo et que la bande suit la façade choisie sans rechargement.
+- Étape C — à faire : génération standard automatique puis transition directe en 1re personne face à la fenêtre principale, soleil réel, bouton de modification.
+- Étape D — non commencée, hors périmètre.
