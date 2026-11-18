@@ -8,6 +8,7 @@ import { sunPosition, sunDirection } from './sun.js';
 import { calculateSolarReport, verifySolarAt } from './solarAnalysis.js';
 import { scoreSoleil } from './solarScore.js';
 import { findSafeRectangle, footprintArea, floorFitsBuilding } from './footprint.js';
+import { automaticWindowCount, automaticWindowPositions, requireMinimumDepth } from './apartmentDefaults.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -33,6 +34,7 @@ body.as-mode #as-launch{display:none!important}
 #as-candidates button,#as-confirm{border:1px solid #ffffff2a;background:#263343;border-radius:10px;padding:9px 12px;font-weight:700}
 #as-confirm-step{display:none;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:10px;border-radius:12px;background:#1b2330}
 #as-confirm-step.on{display:flex}#as-confirm-step span{font-size:13px;font-weight:700}
+#as-enter{display:none;font-weight:800;background:#1e654a;border-color:#43c58c}#as-enter.on{display:inline-flex}
 #as-start.on,#as-loading.on{display:flex}
 #as-card{width:min(440px,100%);max-height:calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#121822f2;border:1px solid #ffffff22;border-radius:24px;padding:24px 20px 20px;box-shadow:0 20px 60px #000a;position:relative}
 #as-card h1{margin:0;font-size:26px;letter-spacing:-.02em}#as-card h1 em{font-style:normal;color:#ff4d63}
@@ -205,19 +207,19 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       </div>
       <div id="as-window-warning"></div><div id="as-win-custom"></div><div id="as-window-results"></div>
     </div>
-    <div class="row" id="as-draw-actions"><button id="as-window-calc">Calculer</button><button id="as-draw">Dessiner mon plan</button></div>
+    <div class="row" id="as-draw-actions"><button id="as-window-calc">Calculer</button><button id="as-enter" class="primary">Valider l’étage et entrer</button><button id="as-draw">Modifier le plan</button></div>
     <div class="links"><button id="as-change">← Changer d'adresse</button><button id="as-dbgb">Détails</button><button id="as-quit">Quitter</button></div>
     <div id="as-dbg"></div>
   </section>`);
   const $ = id => document.getElementById(id);
-  const defaultWindowSettings = haussmann => ({
-    count:1,width:1.2,height:haussmann?2.4:2.1,sill:haussmann?0.5:0.9,
+  const defaultWindowSettings = (haussmann,facadeSpan=6) => ({
+    count:automaticWindowCount(facadeSpan),facadeSpan,width:1.2,height:haussmann?2.4:2.1,sill:haussmann?0.5:0.9,
     facadeThickness:haussmann?0.5:0.35,ceilingHeight:haussmann?3.0:2.8,customize:false,windows:[]
   });
   state.windowSettings=defaultWindowSettings(false);
   function ensureWindowSettings(){
     const s=state.windowSettings;s.count=Math.max(1,Math.min(8,Number(s.count)||1));s.windows||=[];
-    while(s.windows.length<s.count){const i=s.windows.length;s.windows.push({width:s.width,height:s.height,sill:s.sill,positionMode:'distance',distance:6*(i+1)/(s.count+1)});}
+    while(s.windows.length<s.count){const i=s.windows.length;s.windows.push({width:s.width,height:s.height,sill:s.sill,positionMode:'distance',distance:(Number(s.facadeSpan)||6)*(i+1)/(s.count+1)});}
     s.windows.length=s.count;return s;
   }
   function settingsForPlan(){const s=ensureWindowSettings();return {count:s.count,width:s.width,height:s.height,sill:s.sill,facadeThickness:s.facadeThickness,ceilingHeight:s.ceilingHeight,customize:!!s.customize,windows:s.customize?s.windows.map(w=>({...w})):[]};}
@@ -388,24 +390,27 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const today = parisDay(new Date()); setSunDate(today);
     panel.querySelectorAll('[data-sundate]').forEach(b => b.classList.toggle('on', b.dataset.sundate === 'today'));
   }
-  function open3d() {
+  function open3d(planOverride=null, initialMode='maquette') {
     const r = state.res; if (!r) return;
     state.solarReport = null;
-    const plan = editor.getPlan(), bounds=computeApartmentBounds(r);
+    const plan = planOverride || editor.getPlan(), bounds=computeApartmentBounds(r);
     if(!bounds){$('as-bw').textContent='Aucune emprise sûre ne peut contenir cet appartement.';return;}
     const Hcheck=Math.max(2.2,Math.min(4,Number(plan.settings?.ceilingHeight)||2.8));
     if(!floorFitsBuilding(r.floorData,Hcheck)){$('as-bw').textContent='Étage refusé : plancher + hauteur sous plafond dépassent le toit du bâtiment IGN.';return;}
     plan.footprint=bounds.footprint; state.plan3d = plan;
+    window.__setWorld?.('3d');
     const { F, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
     const H = Math.max(2.2, Math.min(4, Number(plan.settings?.ceilingHeight) || Math.max(2.4, Math.min(3.6, lvl - 0.25))));
     const fr = { F, u, v, floorY: view.floorY(r), H, buildingId: r.feature.properties?.cleabs };
     sunUI.target = [F[0], fr.floorY + H / 2, F[1]];
     view.suspend();
-    apt.build(plan, fr, { dollhouse: true });
+    apt.build(plan, fr, { dollhouse: initialMode==='maquette' });
     $('as3-title').querySelector('span').textContent = (r.housenumber ? r.housenumber + ' ' : '') + (r.street || r.address) + ' · ' + floorName(r.floorData.floor) + ' · ' + plan.pieces.reduce((s, p) => s + p.surface, 0).toFixed(1).replace('.', ',') + ' m²';
     $('as-3d').classList.add('on'); placeJoy();
-    cam3.start(apt.info, plan, 'maquette'); setMode3d('maquette');
+    cam3.start(apt.info, plan, initialMode);
+    if(initialMode==='fenetre'){const mainWindow=Math.floor(plan.ouvertures.filter(o=>o.type==='fenetre').length/2);cam3.setMode('fenetre',mainWindow);}
+    setMode3d(initialMode);
     mountSunControls(r, sunUI.target);
   }
   function close3d() { stopSunDay(); disposeSolarTrees(); $('as3-details').classList.remove('on'); $('as3-verify-results').textContent = ''; drone.setSun(null); cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
@@ -503,7 +508,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     if(candidates.length>1){$c.classList.add('on');$c.innerHTML='<b>Plusieurs bâtiments proches — choisis le bon</b><div class="choices">'+candidates.map((c,i)=>'<button data-candidate="'+esc(c.id)+'">Bâtiment '+String.fromCharCode(65+i)+' · '+Math.round(c.distance)+' m</button>').join('')+'</div>';$c.querySelectorAll('[data-candidate]').forEach(b=>b.onclick=()=>{state.selectedBuildingId=b.dataset.candidate;go();});}
     else{$c.classList.remove('on');$c.innerHTML='';}
     $('as-confirm-step').classList.toggle('on',!state.buildingConfirmed);
-    $('as-floor-live').classList.toggle('on',state.buildingConfirmed);syncFloorControls();renderDbg();
+    $('as-floor-live').classList.toggle('on',state.buildingConfirmed);$('as-enter').classList.toggle('on',state.buildingConfirmed);syncFloorControls();renderDbg();
   }
   function renderDbg() {
     const r = state.res; if (!r) return;
@@ -536,23 +541,29 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const {F,A,B,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]],pu=P=>(P[0]-F[0])*u[0]+(P[1]-F[1])*u[1];
     const north=[-u[1],-v[1]],span=[pu(A),pu(B)].sort((a,b)=>a-b),source=r.local.footprints||[[r.local.ring]];
     const footprint=source.map(poly=>poly.map(ring=>ring.map(P=>{const dx=P[0]-F[0],dz=P[1]-F[1];return [dx*u[0]+dz*u[1],dx*v[0]+dz*v[1]];})));
-    const safe=findSafeRectangle(footprint,span,{frontMargin:0.15,sideMargin:0.15,maxDepth:20,minWidth:1.5,minDepth:1.5,step:0.05});
+    const safe=findSafeRectangle(footprint,span,{frontMargin:0.15,sideMargin:0.15,maxDepth:20,minWidth:1.5,minDepth:8,step:0.05});
     if(!safe)return null;return {F,u,v,north,span,safeBounds:{u0:safe.u0,u1:safe.u1,v1:safe.v1},footprint,footprintArea:footprintArea(footprint)};
   }
   function makeSettingsPlan(r){
     const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise IGN trop étroite pour calculer un appartement.');
-    const s=settingsForPlan(),u0=bounds.safeBounds.u0,u1=bounds.safeBounds.u1,depth=bounds.safeBounds.v1,span=u1-u0;
+    const s=settingsForPlan(),u0=bounds.safeBounds.u0,u1=bounds.safeBounds.u1,depth=requireMinimumDepth(bounds.safeBounds.v1,8),span=u1-u0,autoPositions=automaticWindowPositions(span,s.count);
     const murs=[{id:'F',a:[u0,0],b:[u1,0],epaisseur:s.facadeThickness,facade:true},
       {id:'E',a:[u1,0],b:[u1,depth],epaisseur:0.25,ext:true},{id:'S',a:[u1,depth],b:[u0,depth],epaisseur:0.25,ext:true},{id:'W',a:[u0,depth],b:[u0,0],epaisseur:0.25,ext:true}];
     const ouvertures=[];
     for(let i=0;i<s.count;i++){
       const c=s.customize?s.windows[i]:null,width=Number(c?.width??s.width)||1.2,mode=c?.positionMode||'distance',dist=Number(c?.distance);
-      const along=mode==='left'?width/2+0.2:mode==='center'?span/2:mode==='right'?span-width/2-0.2:Number.isFinite(dist)&&dist>0?dist:span*(i+1)/(s.count+1);
+      const along=mode==='left'?width/2+0.2:mode==='center'?span/2:mode==='right'?span-width/2-0.2:Number.isFinite(dist)&&dist>0&&c?dist:autoPositions[i];
       const center=Math.max(width/2+0.2,Math.min(span-width/2-0.2,along));
       ouvertures.push({id:'w'+(i+1),murId:'F',type:'fenetre',centre:[u0+center,0],largeur:width,hauteur:Number(c?.height??s.height)||2.1,allege:Number(c?.sill??s.sill)});
     }
     return {murs,ouvertures,pieces:[{id:'r0',type:'sejour',polygone:[[u0,0],[u1,0],[u1,depth],[u0,depth]],surface:span*depth}],settings:s};
   }
+  $('as-enter').onclick=()=>{
+    const r=state.res;if(!r||!state.buildingConfirmed)return;
+    try{const bounds=computeApartmentBounds(r);if(!bounds)throw new Error('Emprise insuffisante : l’appartement automatique exige au moins 8 m de profondeur.');
+      const plan=makeSettingsPlan(r);plan.footprint=bounds.footprint;requireMinimumDepth(bounds.safeBounds.v1,8);open3d(plan,'fenetre');
+    }catch(e){$('as-bw').textContent=e.message||String(e);}
+  };
   $('as-window-calc').onclick=async()=>{
     const r=state.res;if(!r)return;const button=$('as-window-calc'),out=$('as-window-results');
     button.disabled=true;button.textContent='Calcul…';out.textContent='Calcul des fenêtres, embrasures et masques…';disposeSolarTrees();state.solarReport=null;
