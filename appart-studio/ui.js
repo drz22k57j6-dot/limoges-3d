@@ -364,7 +364,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const p = r.feature.properties || {}, fd = r.floorData;
     const when = sunUI.bounds ? new Date(sunUI.bounds.first + (sunUI.bounds.last - sunUI.bounds.first) * sunUI.fraction) : new Date();
     const sp = sunPosition(when, r.lat, r.lon), n = r.local.n;
-    const incidence = Math.acos(Math.max(-1, Math.min(1, Math.sin(sp.az * Math.PI / 180) * n[0] - Math.cos(sp.az * Math.PI / 180) * n[1]))) * 180 / Math.PI;
+    const incidence = Math.acos(Math.max(-1, Math.min(1, Math.cos(sp.el * Math.PI / 180) * (Math.sin(sp.az * Math.PI / 180) * n[0] - Math.cos(sp.az * Math.PI / 180) * n[1])))) * 180 / Math.PI;
     const facadeSun = sp.el > 0 && Math.cos(incidence * Math.PI / 180) > 0.02;
     $('as-dbg').textContent = [
       'ID IGN : ' + (p.cleabs || '?') + ' · ' + r.matchMode,
