@@ -23,6 +23,32 @@ def mosaic(prefix):
             a[(2-j)*1000:(3-j)*1000, i*1000:(i+1)*1000] = t
     return a
 MNT = mosaic('mnt'); MNH = mosaic('mnh')
+
+# MNH LiDAR HD haute résolution : 36 dalles de 1 km au pas officiel de 50 cm.
+# Le raster 2 m reste en mémoire pour la détection des arbres et sert de repli
+# uniquement si la dalle haute résolution ne contient pas assez d'échantillons.
+def mosaic_mnh_hd():
+    path = os.path.join(D, 'mnh_hd_0_0.tif')
+    if not os.path.exists(path):
+        print('MNH 50 cm absent : toitures en mode repli MNH 2 m')
+        return None
+    a = np.full((12000, 12000), np.nan, dtype=np.float32)
+    loaded = 0
+    for i in range(6):
+        for j in range(6):
+            path = os.path.join(D, f'mnh_hd_{i}_{j}.tif')
+            if not os.path.exists(path):
+                print('MNH 50 cm missing tile', i, j)
+                continue
+            tile = np.asarray(tifffile.imread(path), dtype=np.float32)
+            if tile.shape != (2000, 2000):
+                raise ValueError(f'{path}: raster attendu 2000x2000, reçu {tile.shape}')
+            a[(5-j)*2000:(6-j)*2000, i*2000:(i+1)*2000] = tile
+            loaded += 1
+    print('MNH 50 cm tiles', loaded, '/ 36; pixels', int(np.isfinite(a).sum()))
+    return a if loaded else None
+
+MNH_HD = mosaic_mnh_hd()
 XMIN, YMAX = X0-R, Y0+R
 def raster_h(x, y, A=MNT):
     c = (np.asarray(x)-XMIN)/2-0.5; r = (YMAX-np.asarray(y))/2-0.5
@@ -317,7 +343,10 @@ wall_tint = {'Résidentiel': (236, 228, 212), 'Industriel': (200, 200, 196), 'Co
 if _o.environ.get('CITY_NAME') == 'paris':   # Paris stone / render when no photo measurement: estimate, flagged as such
     wall_tint.update({'Résidentiel': (226, 214, 190), 'Indifférencié': (224, 213, 192), 'Commercial et services': (222, 214, 198)})
 nb = 0; gables = 0; FOOT = []
-ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"reasons":{}}
+ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"reasons":{},
+              "source_resolution_m":0.5 if MNH_HD is not None else 2.0,
+              "source":"IGN LiDAR HD MNH 50 cm" if MNH_HD is not None else "IGN LiDAR HD MNH WMS 2 m",
+              "high_resolution_tiles_loaded":36 if MNH_HD is not None else 0}
 for f in B:
     p = f['properties']; g = shape(f['geometry'])
     polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
@@ -361,12 +390,20 @@ for f in B:
         # La même géométrie opaque est exportée dans le GLB / les tuiles détaillées ;
         # solarAnalysis.makeBvh() la récupère ensuite par scene.traverse().
         ROOF_STATS["eligible"] += 1
-        roof_est = estimate_roof(poly, MNH, XMIN, YMAX, h, resolution=2.0)
-        roof_pos, roof_idx, roof_step = (np.empty((0,3)), np.empty((0,), dtype=np.uint32), 2.0)
+        roof_raster = MNH_HD if MNH_HD is not None else MNH
+        roof_resolution = 0.5 if MNH_HD is not None else 2.0
+        roof_est = estimate_roof(poly, roof_raster, XMIN, YMAX, h, resolution=roof_resolution)
+        # Si la dalle 50 cm ne couvre pas réellement ce bâtiment (nodata / tuile
+        # absente), reprendre le MNH 2 m. Un écart de hauteur, lui, reste un rejet.
+        if (not roof_est.get("valid") and MNH_HD is not None
+                and roof_est.get("reason") == "moins de 4 pixels MNH valides"):
+            roof_raster, roof_resolution = MNH, 2.0
+            roof_est = estimate_roof(poly, roof_raster, XMIN, YMAX, h, resolution=roof_resolution)
+        roof_pos, roof_idx, roof_step = (np.empty((0,3)), np.empty((0,), dtype=np.uint32), roof_resolution)
         if roof_est.get("valid"):
             roof_pos, roof_idx, roof_step = build_roof_mesh(
-                poly, MNH, XMIN, YMAX, mesh_h, roof_est["eave"], roof_est["mesh_max"],
-                resolution=2.0, triangle_budget=400)
+                poly, roof_raster, XMIN, YMAX, mesh_h, roof_est["eave"], roof_est["mesh_max"],
+                resolution=roof_resolution, triangle_budget=400)
         lidar_roof_ok = bool(roof_est.get("valid") and len(roof_idx) and len(roof_idx)//3 <= 400)
         if lidar_roof_ok:
             eave_tops = np.asarray(mesh_h(ex[:,0], ex[:,1]), dtype=float) + roof_est["eave"]
@@ -394,7 +431,7 @@ for f in B:
                  L(roof_pos[:,0], roof_pos[:,1], roof_pos[:,2]), roof_uv,
                  np.tile(rcol, (len(roof_pos),1)), roof_idx)
             FOOT[-1][1] = float(np.nanmax(roof_pos[:,2])-H0)
-            INFO[-1].update({"toit":"LiDAR HD — MNH", "hauteur_egout_m":round(roof_est["eave"],2),
+            INFO[-1].update({"toit":f"LiDAR HD — MNH {roof_resolution:g} m", "hauteur_egout_m":round(roof_est["eave"],2),
                              "hauteur_faitage_m":round(roof_est["ridge"],2),
                              "triangles_toit":int(len(roof_idx)//3), "pas_maillage_m":round(float(roof_step),2)})
             ROOF_STATS["lidar"] += 1
