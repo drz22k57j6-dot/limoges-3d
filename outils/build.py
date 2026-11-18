@@ -5,6 +5,8 @@ from PIL import Image, ImageDraw
 from shapely.geometry import shape, Polygon, MultiPolygon, LineString
 from shapely.geometry.polygon import orient
 import mapbox_earcut as earcut
+# Le builder est parfois lancé en mode Python isolé (-I), qui retire le dossier script de sys.path.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from toits_lidar import estimate_roof, build_roof_mesh
 
 D = sys.argv[1]; OUTD = sys.argv[2]
