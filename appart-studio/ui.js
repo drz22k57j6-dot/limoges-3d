@@ -54,6 +54,13 @@ body.as-mode #as-launch{display:none!important}
 #as-bar .adj{flex:0 0 auto;width:58px;height:50px;border-radius:14px;border:1px solid #ffffff22;background:#1b2330;font-weight:800;font-size:18px}
 #as-bar .adjl{align-self:center;color:#8b97a8;font-size:12px;text-align:center;flex:0 0 64px}
 #as-draw{flex:1;height:50px;border-radius:14px;border:0;background:linear-gradient(135deg,#ff4d63,#c8233a);font-weight:800}
+#as-express{flex:1;height:50px;border-radius:14px;border:1px solid #ffffff25;background:#24536a;font-weight:800;font-size:12px}
+#as-express-ui{display:none;margin-top:8px;padding:10px;border:1px solid #ffffff24;border-radius:14px;background:#10161ff2}
+#as-express-ui.on{display:block}
+#as-express-ui .row{margin-top:8px}
+#as-express-ui button{flex:1;min-height:40px;border-radius:10px;border:1px solid #ffffff22;background:#202a38;font-weight:700;font-size:12px}
+#as-express-status,#as-express-results{font-size:12px;color:#d8e2ee;white-space:pre-wrap;margin-top:6px}
+#as-express-results{max-height:180px;overflow:auto}
 #as-bar .links{display:flex;justify-content:space-between;margin-top:10px}
 #as-bar .links button{border:0;background:none;color:#8b97a8;font-size:13px;padding:4px 2px}
 #as-dbg{display:none;margin-top:10px;font:11px/1.45 ui-monospace,Menlo,monospace;color:#9fb0c4;white-space:pre-wrap}
@@ -157,7 +164,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   <section id="as-bar" class="as-ui">
     <div class="t" id="as-bt"></div><div class="s" id="as-bs"></div><div class="warn" id="as-bw"></div>
     <div class="row"><button class="adj" id="as-m">−</button><div class="adjl">Ajuster<br>la hauteur</div><button class="adj" id="as-p">+</button></div>
-    <div class="row"><button id="as-draw">C'est bien mon étage → Dessiner mon plan</button></div>
+    <div class="row" id="as-draw-actions"><button id="as-express">Résultat express (30 s)</button><button id="as-draw">Dessiner mon plan (effet wouah)</button></div>
+    <div id="as-express-ui"><b>Mode express · touchez vos fenêtres réelles sur la façade</b><div id="as-express-status">Aucune fenêtre sélectionnée.</div><div class="row"><button id="as-express-calc" disabled>Calculer le soleil</button><button id="as-express-cancel">Retour</button></div><div id="as-express-results"></div></div>
     <div class="links"><button id="as-change">← Changer d'adresse</button><button id="as-dbgb">Détails</button><button id="as-quit">Quitter</button></div>
     <div id="as-dbg"></div>
   </section>`);
@@ -348,7 +356,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   // ouverture / fermeture
   const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
   function quit() {
-    stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
+    stopExpress(); stopSunDay(); disposeSolarTrees(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
     for (const id of ['as-start', 'as-loading', 'as-bar', 'as-3d']) $(id).classList.remove('on');
     document.body.classList.remove('as-mode'); state.res = null;
   }
@@ -356,7 +364,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   $('as-x').onclick = () => { if (state.res) { $('as-start').classList.remove('on'); $('as-bar').classList.add('on'); } else quit(); };
   $('as-quit').onclick = quit;
   $('as3-quit').onclick = quit;
-  $('as-change').onclick = () => { $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
+  $('as-change').onclick = () => { stopExpress(); $('as-bar').classList.remove('on'); $('as-start').classList.add('on'); };
 
   // localisation
   async function go() {
@@ -406,6 +414,93 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       'FPS : ' + Math.round(window.__fps || 0),
     ].join('\n');
   }
+  // Mode express : fenêtres réellement générées par le moteur de façades, sans construire l'appartement.
+  const expressRaycaster = new THREE.Raycaster(), expressPointer = new THREE.Vector2();
+  function clearExpressOverlay() {
+    if (state.expressGroup) {
+      scene.remove(state.expressGroup);
+      state.expressGroup.traverse(o => { o.geometry?.dispose?.(); if (o.material) for (const m of [].concat(o.material)) m.dispose?.(); });
+      state.expressGroup = null;
+    }
+    state.expressTargets = []; state.expressWindows = []; state.expressSelected = new Set();
+  }
+  function stopExpress() {
+    state.expressMode = false;
+    renderer.domElement.removeEventListener('pointerdown', expressPick, true);
+    clearExpressOverlay(); disposeSolarTrees();
+    $('as-express-ui')?.classList.remove('on');
+    if ($('as-draw-actions')) $('as-draw-actions').style.display = '';
+  }
+  function expressPick(e) {
+    if (!state.expressMode) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const rect=renderer.domElement.getBoundingClientRect();
+    expressPointer.set((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+    camera.updateMatrixWorld(); expressRaycaster.setFromCamera(expressPointer,camera);
+    const hit=expressRaycaster.intersectObjects(state.expressTargets,false)[0];
+    if (!hit) return;
+    const id=hit.object.userData.windowId;
+    if (state.expressSelected.has(id)) state.expressSelected.delete(id); else state.expressSelected.add(id);
+    for(const mesh of state.expressTargets){
+      const on=state.expressSelected.has(mesh.userData.windowId);
+      mesh.material.color.setHex(on?0xffa23a:0x35c7ff); mesh.material.opacity=on ? 0.62 : 0.28;
+    }
+    $('as-express-status').textContent=state.expressSelected.size+' fenêtre(s) sélectionnée(s). Touchez une fenêtre pour ajouter/retirer.';
+    $('as-express-calc').disabled=!state.expressSelected.size;
+  }
+  function startExpress() {
+    stopExpress();
+    const r=state.res; if(!r) return;
+    const list=window.__facadeEtages?.get(r.feature.properties?.cleabs)||[];
+    const F=r.local.F; let best=null,bd=Infinity;
+    for(const e of list){
+      const dx=e.b[0]-e.a[0],dz=e.b[1]-e.a[1],l2=dx*dx+dz*dz||1;
+      const t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2));
+      const d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t);
+      if(d<bd){bd=d;best=e;}
+    }
+    if(!best||bd>6||!best.windows?.length){
+      $('as-bw').textContent='Les fenêtres exactes de cette façade ne sont pas encore chargées. Restez quelques secondes face à l’immeuble puis réessayez.';
+      return;
+    }
+    const floorIndex=best.ent&&r.floorData.floor>=1?r.floorData.floor+1:r.floorData.floor;
+    const windows=best.windows.filter(w=>w.floor===floorIndex);
+    if(!windows.length){$('as-bw').textContent='Aucune baie vitrée exploitable n’a été publiée pour cet étage.';return;}
+    const dx=best.b[0]-best.a[0],dz=best.b[1]-best.a[1],L=Math.hypot(dx,dz)||1,e=[dx/L,dz/L],n=[-e[1],e[0]];
+    const group=new THREE.Group();group.name='appart-studio-express-windows';state.expressGroup=group;
+    state.expressTargets=[];state.expressWindows=[];
+    for(const w of windows){
+      const id='facade-'+best.k+'-'+w.floor+'-'+w.bay;
+      const cx=best.a[0]+e[0]*w.x+n[0]*(w.surfaceZ??0.06),cz=best.a[1]+e[1]*w.x+n[1]*(w.surfaceZ??0.06),cy=best.y0+w.y;
+      const plane=new THREE.Mesh(new THREE.PlaneGeometry(w.width,w.height),new THREE.MeshBasicMaterial({color:0x35c7ff,transparent:true,opacity:.28,depthWrite:false,depthTest:false,side:THREE.DoubleSide}));
+      plane.position.set(cx+n[0]*.02,cy,cz+n[1]*.02);plane.rotation.y=Math.atan2(n[0],n[1]);plane.renderOrder=30;plane.userData.windowId=id;group.add(plane);state.expressTargets.push(plane);
+      const points=[[0,0],[-.38,-.32],[.38,-.32],[-.38,.32],[.38,.32]].map(([a,b])=>[cx+n[0]*.08+e[0]*a*w.width,cy+b*w.height*.34,cz+n[1]*.08+e[1]*a*w.width]);
+      state.expressWindows.push({id,index:state.expressWindows.length,points,normal:[n[0],0,n[1]],roomId:null,roomType:'façade sans plan'});
+    }
+    scene.add(group);state.expressMode=true;renderer.domElement.addEventListener('pointerdown',expressPick,true);
+    $('as-draw-actions').style.display='none';$('as-express-ui').classList.add('on');
+    $('as-express-status').textContent=windows.length+' fenêtre(s) réelle(s) trouvée(s) à cet étage. Touchez celles que vous souhaitez analyser.';
+    $('as-express-results').textContent='';$('as-express-calc').disabled=true;
+    $('as-bw').textContent='';
+  }
+  $('as-express').onclick=startExpress;
+  $('as-express-cancel').onclick=stopExpress;
+  $('as-express-calc').onclick=async()=>{
+    const selected=state.expressWindows.filter(w=>state.expressSelected.has(w.id));
+    if(!selected.length)return;
+    const button=$('as-express-calc'),out=$('as-express-results');disposeSolarTrees();button.disabled=true;button.textContent='Calcul en cours…';out.textContent='Calcul des fenêtres sélectionnées…';
+    try{
+      const r=state.res,{F,n}=r.local,u=[-n[1],n[0]],v=[-n[0],-n[1]],fr={F,u,v,floorY:view.floorY(r),H:view.floorH(r)};
+      const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan:{murs:[],ouvertures:[],pieces:[]},fr,windowsOverride:selected,onProgress:p=>{out.textContent=p.stage==='calcul'?'Calcul express '+p.done+'/'+p.total+'…':'Chargement des arbres et préparation…';}});
+      state.solarTreeGroup=result.treeGroup;state.expressReport=result;
+      const keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};
+      const totals={};
+      for(const key of keys){const series=result.windows.map(w=>w.byDate[key].minutes);let minutes=0;for(let i=0;i<(series[0]?.length||0);i++)minutes+=Math.max(0,...series.map(a=>a[i]?.frac||0))*15;totals[key]=minutes/60;}
+      out.textContent='RÉSULTAT EXPRESS · '+selected.length+' fenêtre(s)\nTotal sans double comptage : '+keys.map(k=>labels[k]+' '+totals[k].toFixed(1)+' h').join(' · ')+'\n\n'+result.windows.map(w=>{const h=w.byDate;return w.id+' : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
+    }catch(e){out.textContent='Calcul express impossible : '+e.message;}
+    finally{button.disabled=false;button.textContent='Recalculer la sélection';}
+  };
+  renderer.domElement.addEventListener('pointerdown',expressPick,true);
   setInterval(() => { if ($('as-dbg').classList.contains('on')) renderDbg(); }, 1000);
   $('as-dbgb').onclick = () => $('as-dbg').classList.toggle('on');
   const adjust = d => { const r = state.res; if (!r) return; r.adjust = Math.round((r.adjust + d) * 100) / 100; view.refresh(); renderDbg(); };
@@ -414,6 +509,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
 
   // plan
   $('as-draw').onclick = () => {
+    stopExpress();
     const r = state.res; if (!r) return;
     const { F, A, B, n } = r.local, u = [-n[1], n[0]], v = [-n[0], -n[1]];
     const pu = P => (P[0] - F[0]) * u[0] + (P[1] - F[1]) * u[1];

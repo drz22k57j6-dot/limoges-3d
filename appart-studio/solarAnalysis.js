@@ -98,8 +98,8 @@ function makeTreeVisuals(THREE, trees) {
   group.add(trunks,crowns); return group;
 }
 
-export async function calculateSolarReport({ THREE, scene, drone, ground, res, plan, fr, onProgress = () => {} }) {
-  const windows = makeWindows(plan,fr), year = new Date().getUTCFullYear(), now = new Date();
+export async function calculateSolarReport({ THREE, scene, drone, ground, res, plan, fr, windowsOverride = null, onProgress = () => {} }) {
+  const windows = windowsOverride || makeWindows(plan,fr), year = new Date().getUTCFullYear(), now = new Date();
   const paris=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
   const dates = {
     winter:new Date(Date.UTC(year,11,21)),

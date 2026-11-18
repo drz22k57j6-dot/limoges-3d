@@ -71,8 +71,18 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - Le calcul cède la main après des tranches d'environ 30 ms via `requestIdleCallback` (ou `setTimeout` sur Safari), avec progression visible.
 - Test hors réseau ajouté : `node --test appart-studio/phase4b.test.mjs`. Il couvre le masque de 30° sur une façade Est et le résultat sans obstacle.
 
+## Phase 4C — mode express sur la façade réelle
+
+- Après confirmation de l'étage, deux actions sont proposées : **Résultat express (30 s)** ou **Dessiner mon plan (effet wouah)**.
+- Le générateur de façades publie les baies réellement construites dans `userData.etages.windows` (travée, niveau, position, largeur et hauteur). Le mode express filtre les baies du niveau demandé.
+- Les fenêtres sont surlignées sur la façade en place ; toucher une baie l'ajoute/retire de la sélection. Le calcul réutilise `calculateSolarReport()` / `windowSunHours()`, les obstacles, les arbres et les quatre dates de la phase B, sans construire la géométrie intérieure de l'appartement.
+- Le résultat présente chaque fenêtre sélectionnée et un total multi-fenêtres sans double comptage des pas de 15 minutes.
+- Si les métadonnées de façade ne sont pas encore chargées ou si le générateur ne publie pas de baies pour le niveau, le mode express explique pourquoi il ne peut pas démarrer.
+
 ## Limites
 
+- Le calcul express n'a pas été chronométré sur iPhone ; l'objectif inférieur à 5 secondes reste à mesurer.
+- Le mode express dépend des métadonnées des façades classiques ; les immeubles modernes ou les façades non encore générées peuvent ne pas exposer de fenêtres sélectionnables.
 - Les tests B n'ont pas été exécutés dans cette session ; le script est livré pour exécution locale/CI.
 - Le BVH porte sur les meshes actuellement chargés dans la scène : les bâtiments encore non streamés ne peuvent pas bloquer les rayons.
 - Les résultats arbres dépendent des données Open Data disponibles ; en cas d'échec réseau, le calcul continue sans arbres et le signale dans la console.
