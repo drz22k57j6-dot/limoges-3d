@@ -94,6 +94,9 @@ body.as-mode #as-launch{display:none!important}
 #as3-sun .sun-analysis{width:100%;height:36px;margin-top:6px;background:#24536a;font-size:12px}
 #as3-sun .sun-report{display:none;margin-top:7px;padding:8px;border-radius:10px;background:#080d14;color:#d8e2ee;font-size:11px;white-space:pre-wrap;max-height:180px;overflow:auto}
 #as3-sun .sun-report.on{display:block}
+#as3-sun .sun-progress{height:4px;background:#ffffff20;border-radius:9px;overflow:hidden;margin-top:6px;display:none}
+#as3-sun .sun-progress.on{display:block}
+#as3-sun .sun-progress span{display:block;height:100%;width:0;background:#ffd58a;transition:width .12s}
 @media(min-width:760px){#as3-sun{max-width:520px;margin-left:auto;margin-right:auto}}
 
 #as3-joy{position:absolute;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
@@ -240,15 +243,16 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     let panel = document.getElementById('as3-sun');
     if (!panel) {
       panel = document.createElement('div'); panel.id = 'as3-sun';
-      panel.innerHTML = '<div class="sun-head"><button class="sun-toggle" id="as3-sun-toggle" aria-expanded="false">☀ <span class="sun-summary" id="as3-sun-summary">21 juin · --:--</span><span class="sun-caret" id="as3-sun-caret">▾</span></button></div><div class="sun-controls"><div id="as3-sun-date"></div><input id="as3-sun-date-range" aria-label="Date" type="range" min="0" max="365" step="1"><div class="sun-shortcuts"><button data-sundate="winter">21 déc.</button><button data-sundate="spring">21 mars</button><button data-sundate="summer">21 juin</button><button data-sundate="today">Aujourd’hui</button></div><input id="as3-sun-hour" aria-label="Heure entre lever et coucher" type="range" min="0" max="1000" step="1"><button class="sun-play" id="as3-sun-play">▶ Journée accélérée · 12 s</button><button class="sun-analysis" id="as3-sun-analysis">Calculer le soleil par pièce</button><div class="sun-report" id="as3-sun-report"></div></div>';
+      panel.innerHTML = '<div class="sun-head"><button class="sun-toggle" id="as3-sun-toggle" aria-expanded="false">☀ <span class="sun-summary" id="as3-sun-summary">21 juin · --:--</span><span class="sun-caret" id="as3-sun-caret">▾</span></button></div><div class="sun-controls"><div id="as3-sun-date"></div><input id="as3-sun-date-range" aria-label="Date" type="range" min="0" max="365" step="1"><div class="sun-shortcuts"><button data-sundate="winter">21 déc.</button><button data-sundate="spring">21 mars</button><button data-sundate="summer">21 juin</button><button data-sundate="today">Aujourd’hui</button></div><input id="as3-sun-hour" aria-label="Heure entre lever et coucher" type="range" min="0" max="1000" step="1"><button class="sun-play" id="as3-sun-play">▶ Journée accélérée · 12 s</button><button class="sun-analysis" id="as3-sun-analysis">Calculer le soleil par pièce</button><div class="sun-progress" id="as3-sun-progress"><span></span></div><div class="sun-report" id="as3-sun-report"></div></div>';
       $('as3-bottom').insertBefore(panel, $('as3-modes'));
       $('as3-sun-toggle').onclick = () => { const open = panel.classList.toggle('expanded'); $('as3-sun-toggle').setAttribute('aria-expanded', String(open)); $('as3-sun-caret').textContent = open ? '▴' : '▾'; };
       $('as3-sun-analysis').onclick = async () => {
-        const button=$('as3-sun-analysis'), report=$('as3-sun-report');
+        const button=$('as3-sun-analysis'), report=$('as3-sun-report'), progress=$('as3-sun-progress'), progressFill=progress.firstElementChild;
         if (!state.plan3d || !apt.info) return;
-        disposeSolarTrees(); button.disabled=true; button.textContent='Calcul en cours…'; report.classList.add('on'); report.textContent='Préparation du BVH et des arbres…';
+        disposeSolarTrees(); button.disabled=true; button.textContent='Calcul en cours…'; report.classList.add('on'); progress.classList.add('on'); progressFill.style.width='0%'; report.textContent='Préparation du BVH et des arbres…';
         try {
           const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan:state.plan3d,fr:apt.info.fr,onProgress:p=>{
+            if(p.total) progressFill.style.width=(100*p.done/p.total)+'%';
             report.textContent=p.stage==='arbres'?'Chargement des arbres…':p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' · fenêtre '+p.window+' · '+p.date:'Finalisation…';
           }});
           state.solarReport=result; state.solarTreeGroup=result.treeGroup; window.__appartStudioSolarReport=result;
