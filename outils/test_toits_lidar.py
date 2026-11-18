@@ -66,6 +66,9 @@ class LidarRoofSyntheticTests(unittest.TestCase):
         got=estimate_roof(self.poly,roof,self.xmin,self.ymax,8.0,resolution=self.res)
         verts,indices,step=build_roof_mesh(polygon,roof,self.xmin,self.ymax,self.ground,got["eave"],got["mesh_max"],resolution=self.res,triangle_budget=400)
         self.assertLessEqual(len(indices)//3,400)
+        faces=verts[indices.reshape(-1,3)]
+        cross=(faces[:,1,0]-faces[:,0,0])*(faces[:,2,1]-faces[:,0,1])-(faces[:,1,1]-faces[:,0,1])*(faces[:,2,0]-faces[:,0,0])
+        self.assertTrue(np.all(cross>0))
         # Tous les centres de triangles restent dans l'emprise, donc jamais dans la cour.
         for tri in verts[indices.reshape(-1,3)].mean(axis=1):
             self.assertTrue(polygon.covers(__import__('shapely').geometry.Point(float(tri[0]),float(tri[1]))))
