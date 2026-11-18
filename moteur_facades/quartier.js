@@ -69,6 +69,7 @@ export async function createQuartier(T, opt) {
   function fabriquer(bat, grp, lod) {
     const R = rngOf(bat.id), st = bat.st, tone = teinte(R, st), wear = Math.round((.12 + R() * .3) * 4) / 4;
     let yMin = Infinity;
+    const buildingGroup = new T.Group(); buildingGroup.userData.appartStudioBuildingId = bat.id;
     bat.f.forEach((f, k) => {
       const [ax, az] = f.a, [bx, bz] = f.b, W = Math.hypot(bx - ax, bz - az); if (W < 4) return;
       const dx = (bx - ax) / W, dz = (bz - az) / W, mx = (ax + bx) / 2, mz = (az + bz) / 2, y = opt.groundH(mx, mz);
@@ -77,37 +78,40 @@ export async function createQuartier(T, opt) {
       const b = buildBuilding(T, KIT, { width: W, depth: 6, seed: hash(bat.id) + k * 7919, style: st, hGout: bat.h, wear, tone, shops, shopBuilder: buildShop, trottoir: f.tr, verdure: .5, tagP: .35, pClosed: .15, toneJit: 0, lod });
       const M = new T.Matrix4().makeBasis(new T.Vector3(dx, 0, dz), new T.Vector3(0, 1, 0), new T.Vector3(-dz, 0, dx)).setPosition(ax, y, az);
       if (b.userData.etages) { const R = (window.__facadeEtages ||= new Map()); if (!R.has(bat.id)) R.set(bat.id, []); const L = R.get(bat.id).filter(e => e.k !== k); L.push({ k, a: f.a, b: f.b, y0: y, ...b.userData.etages }); R.set(bat.id, L); }
-      b.applyMatrix4(M); grp.add(b);
+      b.applyMatrix4(M); buildingGroup.add(b);
     });
     if (!isFinite(yMin)) yMin = opt.groundH(bat.cx, bat.cz);
     const hc = bat.h + (st === 'moderne' ? .6 : st === 'modeste' ? 2.6 : 3.6);
     const murs = [], toits = [];
     for (const r of bat.c) { const { murs: m, toit: t } = noyau(r, yMin - 1, hc + 1, tone); murs.push(m); toits.push(t); }
-    if (murs.length) { const a = new T.Mesh(mergeGeometries(murs), cour), b = new T.Mesh(mergeGeometries(toits), toitCour); a.castShadow = a.receiveShadow = b.receiveShadow = true; grp.add(a, b); }
+    if (murs.length) { const a = new T.Mesh(mergeGeometries(murs), cour), b = new T.Mesh(mergeGeometries(toits), toitCour); a.castShadow = a.receiveShadow = b.receiveShadow = true; buildingGroup.add(a, b); }
+    grp.add(buildingGroup);
   }
 
   // fusion par matériau du contenu d'une cellule, découpée en petites étapes (pas de saccade)
   function preparerFusion(grp) {
     grp.updateMatrixWorld(true); const meshes = []; grp.traverse(o => { if (o.isMesh) meshes.push(o); });
-    return { meshes, i: 0, par: new Map(), paquets: null, out: new T.Group() };
+    return { root: grp, meshes, i: 0, par: new Map(), paquets: null, out: new T.Group() };
   }
   // étape 1 : copie en coordonnées monde par lots ; étape 2 : fusion par matériau, par paquets de taille bornée
   function etapePrep(F, budget, t0) {
     while (F.i < F.meshes.length && performance.now() - t0 < budget) {
       const o = F.meshes[F.i++], g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); g.applyMatrix4(o.matrixWorld);
-      const sig = Object.keys(g.attributes).sort().join(','), key = o.material.uuid + sig;
-      if (!F.par.has(key)) F.par.set(key, { m: o.material, L: [], n: 0 }); const p = F.par.get(key); p.L.push(g); p.n += g.attributes.position.count;
+      let owner = o; while (owner && owner !== F.root && !owner.userData?.appartStudioBuildingId) owner = owner.parent;
+      const id = owner?.userData?.appartStudioBuildingId || null;
+      const sig = Object.keys(g.attributes).sort().join(','), key = (id || '') + '|' + o.material.uuid + '|' + sig;
+      if (!F.par.has(key)) F.par.set(key, { id, m: o.material, L: [], n: 0 }); const p = F.par.get(key); p.L.push(g); p.n += g.attributes.position.count;
     }
     if (F.i < F.meshes.length) return false;
-    F.paquets = []; for (const p of F.par.values()) { let cur = []; let n = 0; for (const g of p.L) { cur.push(g); n += g.attributes.position.count; if (n > 60000) { F.paquets.push({ m: p.m, L: cur }); cur = []; n = 0; } } if (cur.length) F.paquets.push({ m: p.m, L: cur }); }
+    F.paquets = []; for (const p of F.par.values()) { let cur = []; let n = 0; for (const g of p.L) { cur.push(g); n += g.attributes.position.count; if (n > 60000) { F.paquets.push({ id: p.id, m: p.m, L: cur }); cur = []; n = 0; } } if (cur.length) F.paquets.push({ id: p.id, m: p.m, L: cur }); }
     return true;
   }
   function etapeFusion(F) {
     const p = F.paquets.pop(); if (!p) return true;
     let g = null; try { g = p.L.length > 1 ? mergeGeometries(p.L, false) : p.L[0]; } catch (e) { g = null; }
-    if (!g) { for (const x of p.L) F.out.add(new T.Mesh(x, p.m)); return !F.paquets.length; }
+    if (!g) { for (const x of p.L) { const mesh = new T.Mesh(x, p.m); if (p.id) mesh.userData.appartStudioBuildingId = p.id; F.out.add(mesh); } return !F.paquets.length; }
     if (p.L.length > 1) p.L.forEach(x => x.dispose());
-    const m = p.m, me = new T.Mesh(g, m); me.castShadow = opt.ombres !== false && !m.transparent && !(m.emissiveIntensity > .5); me.receiveShadow = true; me.matrixAutoUpdate = false; F.out.add(me);
+    const m = p.m, me = new T.Mesh(g, m); if (p.id) me.userData.appartStudioBuildingId = p.id; me.castShadow = opt.ombres !== false && !m.transparent && !(m.emissiveIntensity > .5); me.receiveShadow = true; me.matrixAutoUpdate = false; F.out.add(me);
     return !F.paquets.length;
   }
   function liberer(grp, geomSeule) {

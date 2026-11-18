@@ -3,6 +3,8 @@
 // Le volume de l'appartement est découpé dans le bâtiment réel (plans de coupe locaux, mode intersection),
 // donc on voit l'intérieur et, par les fenêtres, la vraie rue et les vrais immeubles d'en face.
 
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
 const TEX = {};
 function canvasTex(THREE, key, size, draw, repeatMeters) {
   if (TEX[key]) return TEX[key];
@@ -23,7 +25,7 @@ function plank(g, x, y, w, h, ang, base) {
   g.globalAlpha = 0.55; g.strokeStyle = '#2a1a0c'; g.lineWidth = 1.2; g.strokeRect(0, 0, w, h);
   g.restore(); g.globalAlpha = 1;
 }
-const texHerringbone = THREE => canvasTex(THREE, 'hb', 1024, (g, S) => {
+const texHerringbone = THREE => canvasTex(THREE, 'hb', 512, (g, S) => {
   g.fillStyle = '#7a5130'; g.fillRect(0, 0, S, S);
   const w = S / 16, L = w * 5;                         // lattes ~ 8 x 40 cm sur 1,6 m
   for (let row = -6; row < 22; row++) for (let col = -2; col < 10; col++) {
@@ -32,7 +34,7 @@ const texHerringbone = THREE => canvasTex(THREE, 'hb', 1024, (g, S) => {
     plank(g, x + L * 0.7071 + w * 0.7071, y + L * 0.7071 - w * 0.7071, L, w, -Math.PI / 4, 34);
   }
 }, 1.6);
-const texPlanks = THREE => canvasTex(THREE, 'pl', 1024, (g, S) => {
+const texPlanks = THREE => canvasTex(THREE, 'pl', 512, (g, S) => {
   const w = S / 8;
   for (let r = 0; r < 8; r++) { let x = -rnd() * S * 0.6; while (x < S) { const L = S * (0.35 + rnd() * 0.4); plank(g, x, r * w, L, w, 0, 40); x += L; } }
 }, 1.6);
@@ -69,7 +71,7 @@ function materials(THREE) {
 }
 
 export function createApartment({ THREE, scene, renderer }) {
-  let M = null, group = null, clip = null, clipped = new Set(), scanT = 0, info = null;
+  let M = null, group = null, clip = null, clipped = new Set(), info = null, originalMaterials = new Map();
 
   function dispose() {
     if (!group) return;
@@ -89,26 +91,34 @@ export function createApartment({ THREE, scene, renderer }) {
       pl(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, floorY + top, 0)), pl(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, floorY - 0.06, 0)),
     ];
   }
-  function applyClip(force = false) {
-    if (!clip || !group) return;
-    const c = info.center, R2 = 90 * 90;
+  // La liste de plans est créée une seule fois. Les changements de vue ne modifient que le plan supérieur.
+  function applyClip() {
+    if (!clip || !group || !info || originalMaterials.size) return;
+    const cache = new Map();
     scene.traverse(o => {
-      if (!o.isMesh || !o.material || o === group || isOurs(o)) return;
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      if (!force && mats.every(m => clipped.has(m))) return;
-      // seulement ce qui est autour de l'appartement (la découpe est locale de toute façon)
-      if (o.geometry && !o.geometry.boundingSphere) o.geometry.computeBoundingSphere?.();
-      const bs = o.geometry?.boundingSphere;
-      if (bs) { const p = bs.center.clone().applyMatrix4(o.matrixWorld); const r = bs.radius * o.matrixWorld.getMaxScaleOnAxis(); const dx = p.x - c.x, dz = p.z - c.z; if (dx * dx + dz * dz > (Math.sqrt(R2) + r) ** 2) return; }
-      for (const m of mats) {
-        if (clipped.has(m) && !force) continue;
-        m.clippingPlanes = clip; m.clipIntersection = true; m.clipShadows = true; m.needsUpdate = true; clipped.add(m);
-      }
+      if (!o.isMesh || !o.material || isOurs(o) || o.userData.appartStudioBuildingId !== info.buildingId) return;
+      const originals = Array.isArray(o.material) ? o.material : [o.material];
+      const replacements = originals.map(original => {
+        if (!cache.has(original)) {
+          const clone = original.clone();
+          clone.clippingPlanes = clip;
+          clone.clipIntersection = true;
+          clone.clipShadows = true;
+          clone.needsUpdate = true; // uniquement les matériaux clonés du bâtiment cible, une seule fois
+          cache.set(original, clone);
+          clipped.add(clone);
+        }
+        return cache.get(original);
+      });
+      originalMaterials.set(o, o.material);
+      o.material = Array.isArray(o.material) ? replacements : replacements[0];
     });
   }
   function isOurs(o) { for (let p = o; p; p = p.parent) if (p === group) return true; return false; }
   function unclip() {
-    for (const m of clipped) { m.clippingPlanes = null; m.clipIntersection = false; m.clipShadows = false; m.needsUpdate = true; }
+    for (const [mesh, material] of originalMaterials) mesh.material = material;
+    originalMaterials.clear();
+    for (const m of clipped) m.dispose();
     clipped.clear(); clip = null;
   }
 
@@ -122,7 +132,7 @@ export function createApartment({ THREE, scene, renderer }) {
     const add = (geo, mat, cast = true) => { const m = new THREE.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = true; group.add(m); return m; };
 
     // pièce de mur : boîte orientée entre deux points du plan (centre de la ligne), de y0 à y1
-    function slab(a, b, t, y0, y1, mat, offset = 0) {
+    function slab(a, b, t, y0, y1, mat, offset = 0, mergeWall = false) {
       const d = [b[0] - a[0], b[1] - a[1]], L = Math.hypot(...d); if (L < 0.01 || y1 - y0 < 0.01) return null;
       const nrm = [-d[1] / L, d[0] / L];
       const ca = W(a[0] + nrm[0] * offset, a[1] + nrm[1] * offset), cb = W(b[0] + nrm[0] * offset, b[1] + nrm[1] * offset);
@@ -130,6 +140,7 @@ export function createApartment({ THREE, scene, renderer }) {
       const m = add(g, mat);
       m.position.set((ca[0] + cb[0]) / 2, floorY + (y0 + y1) / 2, (ca[1] + cb[1]) / 2);
       m.rotation.y = Math.atan2(-(cb[1] - ca[1]), cb[0] - ca[0]);
+      if (mergeWall) m.userData.mergeWall = true;
       return m;
     }
 
@@ -154,8 +165,8 @@ export function createApartment({ THREE, scene, renderer }) {
       const piece = (s0, s1, y0, y1, solid) => {
         if (s1 - s0 < 0.005) return;
         // mur extérieur : deux couches (intérieur peint / extérieur pierre)
-        if (w.facade) { slab(P(s0), P(s1), t * 0.25, y0, y1, mat, off + Math.sign(off) * t * 0.375); slab(P(s0), P(s1), t * 0.75, y0, y1, matOut, off - Math.sign(off) * t * 0.125); }
-        else slab(P(s0), P(s1), t, y0, y1, mat, off);
+        if (w.facade) { slab(P(s0), P(s1), t * 0.25, y0, y1, mat, off + Math.sign(off) * t * 0.375, true); slab(P(s0), P(s1), t * 0.75, y0, y1, matOut, off - Math.sign(off) * t * 0.125, true); }
+        else slab(P(s0), P(s1), t, y0, y1, mat, off, true);
         if (solid) { const nrm = [-e[1], e[0]]; solids.push([W(P(s0)[0] + nrm[0] * off, P(s0)[1] + nrm[1] * off), W(P(s1)[0] + nrm[0] * off, P(s1)[1] + nrm[1] * off)]); }
       };
       let s = 0;
@@ -223,13 +234,30 @@ export function createApartment({ THREE, scene, renderer }) {
         const ro = add(new THREE.CylinderGeometry(0.32, 0.36, 0.04, 32), M.trim, false); ro.position.set(c[0], floorY + H - 0.02, c[1]); ro.userData.ceiling = true;
       }
     }
+    // Fusion des pans de murs par matériau pour limiter le nombre de draw calls.
+    group.updateMatrixWorld(true);
+    const wallBatches = new Map();
+    group.traverse(o => {
+      if (!o.isMesh || !o.userData.mergeWall) return;
+      const key = o.material.uuid;
+      if (!wallBatches.has(key)) wallBatches.set(key, { material: o.material, meshes: [] });
+      wallBatches.get(key).meshes.push(o);
+    });
+    for (const batch of wallBatches.values()) {
+      const geometries = batch.meshes.map(m => { const g = m.geometry.clone(); g.applyMatrix4(m.matrixWorld); return g; });
+      let merged = null;
+      try { merged = geometries.length > 1 ? mergeGeometries(geometries, false) : geometries[0]; } catch (_) {}
+      if (!merged) { geometries.forEach((g, i) => { if (g !== batch.meshes[i].geometry) g.dispose(); }); continue; }
+      batch.meshes.forEach(m => { group.remove(m); m.geometry.dispose(); });
+      const mesh = new THREE.Mesh(merged, batch.material); mesh.castShadow = true; mesh.receiveShadow = true; mesh.matrixAutoUpdate = false; group.add(mesh);
+    }
     scene.add(group);
 
     // boîte de découpe (contour + marge) : on retire le vrai bâtiment là où se trouve l'appartement
     const us = walls.flatMap(w => [w.a[0], w.b[0]]), vs = walls.flatMap(w => [w.a[1], w.b[1]]);
     const box = { u0: Math.min(...us) - 0.15, u1: Math.max(...us) + 0.15, v0: -0.45, v1: Math.max(...vs) + 0.15 };
     const c3 = W((box.u0 + box.u1) / 2, (box.v0 + box.v1) / 2);
-    info = { fr, box, solids, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W };
+    info = { fr, box, solids, buildingId: fr.buildingId, center: new THREE.Vector3(c3[0], floorY + 1.3, c3[1]), size: Math.max(box.u1 - box.u0, box.v1 - box.v0), H, W };
     renderer.localClippingEnabled = true;
     setDollhouse(!!opts.dollhouse);
     return info;
@@ -237,16 +265,16 @@ export function createApartment({ THREE, scene, renderer }) {
 
   function setDollhouse(on) {
     if (!info) return;
-    unclip();
-    clip = makeClip(info.fr, info.box, on ? 400 : info.H + 0.32);
+    if (!clip) clip = makeClip(info.fr, info.box, on ? 400 : info.H + 0.32);
+    else clip[4].constant = -(info.fr.floorY + (on ? 400 : info.H + 0.32));
     group.traverse(o => { if (o.userData.ceiling) o.visible = !on; });
-    applyClip(true);
+    applyClip();
   }
 
   return {
     build,
     setDollhouse,
-    tick(dt) { if (!clip) return; scanT += dt; if (scanT > 1) { scanT = 0; applyClip(false); } },  // nouvelles tuiles / façades chargées
+    tick() {}, // aucune recompilation ni réapplication aux meshes de la ville après l'entrée en 3D
     hide() { unclip(); dispose(); info = null; },
     get info() { return info; },
   };
