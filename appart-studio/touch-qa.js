@@ -24,8 +24,9 @@
     const next = Number(old) + (Number(old) + step <= max ? step : -step);
     el.value = String(next); el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
     await sleep(30);
-    const ok = Number(el.value) !== Number(old);
-    results.push({control:describe(el),valueChanged:ok,before:old,after:el.value});
+    const after = el.value, ok = Number(after) !== Number(old);
+    results.push({control:describe(el),valueChanged:ok,before:old,after});
+    el.value = old; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
     return ok;
   };
   const testNumber = async el => {
