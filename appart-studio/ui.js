@@ -65,7 +65,7 @@ body.as-mode #as-launch{display:none!important}
 #as-window-settings input,#as-window-settings select{box-sizing:border-box;width:100%;margin-top:4px;padding:8px;border:1px solid #ffffff22;border-radius:9px;background:#1b2330;color:#fff;font:14px -apple-system,Arial}
 #as-window-settings .count-btn,#as-personalize{min-width:38px;height:38px;border-radius:10px;border:1px solid #ffffff22;background:#202a38;font-weight:800}
 #as-personalize{padding:0 10px;font-size:12px}
-#as-win-custom{display:none;margin-top:8px}
+#as-window-warning{font-size:11px;color:#ffc17a;line-height:1.4;margin-top:5px}#as-win-custom{display:none;margin-top:8px}
 #as-win-custom.on{display:block}
 #as-win-custom details{padding:8px 0;border-top:1px solid #ffffff18}
 #as-win-custom summary{font-weight:700;font-size:12px;padding:5px}
@@ -191,7 +191,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
         <label>Mur façade (m)<input id="as-win-thickness" type="number" min="0.15" max="1.2" step="0.05" value="0.35"></label>
         <label>Plafond (m)<input id="as-win-ceiling" type="number" min="2.2" max="4" step="0.05" value="2.80"></label>
       </div>
-      <div id="as-win-custom"></div><div id="as-window-results"></div>
+      <div id="as-window-warning"></div><div id="as-win-custom"></div><div id="as-window-results"></div>
     </div>
     <div class="row" id="as-draw-actions"><button id="as-window-calc">Calculer</button><button id="as-draw">Dessiner mon plan</button></div>
     <div class="links"><button id="as-change">← Changer d'adresse</button><button id="as-dbgb">Détails</button><button id="as-quit">Quitter</button></div>
@@ -215,6 +215,8 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     $('as-win-thickness').value=s.facadeThickness;$('as-win-ceiling').value=s.ceilingHeight;
     $('as-personalize').textContent=s.customize?'Masquer':'Personnaliser';
     const custom=$('as-win-custom');custom.classList.toggle('on',!!s.customize);
+    const tooTall=s.customize?s.windows.some(w=>Number(w.sill??s.sill)+Number(w.height??s.height)>s.ceilingHeight-0.18):Number(s.sill)+Number(s.height)>s.ceilingHeight-0.18;
+    $('as-window-warning').textContent=tooTall?'Attention : la fenêtre dépasse la hauteur sous plafond. Sa hauteur réelle sera réduite dans la 3D et le calcul.':'';
     custom.innerHTML=s.customize?s.windows.map((w,i)=>`<details><summary>Fenêtre ${i+1}</summary><div class="fields">
       <label>Largeur (m)<input type="number" min="0.5" max="4" step="0.05" data-wi="${i}" data-wf="width" value="${w.width}"></label>
       <label>Hauteur (m)<input type="number" min="0.5" max="3.5" step="0.05" data-wi="${i}" data-wf="height" value="${w.height}"></label>
@@ -572,12 +574,6 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     }
     const safeBounds = { u0: safeU0, u1: safeU1, v1: Math.min(20, minDepth - 0.2) };
     if (safeBounds.u1 - safeBounds.u0 < 1.5 || safeBounds.v1 < 1.5) { $('as-bw').textContent = 'Emprise IGN trop étroite ou irrégulière pour garantir le placement de cet appartement.'; return; }
-    const entries = window.__facadeEtages?.get(r.feature.properties?.cleabs) || [];
-    let facade = null, facadeDistance = Infinity;
-    for (const e of entries) { const dx=e.b[0]-e.a[0], dz=e.b[1]-e.a[1], l2=dx*dx+dz*dz||1; const t=Math.max(0,Math.min(1,((F[0]-e.a[0])*dx+(F[1]-e.a[1])*dz)/l2)); const d=Math.hypot(F[0]-e.a[0]-dx*t,F[1]-e.a[1]-dz*t); if(d<facadeDistance){facadeDistance=d;facade=e;} }
-    const floorIndex = facade?.ent && r.floorData.floor >= 1 ? r.floorData.floor + 1 : r.floorData.floor;
-    const facadeAxis = facade ? [(facade.b[0]-facade.a[0])/(Math.hypot(facade.b[0]-facade.a[0],facade.b[1]-facade.a[1])||1),(facade.b[1]-facade.a[1])/(Math.hypot(facade.b[0]-facade.a[0],facade.b[1]-facade.a[1])||1)] : null;
-    const facadeWindows = facade && facadeDistance <= 6 ? (facade.windows || []).filter(w => w.floor === floorIndex).map(w => { const wx=facade.a[0]+facadeAxis[0]*w.x, wz=facade.a[1]+facadeAxis[1]*w.x; return { id:'facade-'+facade.k+'-'+w.floor+'-'+w.bay, u:(wx-F[0])*u[0]+(wz-F[1])*u[1], width:w.width, height:w.height, allege:facade.y0+w.y-w.height/2-view.floorY(r) }; }) : [];
     $('as-bar').classList.remove('on');
     editor.open({
       key:r.address+'|'+r.floorData.floor,title:r.address+' · '+floorName(r.floorData.floor),
