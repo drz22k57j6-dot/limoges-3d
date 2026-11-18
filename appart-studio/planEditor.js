@@ -28,7 +28,7 @@ export function createPlanEditor({ onBack, onView3D }) {
   <div id="ase-hint"></div>
   <div id="ase-sheet"></div>
   <footer id="ase-bottom">
-    <button id="ase-3d">Voir en 3D ✦</button>
+    <button id="ase-settings">Réglages appartement</button><button id="ase-3d">Voir en 3D ✦</button>
     <nav id="ase-tools">
       <button data-tool="piece"><i>✋</i>Pièces</button><button data-tool="mur"><i>▬</i>Mur</button>
       <button data-tool="fenetre"><i>▭</i>Fenêtre</button><button data-tool="porte"><i>◜</i>Porte</button>
@@ -41,7 +41,25 @@ export function createPlanEditor({ onBack, onView3D }) {
   let hist = [], fut = [], drag = null, sel = null, storeKey = '';
 
   // ---------- données ----------
-  const fresh = () => { const b = ctxInfo?.safeBounds; return { o: b ? { u0: b.u0, u1: b.u1, v1: b.v1 } : { u0: -2.5, u1: 2.5, v1: 4 }, walls: [], ops: [], labels: [{ p: [0, Math.min(2, (b?.v1 || 4) / 2)], type: 'sejour' }], n: 1 }; };
+  function defaultWindowOps(settings, u0, u1, start = 1) {
+    const count = Math.max(1, Math.min(8, Number(settings?.count) || 1)), span = u1 - u0, margin = 0.2, ops = [];
+    for (let i = 0; i < count; i++) {
+      const cfg = settings?.customize ? settings.windows?.[i] : null;
+      const width = Math.max(0.5, Math.min(4, Number(cfg?.width ?? settings?.width) || 1.2));
+      const mode = cfg?.positionMode || 'distance', distance = Number(cfg?.distance);
+      const along = mode === 'left' ? width / 2 + margin : mode === 'center' ? span / 2 : mode === 'right' ? span - width / 2 - margin
+        : Number.isFinite(distance) && distance > 0 ? distance : span * (i + 1) / (count + 1);
+      const center = Math.max(width / 2 + margin, Math.min(span - width / 2 - margin, along));
+      ops.push({ id:'o'+(start+i), wall:'F', p:[u0+center,0], w:width,
+        allege:Number(cfg?.sill ?? settings?.sill) || 0.9, h:Number(cfg?.height ?? settings?.height) || 2.1, type:'fenetre' });
+    }
+    return ops;
+  }
+  const fresh = () => {
+    const b=ctxInfo?.safeBounds, o=b?{u0:b.u0,u1:b.u1,v1:b.v1}:{u0:-2.5,u1:2.5,v1:4};
+    const settings=JSON.parse(JSON.stringify(ctxInfo?.settings||{count:1,width:1.2,height:2.1,sill:0.9,facadeThickness:0.35,ceilingHeight:2.8,customize:false,windows:[]}));
+    return {o,settings,walls:[],ops:defaultWindowOps(settings,o.u0,o.u1),labels:[{p:[0,Math.min(2,(b?.v1||4)/2)],type:'sejour'}],n:10};
+  };
   function outline() {
     const { u0, u1, v1 } = P.o;
     return [{ id: 'F', a: [u0, 0], b: [u1, 0], ext: true, facade: true }, { id: 'E', a: [u1, 0], b: [u1, v1], ext: true },
@@ -321,14 +339,40 @@ export function createPlanEditor({ onBack, onView3D }) {
   }
   function openOpSheet(op) {
     const name = op.type === 'fenetre' ? 'Fenêtre' : 'Porte';
-    sheet.innerHTML = `<b>${name} · <span id="ase-w">${fmt(op.w)}</span> m</b><div class="ase-row">
-      <button id="ase-wm">− 10 cm</button><button id="ase-wp">+ 10 cm</button><button id="ase-del" class="ase-danger">Supprimer</button><button id="ase-ok">OK</button></div>`;
+    const leftDistance = Math.max(0, op.p[0] - P.o.u0);
+    sheet.innerHTML = `<b>${name}</b>
+      <label>Largeur (m)<input id="ase-op-w" type="number" min="0.5" max="4" step="0.05" value="${op.w}"></label>
+      ${op.type === 'fenetre' ? `<div class="ase-row"><button data-pos="left">Gauche</button><button data-pos="center">Centre</button><button data-pos="right">Droite</button></div>
+      <label>Distance depuis le bord gauche (m)<input id="ase-op-pos" type="number" min="0" max="${P.o.u1-P.o.u0}" step="0.05" value="${leftDistance}"></label>
+      <label>Hauteur (m)<input id="ase-op-h" type="number" min="0.5" max="3.5" step="0.05" value="${op.h || 2.1}"></label>
+      <label>Allège (m)<input id="ase-op-sill" type="number" min="0" max="2" step="0.05" value="${op.allege ?? 0.9}"></label>` : ''}
+      <div class="ase-row"><button id="ase-del" class="ase-danger">Supprimer</button><button id="ase-ok">OK</button></div>`;
     sheet.classList.add('on');
-    const setW = dw => { op.w = Math.max(0.5, Math.min(4, Math.round((op.w + dw) * 10) / 10)); sheet.querySelector('#ase-w').textContent = fmt(op.w); commit(); };
-    sheet.querySelector('#ase-wm').onclick = () => setW(-0.1);
-    sheet.querySelector('#ase-wp').onclick = () => setW(0.1);
+    const apply = (key,value,min,max) => { op[key]=Math.max(min,Math.min(max,Number(value)||min)); commit(); };
+    sheet.querySelector('#ase-op-w').onchange=e=>apply('w',e.target.value,0.5,4);
+    if(op.type==='fenetre'){
+      sheet.querySelector('#ase-op-h').onchange=e=>apply('h',e.target.value,0.5,3.5);
+      sheet.querySelector('#ase-op-sill').onchange=e=>apply('allege',e.target.value,0,2);
+      sheet.querySelector('#ase-op-pos').onchange=e=>{op.p[0]=P.o.u0+Math.max(0,Math.min(P.o.u1-P.o.u0,Number(e.target.value)||0));commit();};
+      sheet.querySelectorAll('[data-pos]').forEach(b=>b.onclick=()=>{
+        const width=op.w, span=P.o.u1-P.o.u0, d=b.dataset.pos==='left'?width/2+0.2:b.dataset.pos==='right'?span-width/2-0.2:span/2;
+        op.p=[P.o.u0+d,0];commit();openOpSheet(op);
+      });
+    }
     sheet.querySelector('#ase-del').onclick = () => { P.ops = P.ops.filter(o => o.id !== op.id); sel = null; closeSheet(); commit(); };
     sheet.querySelector('#ase-ok').onclick = () => { sel = null; closeSheet(); draw(); };
+  }
+  function openSettingsSheet() {
+    P.settings ||= {};
+    P.settings.facadeThickness ??= 0.35; P.settings.ceilingHeight ??= 2.8;
+    sheet.innerHTML = `<b>Réglages appartement</b>
+      <label>Épaisseur du mur de façade (m)<input id="ase-thickness" type="number" min="0.15" max="1.2" step="0.05" value="${P.settings.facadeThickness}"></label>
+      <label>Hauteur sous plafond (m)<input id="ase-ceiling" type="number" min="2.2" max="4" step="0.05" value="${P.settings.ceilingHeight}"></label>
+      <div class="ase-row"><button id="ase-settings-ok">Fermer</button></div>`;
+    sheet.classList.add('on');
+    sheet.querySelector('#ase-thickness').onchange=e=>{P.settings.facadeThickness=Math.max(0.15,Math.min(1.2,Number(e.target.value)||0.35));commit();};
+    sheet.querySelector('#ase-ceiling').onchange=e=>{P.settings.ceilingHeight=Math.max(2.2,Math.min(4,Number(e.target.value)||2.8));commit();};
+    sheet.querySelector('#ase-settings-ok').onclick=()=>{closeSheet();draw();};
   }
   function openWallSheet(w) {
     const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]);
@@ -348,6 +392,7 @@ export function createPlanEditor({ onBack, onView3D }) {
   root.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   root.querySelector('#ase-undo').onclick = () => { if (hist.length > 1) { fut.push(hist.pop()); restore(hist[hist.length - 1]); } };
   root.querySelector('#ase-redo').onclick = () => { if (fut.length) { const j = fut.pop(); hist.push(j); restore(j); } };
+  root.querySelector('#ase-settings').onclick = openSettingsSheet;
   root.querySelector('#ase-back').onclick = () => { close(); onBack?.(); };
   root.querySelector('#ase-3d').onclick = () => {
     if (!rooms.length) { flash('Dessine au moins une pièce fermée'); return; }
@@ -363,6 +408,10 @@ export function createPlanEditor({ onBack, onView3D }) {
       ctxInfo = info; storeKey = 'as-plan:' + info.key;
       let saved = null; try { saved = JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) {}
       P = saved && saved.o ? saved : fresh();
+      P.settings = { ...(ctxInfo.settings || {}), ...(P.settings || {}) };
+      P.ops = P.ops.filter(o => !o.facadeWindowId);
+      if (!P.ops.some(o => o.type === 'fenetre' && o.wall === 'F')) P.ops.push(...defaultWindowOps(P.settings, P.o.u0, P.o.u1, P.n));
+      P.n = Math.max(P.n || 1, 10 + P.ops.length);
       if (ctxInfo.safeBounds) {
         const b = ctxInfo.safeBounds;
         P.o.u0 = Math.max(b.u0, Math.min(b.u1 - 1.5, P.o.u0));
@@ -385,9 +434,10 @@ export function createPlanEditor({ onBack, onView3D }) {
     // données pour la phase 3 (génération 3D) — plan en mètres, repère u/v
     getPlan() {
       return {
-        murs: allWalls().map(w => ({ id: w.id, a: w.a, b: w.b, epaisseur: w.facade ? 0.4 : w.ext ? 0.25 : 0.15, facade: !!w.facade })),
+        murs: allWalls().map(w => ({ id: w.id, a: w.a, b: w.b, epaisseur: w.facade ? (P.settings?.facadeThickness || 0.35) : w.ext ? 0.25 : 0.15, facade: !!w.facade })),
         ouvertures: P.ops.map(o => { const sp = opSpan(o); return { id: o.id, murId: o.wall, type: o.type, centre: sp?.c, largeur: sp?.width ?? o.w, allege: o.allege, hauteur: o.h }; }),
         pieces: rooms.map((r, i) => ({ id: 'r' + i, type: r.type, polygone: r.poly, surface: r.area })),
+        settings: { ...P.settings },
       };
     },
   };
