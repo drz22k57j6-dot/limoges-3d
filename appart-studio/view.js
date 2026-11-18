@@ -97,6 +97,14 @@ export function createFacadeView({ THREE, scene, camera, drone, ground }) {
       return { gap: st.cam.gap };
     },
     refresh() { if (st.res) { build(st.res); st.t0 -= 3; } },
+    setFloor(floorData) {
+      if (!st.res || !st.group) return;
+      st.res.floorData = floorData;
+      st.res.snap = snapFromFacades(st.res);
+      const y = floorY(st.res), h = floorH(st.res);
+      st.group.scale.y = h / Math.max(0.1, st.baseBandHeight || h);
+      st.group.position.y = y + h / 2;
+    },
     onSnap(f) { st.onSnap = f; },
     suspend() { if (st.group) st.group.visible = false; if (window.__camOverride === hook) window.__camOverride = null; },
     resume() { if (st.group) st.group.visible = true; if (st.cam) { window.__camOverride = hook; st.t0 = performance.now() / 1000 - 3; } },
