@@ -50,6 +50,14 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - 3D : appartement de 42 m² (séjour, chambre, SDB, 3 fenêtres, 2 portes) au 38 rue Cler 2e — maquette, visite et vue fenêtre vérifiées par captures.
 - Éditeur : agrandissement 7 × 5 m, 2 cloisons → Séjour 17,65 m² / Chambre 11,10 m² / Salle de bain 6,25 m², 3 fenêtres, 1 porte, annuler/rétablir.
 
+## Phase 4A — soleil réel dans la scène
+
+- Le panneau solaire apparaît dans les vues 3D (maquette, visite, fenêtres) : date, raccourcis 21 décembre / 21 mars / 21 juin / aujourd'hui, heure entre lever et coucher, journée accélérée en 12 secondes.
+- La position et la direction sont importées directement depuis `sun.js` ; les algorithmes de référence ne sont pas recopiés.
+- La DirectionalLight existante du jeu est pilotée temporairement autour du centre de l'appartement. Aucune seconde lumière n'est créée.
+- La caméra d'ombre est resserrée à 150 × 150 m ; résolution plafonnée à 1024 sur mobile. Le suivi du soleil, la couleur, l'intensité et le cadrage d'ombre du jeu sont restaurés à la fermeture.
+- Les vitres de l'appartement avaient déjà `castShadow = false` ; aucun changement de géométrie ou matériau de fenêtre n'est nécessaire pour ce point.
+
 ## Limites
 
 - Phase 4 (soleil réel, heures d'ensoleillement par pièce) non commencée.
