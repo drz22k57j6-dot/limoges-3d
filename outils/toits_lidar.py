@@ -8,7 +8,8 @@ import math
 import numpy as np
 from shapely.geometry import Point, Polygon, MultiPolygon, GeometryCollection, box
 from shapely.prepared import prep
-import mapbox_earcut as earcut
+from shapely.geometry import MultiPoint
+from shapely.ops import triangulate
 
 
 def sample_raster(raster, x, y, xmin, ymax, resolution=2.0):
@@ -146,27 +147,51 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
                     rings += [np.asarray(r.coords)[:-1] for r in piece.interiors]
                     if not rings[0].size:
                         continue
-                    verts = np.vstack(rings)
-                    ends = np.cumsum([len(r) for r in rings]).astype(np.uint32)
-                    tri = np.asarray(earcut.triangulate_float64(verts, ends), dtype=np.uint32).reshape(-1, 3)
-                    if not len(tri):
-                        continue
-                    # Normales orientées vers le haut dans le repère du jeu (Y = altitude).
-                    aa, bb, cc = verts[tri[:,0]], verts[tri[:,1]], verts[tri[:,2]]
-                    cross = (bb[:,0]-aa[:,0])*(cc[:,1]-aa[:,1])-(bb[:,1]-aa[:,1])*(cc[:,0]-aa[:,0])
-                    tri[cross < 0] = tri[cross < 0][:,[0,2,1]]
-                    zrel = sample_raster(mnh, verts[:,0], verts[:,1], xmin, ymax, resolution)
-                    zrel = np.clip(zrel, max(0.0, eave-0.2), mesh_max)
-                    ground = np.asarray(ground_sampler(verts[:,0], verts[:,1]), dtype=float)
-                    xyz = np.column_stack([verts[:,0], verts[:,1], ground+zrel])
-                    local = np.empty(len(xyz), dtype=np.uint32)
-                    for vi, point in enumerate(xyz):
-                        key = (round(float(point[0]), 3), round(float(point[1]), 3))
-                        if key not in vertex_map:
-                            vertex_map[key] = len(positions)
-                            positions.append(point)
-                        local[vi] = vertex_map[key]
-                    indices.append(local[tri.reshape(-1)])
+                    # Ajouter le point haut significatif de chaque cellule adaptative.
+                    # Cela conserve cheminées/cages d'ascenseur même quand le budget
+                    # force le maillage à agréger plusieurs pixels de 50 cm.
+                    points = [tuple(map(float, q)) for ring in rings for q in ring]
+                    pminx, pminy, pmaxx, pmaxy = piece.bounds
+                    c0 = max(0, int(math.floor((pminx-xmin)/resolution)))
+                    c1 = min(mnh.shape[1]-1, int(math.ceil((pmaxx-xmin)/resolution)))
+                    r0 = max(0, int(math.floor((ymax-pmaxy)/resolution)))
+                    r1 = min(mnh.shape[0]-1, int(math.ceil((ymax-pminy)/resolution)))
+                    if c1 >= c0 and r1 >= r0:
+                        window = np.asarray(mnh[r0:r1+1, c0:c1+1], dtype=float)
+                        valid = np.isfinite(window) & (window > max(0.5, eave + 0.75))
+                        if valid.any():
+                            candidates = np.where(valid, window, -np.inf)
+                            rr, cc = np.unravel_index(int(np.argmax(candidates)), candidates.shape)
+                            px = xmin + (c0+cc+0.5)*resolution
+                            py = ymax - (r0+rr+0.5)*resolution
+                            peak = Point(float(px), float(py))
+                            if piece.contains(peak):
+                                points.append((float(px), float(py)))
+                    # Delaunay avec le point haut intérieur, puis rejet strict de tout
+                    # triangle qui déborde de l'emprise ou traverse une cour.
+                    tris = triangulate(MultiPoint(points))
+                    for tri_geom in tris:
+                        if not piece.covers(tri_geom):
+                            continue
+                        verts = np.asarray(tri_geom.exterior.coords[:-1], dtype=float)
+                        if len(verts) != 3:
+                            continue
+                        cross = ((verts[1,0]-verts[0,0])*(verts[2,1]-verts[0,1])
+                                 -(verts[1,1]-verts[0,1])*(verts[2,0]-verts[0,0]))
+                        if cross < 0:
+                            verts = verts[[0,2,1]]
+                        zrel = sample_raster(mnh, verts[:,0], verts[:,1], xmin, ymax, resolution)
+                        zrel = np.clip(zrel, max(0.0, eave-0.2), mesh_max)
+                        ground = np.asarray(ground_sampler(verts[:,0], verts[:,1]), dtype=float)
+                        xyz = np.column_stack([verts[:,0], verts[:,1], ground+zrel])
+                        local = np.empty(len(xyz), dtype=np.uint32)
+                        for vi, point in enumerate(xyz):
+                            key = (round(float(point[0]), 3), round(float(point[1]), 3))
+                            if key not in vertex_map:
+                                vertex_map[key] = len(positions)
+                                positions.append(point)
+                            local[vi] = vertex_map[key]
+                        indices.append(local)
                 y += step
             x += step
         if positions and indices:
