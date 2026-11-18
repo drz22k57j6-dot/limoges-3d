@@ -1,4 +1,4 @@
-# Appart Studio — phases 1, 2 et 3
+# Appart Studio — phases 1 à 4
 
 ## Parcours (iPhone)
 
@@ -50,8 +50,20 @@ Adresses de test : appui long sur le titre « Appart Studio » (rue Cler en têt
 - 3D : appartement de 42 m² (séjour, chambre, SDB, 3 fenêtres, 2 portes) au 38 rue Cler 2e — maquette, visite et vue fenêtre vérifiées par captures.
 - Éditeur : agrandissement 7 × 5 m, 2 cloisons → Séjour 17,65 m² / Chambre 11,10 m² / Salle de bain 6,25 m², 3 fenêtres, 1 porte, annuler/rétablir.
 
+## Phase 4A — soleil réel dans la scène
+
+- Le panneau solaire apparaît dans les vues 3D (maquette, visite, fenêtres) : date, raccourcis 21 décembre / 21 mars / 21 juin / aujourd'hui, heure entre lever et coucher, journée accélérée en 12 secondes.
+- La position et la direction sont importées directement depuis `sun.js` ; les algorithmes de référence ne sont pas recopiés.
+- La DirectionalLight existante du jeu est pilotée temporairement autour du centre de l'appartement. Aucune seconde lumière n'est créée.
+- La caméra d'ombre est resserrée à 150 × 150 m ; résolution plafonnée à 1024 sur mobile. Le suivi du soleil, la couleur, l'intensité et le cadrage d'ombre du jeu sont restaurés à la fermeture.
+- Le panneau est repliable (une ligne compacte par défaut) ; en mode Visite il se replie automatiquement. Le joystick se place au-dessus du bloc inférieur à partir de sa hauteur mesurée par `ResizeObserver`. L'aide de déplacement disparaît après 4 secondes.
+- « Détails » expose azimut, élévation, incidence sur la façade et présence du soleil sur la façade.
+- Les vitres de l'appartement ont `castShadow = false` ; aucune modification de géométrie n'a été nécessaire pour ce point.
+- **Non validé sur iPhone à ce stade** : le positionnement réel, les ombres visibles au sol, les performances et les captures restent à vérifier sur appareil.
+
 ## Limites
 
-- Phase 4 (soleil réel, heures d'ensoleillement par pièce) non commencée.
+- Le calcul d'angle de masque de l'immeuble opposé au 38 rue Cler n'est pas documenté ici : il manque une hauteur IGN vérifiée du bâtiment en face et l'altitude exacte de la fenêtre du logement de démonstration. Aucune hauteur ne doit être supposée. Une fois ces deux valeurs établies, appliquer `atan((H_{face}-altitude_{fenêtre})/13)` et calculer les minutes où l'élévation solaire dépasse cet angle, avec azimut dans [−21°, 159°].
+- Phase 4B (heures d'ensoleillement par fenêtre et par pièce, BVH et arbres) à venir.
 - Pas encore de meubles.
 - Hors des rues habillées par le moteur de façades, l'étage reste une estimation IGN (corrigeable ±10 cm).

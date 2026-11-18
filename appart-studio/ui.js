@@ -4,6 +4,7 @@ import { createFacadeView } from './view.js';
 import { createPlanEditor, ROOM_TYPES } from './planEditor.js';
 import { createApartment } from './buildApartment.js';
 import { createCam3d } from './cam3d.js';
+import { sunPosition, sunDirection } from './sun.js';
 
 // adresses de démonstration : rue Cler (7e), là où le moteur de façades habille les vraies rues
 const TESTS = [
@@ -74,7 +75,23 @@ body.as-mode #as-launch{display:none!important}
 #as3-win.on{display:flex}
 #as3-win button{width:52px;height:46px;border-radius:14px;border:1px solid #ffffff2a;background:#10161fe8;font-size:20px;font-weight:800}
 #as3-win span{flex:1;text-align:center;background:#10161fe8;border:1px solid #ffffff22;border-radius:14px;height:46px;line-height:46px;font-weight:700;font-size:14px}
-#as3-help{text-align:center;font-size:12px;color:#e8edf5;text-shadow:0 1px 3px #000;margin-bottom:8px}
+#as3-help{text-align:center;font-size:12px;color:#e8edf5;text-shadow:0 1px 3px #000;margin-bottom:8px;transition:opacity .2s}
+#as3-help.hidden{display:none}
+#as3-sun{background:#10161fe8;border:1px solid #ffffff22;border-radius:14px;padding:5px 9px;margin-bottom:8px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#as3-sun .sun-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800}
+#as3-sun .sun-toggle{width:100%;height:28px;border:0;background:transparent;text-align:left;padding:0;font-size:12px;font-weight:800}
+#as3-sun .sun-summary{color:#ffd58a;font-variant-numeric:tabular-nums}
+#as3-sun .sun-caret{margin-left:auto;color:#aeb8c7}
+#as3-sun .sun-controls{display:none;padding-top:5px}
+#as3-sun.expanded .sun-controls{display:block}
+#as3-sun input[type=range]{width:100%;height:24px;accent-color:#ffbf65;display:block;margin:2px 0}
+#as3-sun .sun-shortcuts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+#as3-sun button{min-width:0;height:31px;border-radius:9px;border:1px solid #ffffff20;background:#202a38;font-size:10px;font-weight:700;padding:0 3px}
+#as3-sun .sun-toggle{height:28px;border:0;background:transparent}
+#as3-sun button.on{background:#a45b26;border-color:#ffd58a}
+#as3-sun .sun-play{width:100%;height:35px;margin-top:6px;background:#8a5128;font-size:12px}
+@media(min-width:760px){#as3-sun{max-width:520px;margin-left:auto;margin-right:auto}}
+
 #as3-joy{position:absolute;left:24px;bottom:calc(112px + env(safe-area-inset-bottom));width:116px;height:116px;border-radius:50%;background:#ffffff18;border:2px solid #ffffff40;display:none;pointer-events:auto;touch-action:none}
 #as3-joy.on{display:block}
 #as3-joy div{position:absolute;left:33px;top:33px;width:46px;height:46px;border-radius:50%;background:#ffffffd0;box-shadow:0 2px 10px #0008}
@@ -140,15 +157,25 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   const $ = id => document.getElementById(id);
   const apt = createApartment(ctx), cam3 = createCam3d(ctx);
   cam3.mount($('as-3d'));
+  const joy = document.getElementById('as3-joy');
+  const bottom = $('as3-bottom');
+  const placeJoy = () => { const r = bottom.getBoundingClientRect(); joy.style.bottom = Math.max(12, window.innerHeight - r.top + 12) + 'px'; };
+  const bottomObserver = new ResizeObserver(placeJoy); bottomObserver.observe(bottom);
+  window.addEventListener('resize', placeJoy); placeJoy();
   const editor = createPlanEditor({ onBack: () => $('as-bar').classList.add('on'), onView3D: () => open3d() });
   const HELP = { maquette: 'Glisse pour tourner autour · pince pour zoomer', visite: 'Joystick pour marcher · glisse à droite pour regarder', fenetre: 'Ta vraie vue · glisse pour regarder autour' };
   const TYPE_N = Object.fromEntries(ROOM_TYPES.map(([k, n]) => [k, n]));
+  let helpTimer = 0;
   function setMode3d(m) {
     apt.setDollhouse(m === 'maquette');
     cam3.setMode(m);
     document.querySelectorAll('#as3-modes button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
     $('as3-help').textContent = HELP[m];
+    $('as3-help').classList.remove('hidden');
+    clearTimeout(helpTimer);
+    helpTimer = setTimeout(() => $('as3-help').classList.add('hidden'), 4000);
     $('as3-win').classList.toggle('on', m === 'fenetre'); if (m === 'fenetre') winLabel();
+    if (m === 'visite') document.getElementById('as3-sun')?.classList.remove('expanded');
   }
   function winLabel() {
     const ws = cam3.windows(), plan = state.plan3d, w = ws[cam3.win];
@@ -159,6 +186,76 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     for (const [dx, dy] of [[0, tol], [0, -tol], [tol, 0], [-tol, 0]]) { const p = [c[0] + dx, c[1] + dy]; let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) ins = !ins; } if (ins) return true; }
     return false;
   }
+  const sunUI = { date: null, fraction: 0.5, bounds: null, timer: 0, target: null };
+  const parisParts = d => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d).filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
+  const parisDay = d => { const p = parisParts(d); return new Date(Date.UTC(+p.year, +p.month - 1, +p.day)); };
+  function dayBounds(day, lat, lon) {
+    const start = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+    let first = null, last = null;
+    for (let minute = 0; minute < 1440; minute++) {
+      const t = new Date(start + minute * 60000);
+      if (sunPosition(t, lat, lon).el > 0) { if (first === null) first = t.getTime(); last = t.getTime(); }
+    }
+    return first === null ? null : { first, last };
+  }
+  function stopSunDay() { if (sunUI.timer) clearInterval(sunUI.timer); sunUI.timer = 0; const b = document.getElementById('as3-sun-play'); if (b) b.textContent = '▶ Journée accélérée · 12 s'; }
+  function updateSunScene() {
+    if (!sunUI.bounds || !sunUI.target || !state.res) return;
+    const ms = sunUI.bounds.first + (sunUI.bounds.last - sunUI.bounds.first) * sunUI.fraction;
+    const date = new Date(ms), p = sunPosition(date, state.res.lat, state.res.lon);
+    if (p.el <= 0) { drone.setSun(null); return; }
+    drone.setSun(sunDirection(p.az, p.el), sunUI.target);
+    const timeText = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' }).format(date);
+    const label = document.getElementById('as3-sun-summary');
+    if (label) label.textContent = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', day: 'numeric', month: 'long' }).format(sunUI.date || date) + ' · ' + timeText;
+    const hour = document.getElementById('as3-sun-hour'); if (hour) hour.value = String(Math.round(sunUI.fraction * 1000));
+  }
+  function setSunDate(day) {
+    const r = state.res; if (!r) return;
+    stopSunDay(); sunUI.date = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
+    sunUI.bounds = dayBounds(sunUI.date, r.lat, r.lon);
+    const dateLabel = document.getElementById('as3-sun-date');
+    if (dateLabel) dateLabel.textContent = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: 'short', year: 'numeric' }).format(sunUI.date);
+    const range = document.getElementById('as3-sun-date-range');
+    if (range) {
+      const y = sunUI.date.getUTCFullYear(), days = (Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1)) / 86400000;
+      range.max = String(days - 1); range.value = String(Math.round((sunUI.date - Date.UTC(y, 0, 1)) / 86400000));
+    }
+    const slider = document.getElementById('as3-sun-hour');
+    if (!sunUI.bounds) { if (slider) slider.disabled = true; drone.setSun(null); return; }
+    if (slider) slider.disabled = false;
+    sunUI.fraction = 0.5; updateSunScene();
+  }
+  function mountSunControls(r, target) {
+    let panel = document.getElementById('as3-sun');
+    if (!panel) {
+      panel = document.createElement('div'); panel.id = 'as3-sun';
+      panel.innerHTML = '<div class="sun-head"><button class="sun-toggle" id="as3-sun-toggle" aria-expanded="false">☀ <span class="sun-summary" id="as3-sun-summary">21 juin · --:--</span><span class="sun-caret" id="as3-sun-caret">▾</span></button></div><div class="sun-controls"><div id="as3-sun-date"></div><input id="as3-sun-date-range" aria-label="Date" type="range" min="0" max="365" step="1"><div class="sun-shortcuts"><button data-sundate="winter">21 déc.</button><button data-sundate="spring">21 mars</button><button data-sundate="summer">21 juin</button><button data-sundate="today">Aujourd’hui</button></div><input id="as3-sun-hour" aria-label="Heure entre lever et coucher" type="range" min="0" max="1000" step="1"><button class="sun-play" id="as3-sun-play">▶ Journée accélérée · 12 s</button></div>';
+      $('as3-bottom').insertBefore(panel, $('as3-modes'));
+      $('as3-sun-toggle').onclick = () => { const open = panel.classList.toggle('expanded'); $('as3-sun-toggle').setAttribute('aria-expanded', String(open)); $('as3-sun-caret').textContent = open ? '▴' : '▾'; };
+      panel.querySelectorAll('[data-sundate]').forEach(b => b.onclick = () => {
+        const y = sunUI.date?.getUTCFullYear() || parisDay(new Date()).getUTCFullYear();
+        const fixed = { winter: [11, 21], spring: [2, 21], summer: [5, 21] };
+        const d = b.dataset.sundate === 'today' ? parisDay(new Date()) : new Date(Date.UTC(y, fixed[b.dataset.sundate][0], fixed[b.dataset.sundate][1]));
+        panel.querySelectorAll('[data-sundate]').forEach(x => x.classList.toggle('on', x === b)); setSunDate(d);
+      });
+      $('as3-sun-date-range').oninput = e => { const y = sunUI.date?.getUTCFullYear() || parisDay(new Date()).getUTCFullYear(); setSunDate(new Date(Date.UTC(y, 0, 1 + Number(e.target.value)))); };
+      $('as3-sun-hour').oninput = e => { stopSunDay(); sunUI.fraction = Number(e.target.value) / 1000; updateSunScene(); };
+      $('as3-sun-play').onclick = () => {
+        if (sunUI.timer) { stopSunDay(); return; }
+        if (!sunUI.bounds) return;
+        const start = performance.now(); $('as3-sun-play').textContent = 'Ⅱ Pause';
+        sunUI.timer = setInterval(() => {
+          if (!$('as-3d').classList.contains('on')) { stopSunDay(); return; }
+          sunUI.fraction = Math.min(1, (performance.now() - start) / 12000); updateSunScene();
+          if (sunUI.fraction >= 1) stopSunDay();
+        }, 100);
+      };
+    }
+    sunUI.target = target;
+    const today = parisDay(new Date()); setSunDate(today);
+    panel.querySelectorAll('[data-sundate]').forEach(b => b.classList.toggle('on', b.dataset.sundate === 'today'));
+  }
   function open3d() {
     const r = state.res; if (!r) return;
     const plan = editor.getPlan(); state.plan3d = plan;
@@ -166,13 +263,15 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     const lvl = r.snap ? r.snap.h : (r.floorData.floor === 0 ? r.floorData.hRDC : r.floorData.hEtage);
     const H = Math.max(2.4, Math.min(3.6, lvl - 0.25));
     const fr = { F, u, v, floorY: view.floorY(r), H };
+    sunUI.target = [F[0], fr.floorY + H / 2, F[1]];
     view.suspend();
     apt.build(plan, fr, { dollhouse: true });
     $('as3-title').querySelector('span').textContent = (r.housenumber ? r.housenumber + ' ' : '') + (r.street || r.address) + ' · ' + floorName(r.floorData.floor) + ' · ' + plan.pieces.reduce((s, p) => s + p.surface, 0).toFixed(1).replace('.', ',') + ' m²';
-    $('as-3d').classList.add('on');
+    $('as-3d').classList.add('on'); placeJoy();
     cam3.start(apt.info, plan, 'maquette'); setMode3d('maquette');
+    mountSunControls(r, sunUI.target);
   }
-  function close3d() { cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
+  function close3d() { stopSunDay(); drone.setSun(null); cam3.stop(); apt.hide(); $('as-3d').classList.remove('on'); view.resume(); }
   document.querySelectorAll('#as3-modes button').forEach(b => b.onclick = () => setMode3d(b.dataset.m));
   $('as3-wp').onclick = () => { cam3.nextWindow(-1); winLabel(); };
   $('as3-wn').onclick = () => { cam3.nextWindow(1); winLabel(); };
@@ -219,7 +318,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   // ouverture / fermeture
   const enter = () => { document.body.classList.add('as-mode'); $('as-start').classList.add('on'); setTimeout(() => $('as-addr').focus(), 250); };
   function quit() {
-    cam3.stop(); apt.hide(); view.hide(); editor.close();
+    stopSunDay(); drone.setSun(null); cam3.stop(); apt.hide(); view.hide(); editor.close();
     for (const id of ['as-start', 'as-loading', 'as-bar', 'as-3d']) $(id).classList.remove('on');
     document.body.classList.remove('as-mode'); state.res = null;
   }
@@ -263,12 +362,17 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   function renderDbg() {
     const r = state.res; if (!r) return;
     const p = r.feature.properties || {}, fd = r.floorData;
+    const when = sunUI.bounds ? new Date(sunUI.bounds.first + (sunUI.bounds.last - sunUI.bounds.first) * sunUI.fraction) : new Date();
+    const sp = sunPosition(when, r.lat, r.lon), n = r.local.n;
+    const incidence = Math.acos(Math.max(-1, Math.min(1, Math.cos(sp.el * Math.PI / 180) * (Math.sin(sp.az * Math.PI / 180) * n[0] - Math.cos(sp.az * Math.PI / 180) * n[1])))) * 180 / Math.PI;
+    const facadeSun = sp.el > 0 && Math.cos(incidence * Math.PI / 180) > 0.02;
     $('as-dbg').textContent = [
       'ID IGN : ' + (p.cleabs || '?') + ' · ' + r.matchMode,
       'Hauteur : ' + fd.height.toFixed(1) + ' m · niveaux IGN : ' + fd.floors + ' (RDC compris)',
       'RDC ' + fd.hRDC.toFixed(2) + ' m · étage ' + fd.hEtage.toFixed(2) + ' m' + (fd.haussmann ? ' · haussmannien' : ''),
       (r.snap ? 'Plancher calé sur la façade : ' + r.snap.y.toFixed(2) + ' m alt. · niveau ' + r.snap.h.toFixed(2) + ' m' : 'Plancher estimé : ' + fd.offset.toFixed(2) + ' m au-dessus du sol') + ' · correction ' + (r.adjust >= 0 ? '+' : '') + r.adjust.toFixed(2),
       'Façade : ' + Math.round(r.local.bearing) + '° · adresse → façade ' + r.facade.distance.toFixed(1) + ' m · rue ' + (r.gap ?? 0).toFixed(1) + ' m',
+      'Soleil : azimut ' + sp.az.toFixed(1) + '° · élévation ' + sp.el.toFixed(1) + '° · incidence façade ' + incidence.toFixed(1) + '° · soleil sur la façade : ' + (facadeSun ? 'oui' : 'non'),
       'FPS : ' + Math.round(window.__fps || 0),
     ].join('\n');
   }
