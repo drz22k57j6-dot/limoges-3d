@@ -23,7 +23,7 @@ jobs:
       - name: Install geometry dependencies
         run: python -m pip install numpy shapely mapbox-earcut tifffile Pillow
       - name: Compile changed Python files
-        run: python -m py_compile outils/build.py outils/toits_lidar.py outils/test_toits_lidar.py outils/terrain_runtime.py outils/test_terrain_runtime.py
+        run: python -m py_compile outils/build.py outils/dl_ville.py outils/toits_lidar.py outils/test_toits_lidar.py outils/terrain_runtime.py outils/test_terrain_runtime.py
       - name: Verify helper import in isolated Python mode
         run: python -I -c "import os,sys; sys.path.insert(0, os.path.abspath('outils')); import toits_lidar"
       - name: Run offline synthetic LiDAR tests
