@@ -29,6 +29,15 @@ Audit du code sur la tête de la PR #27 (`f2896d5ac30a925bbbe7b3382ab048f38b3012
 - Le calcul solaire de `appart-studio/sun.js` dispose d'un contrat d'occlusion pour des obstacles et d'une transmission d'arbres facultative, mais l'audit n'a pas trouvé de raccordement des nouvelles haies/massifs à ce calcul.
 - **Non démontré :** fusion/dédoublonnage des arbres d'inventaire et arbres détectés LiDAR, affichage des haies/massifs, occlusion solaire issue de ces nouvelles données.
 
+## Intégration végétation ajoutée depuis l'audit
+
+- `index.html` charge l'index et les JSON de végétation uniquement pour les secteurs visibles autour du joueur.
+- Les arbres Ville de Paris sont convertis vers le format binaire historique attendu par `buildTrees()`, avec hauteur, rayon de houppier, orientation et couleur de famille botanique.
+- Les arbres sont fusionnés aux arbres LiDAR historiques ; un dédoublonnage spatial de 2,25 m évite la majorité des doubles placements.
+- Les haies sont rendues comme volumes 3D segmentés ; les massifs comme volumes extrudés. Le rendu est libéré lorsque le secteur sort de la zone visible.
+- `appart-studio/solarAnalysis.js` lit désormais en priorité l'inventaire local pour les arbres et utilise les haies/massifs comme obstacles opaques du BVH solaire. L'API live des arbres reste un fallback si l'inventaire local est indisponible.
+- Tests ajoutés : `appart-studio/vegetation.test.mjs` et `outils/test_vegetation_runtime.py`. Le workflow `.github/workflows/vegetation-runtime.yml` valide la syntaxe du module navigateur, le module solaire, les tests de chargement et les 236 secteurs de données.
+
 ## Correction de sécurité incluse dans cette branche
 
 Le workflow `.github/workflows/vegetation.yml` pointait explicitement sur `main` pour le checkout et le push. Il pouvait donc publier des données sur `main` même lorsqu'il était lancé depuis une branche de travail. Il est maintenant limité à `feat/appart-studio-runtime-lidar-vegetation` (checkout, rebase et push).
@@ -43,4 +52,8 @@ Le workflow `.github/workflows/vegetation.yml` pointait explicitement sur `main`
 
 ## Limites de validation
 
-Cette branche contient l'audit et la correction du workflow végétation, pas l'intégration runtime complète. Les données sources et les scripts seuls ne permettent pas de déclarer que le monde affiché ou les résultats solaires utilisent déjà toutes ces données. Les étapes 1 à 5 restent à exécuter et à mesurer.
+La végétation est maintenant raccordée au code runtime et au calcul solaire, et les tests GitHub Actions du commit `b3d2fd12ae583e735d37c996b627c2e34ef882b1` ont réussi (syntaxe navigateur, syntaxe solaire, tests Node, validation des données).
+
+Les étapes terrain et reconstruction réelle des toitures restent à exécuter. Le workflow de toitures a été réorienté vers cette branche et la PR #28, mais il est manuel : aucun build IGN réel ni test Safari iPhone n'est déclaré terminé. Le générateur terrain actuellement présent dans le dépôt ne produit pas les tuiles runtime `terrain/t_*.wasm`; les sorties terrain GLB de `outils/build.py` ne sont pas automatiquement chargées par le jeu. Le terrain haute résolution n'est donc pas encore intégré.
+
+Aucune validation visuelle réelle sur iPhone n'a été possible depuis les outils GitHub seuls. Les données et le code sont en place, mais il faut encore exécuter le workflow LiDAR réel et contrôler le rendu en Safari avant de déclarer l'ensemble terminé.
