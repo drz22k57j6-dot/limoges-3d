@@ -104,6 +104,51 @@ function makeTreeModel(trees, drone, ground) {
 
 // Priorité aux données végétation Paris déjà versionnées dans le dépôt (même repère
 // Lambert-93 local que le moteur 3D). L'API live reste un fallback si le secteur manque.
+export async function fetchInventoryGreenery(lon, lat, drone, radiusM = 180) {
+  const [cx, cz] = drone.ll(lon, lat), si = Math.floor((cx + 10000) / 1000), sj = Math.floor((-cz + 6000) / 1000);
+  const jobs = [];
+  for (let i = si - 1; i <= si + 1; i++) for (let j = sj - 1; j <= sj + 1; j++) {
+    const url = new URL('../data/paris/vegetation/' + i + '_' + j + '.json', import.meta.url);
+    jobs.push(fetch(url).then(r => r.ok ? r.json() : null).catch(() => null));
+  }
+  const sectors = await Promise.all(jobs), hedges = [], massifs = [];
+  const near = (x,z) => Math.hypot(x-cx,z-cz) <= radiusM;
+  for (const data of sectors) {
+    for (const h of data?.h || []) {
+      const pts=h[0]||[]; if(pts.length<2) continue;
+      const mx=pts.reduce((s,p)=>s+p[0],0)/pts.length, mz=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+      if(near(mx,mz)) hedges.push(h);
+    }
+    for (const m of data?.m || []) {
+      const pts=m[0]||[]; if(pts.length<3) continue;
+      const mx=pts.reduce((s,p)=>s+p[0],0)/pts.length, mz=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+      if(near(mx,mz)) massifs.push(m);
+    }
+  }
+  return { hedges, massifs };
+}
+function makeGreeneryVisuals(THREE, greenery, ground) {
+  const group=new THREE.Group(); group.name='appart-studio-solar-greenery';
+  const hedgeMat=new THREE.MeshLambertMaterial({color:0x426b35}), massifMat=new THREE.MeshLambertMaterial({color:0x355c32});
+  const box=new THREE.BoxGeometry(1,1,1);
+  for(const h of greenery.hedges||[]) {
+    const pts=h[0], width=THREE.MathUtils.clamp(Number(h[1])||0.8,0.3,3.5), height=THREE.MathUtils.clamp(Number(h[2])||1.5,0.5,3.5);
+    for(let i=1;i<pts.length;i++) {
+      const a=pts[i-1],b=pts[i],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz); if(len<0.25) continue;
+      const mesh=new THREE.Mesh(box,hedgeMat); mesh.position.set((a[0]+b[0])/2,ground((a[0]+b[0])/2,(a[1]+b[1])/2)+height/2,(a[1]+b[1])/2);
+      mesh.rotation.y=-Math.atan2(dz,dx); mesh.scale.set(len,height,width); mesh.castShadow=false; mesh.receiveShadow=true; group.add(mesh);
+    }
+  }
+  for(const m of greenery.massifs||[]) {
+    const pts=m[0],height=THREE.MathUtils.clamp(Number(m[1])||1.2,0.4,14); if(pts.length<3) continue;
+    const shape=new THREE.Shape(); shape.moveTo(pts[0][0],-pts[0][1]); for(let i=1;i<pts.length;i++) shape.lineTo(pts[i][0],-pts[i][1]); shape.closePath();
+    const geo=new THREE.ExtrudeGeometry(shape,{depth:height,bevelEnabled:false,curveSegments:1}); geo.rotateX(-Math.PI/2);
+    const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length,cz=pts.reduce((s,p)=>s+p[1],0)/pts.length; geo.translate(0,ground(cx,cz),0);
+    const mesh=new THREE.Mesh(geo,massifMat); mesh.castShadow=false; mesh.receiveShadow=true; group.add(mesh);
+  }
+  return group;
+}
+
 export async function fetchInventoryTrees(lon, lat, drone, radiusM = 150) {
   const [cx, cz] = drone.ll(lon, lat);
   const si = Math.floor((cx + 10000) / 1000), sj = Math.floor((-cz + 6000) / 1000);
@@ -163,6 +208,9 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
     trees=inventory.length ? makeLocalTreeModel(inventory,ground) : makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground);
   } catch(e) { console.warn('[Appart Studio] inventaire arbres indisponible, fallback API',e); try { trees=makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground); } catch(apiError) { console.warn('[Appart Studio] arbres indisponibles',apiError); } }
   const treeGroup=makeTreeVisuals(THREE,trees);
+  let greeneryGroup=null;
+  try { greeneryGroup=makeGreeneryVisuals(THREE,await fetchInventoryGreenery(res.lon,res.lat,drone,180),ground); scene.add(greeneryGroup); }
+  catch(e) { console.warn('[Appart Studio] haies et massifs indisponibles',e); }
   const bvh=makeBvh(THREE,scene,[fr.F[0],fr.floorY+fr.H/2,fr.F[1]],250);
   scene.add(treeGroup);
   const baseBlocked=makeBlocker(THREE,bvh);
@@ -196,7 +244,7 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
     return {id:room.id,type:room.type,windows:ws.map(w=>w.id),hours:sums};
   });
   onProgress({stage:'termine',done:total,total,trees:trees.length});
-  return {windows:results,rooms,trees:trees.length,treeGroup,dates:Object.fromEntries(Object.entries(dates).map(([k,d])=>[k,d.toISOString().slice(0,10)]))};
+  return {windows:results,rooms,trees:trees.length,treeGroup,greeneryGroup,dates:Object.fromEntries(Object.entries(dates).map(([k,d])=>[k,d.toISOString().slice(0,10)]))};
 }
 
 
@@ -216,6 +264,9 @@ export async function verifySolarAt({ THREE, scene, drone, ground, res, plan, fr
     catch (apiError) { console.warn('[Appart Studio] arbres indisponibles pour Vérifier', apiError); }
   }
   const treeGroup = makeTreeVisuals(THREE, trees);
+  let greeneryGroup = null;
+  try { greeneryGroup = makeGreeneryVisuals(THREE, await fetchInventoryGreenery(res.lon, res.lat, drone, 180), ground); scene.add(greeneryGroup); }
+  catch (e) { console.warn('[Appart Studio] haies et massifs indisponibles pour Vérifier', e); }
   const bvh = makeBvh(THREE, scene, [fr.F[0], fr.floorY + fr.H / 2, fr.F[1]], 250);
   scene.add(treeGroup);
   const baseBlocked = makeBlocker(THREE, bvh);
