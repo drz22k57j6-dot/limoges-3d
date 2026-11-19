@@ -38,7 +38,8 @@ Audit du code sur la tête de la PR #27 (`f2896d5ac30a925bbbe7b3382ab048f38b3012
 - Les arbres Ville de Paris sont convertis vers le format binaire historique attendu par `buildTrees()`, avec hauteur, rayon de houppier, orientation et couleur de famille botanique.
 - Les arbres sont fusionnés aux arbres LiDAR historiques ; un dédoublonnage spatial de 2,25 m évite la majorité des doubles placements.
 - Les haies sont rendues comme volumes 3D segmentés ; les massifs comme volumes extrudés. Le rendu est libéré lorsque le secteur sort de la zone visible.
-- `appart-studio/solarAnalysis.js` lit désormais en priorité l'inventaire local pour les arbres et utilise les haies/massifs comme obstacles opaques du BVH solaire. L'API live des arbres reste un fallback si l'inventaire local est indisponible.
+- `appart-studio/solarAnalysis.js` lit désormais en priorité l'inventaire local pour les arbres et utilise les haies/massifs comme obstacles opaques du BVH solaire. Les houppiers d'arbres utilisent le modèle saisonnier simplifié existant (caduc/conifère). L'API live des arbres reste un fallback si l'inventaire local est indisponible.
+- **Limite scientifique :** les haies/massifs sont actuellement opaques et les houppiers utilisent une transmission simplifiée ; ce n'est pas une modélisation radiative calibrée ni un résultat juridiquement opposable. Il faudra mesurer/calibrer porosité, dimensions et saisonnalité avant tout usage contractuel.
 - Tests ajoutés : `appart-studio/vegetation.test.mjs` et `outils/test_vegetation_runtime.py`. Le workflow `.github/workflows/vegetation-runtime.yml` valide la syntaxe du module navigateur, le module solaire, les tests de chargement et les 236 secteurs de données.
 
 ## Correction de sécurité incluse dans cette branche
