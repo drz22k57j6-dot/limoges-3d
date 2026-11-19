@@ -16,10 +16,13 @@ Audit du code sur la tête de la PR #27 (`f2896d5ac30a925bbbe7b3382ab048f38b3012
 
 ### Terrain
 
-- Le runtime Paris avec `data/paris/secteurs/index.json` charge `terrain_loin.wasm` au démarrage, puis les tuiles `data/paris/terrain/t_<i>_<j>.wasm` à proximité.
-- Le builder `outils/build.py` construit actuellement `ville_terrain.glb` et `relief.bin` dans ses sorties de build, avec MNT 2 m. Ces sorties ne sont pas, à elles seules, les tuiles runtime `terrain/t_*.wasm`.
-- L'arbre Git contient déjà des tuiles runtime `data/paris/terrain/t_*.wasm` et `data/paris/secteurs/relief/r_*.wasm`. Leur présence dans Git ne prouve pas qu'elles ont été régénérées depuis un MNT HD.
-- **Non démontré :** disponibilité d'un MNT LiDAR HD adapté, intégration dans le générateur de tuiles runtime, gains de résolution réellement visibles. Aucun remplacement du terrain runtime n'est effectué dans cette branche.
+- Le runtime Paris charge `terrain_loin.wasm`, puis les tuiles `data/paris/terrain/t_<i>_<j>.wasm` de 2 km autour du joueur.
+- `outils/build.py` produit toujours un GLB de terrain distinct, qui n'est pas consommé par le streamer. Pour éviter ce décalage, cette branche ajoute un générateur dédié : `outils/terrain_runtime.py`.
+- `outils/dl_ville.py` télécharge maintenant les dalles brutes MNT LiDAR HD en EPSG:2154, couche `IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93`, à 0,5 m/pixel (36 dalles 1 km).
+- Le générateur produit `data/paris/terrain_hd/t_<i>_<j>.wasm`, directement au format GLB attendu par `loadGLB()`, aligné sur `RX`, `RY` et `H0` du runtime. Le maillage est échantillonné tous les **4 m** depuis le raster MNT 50 cm, avec texture orthophoto IGN.
+- `terrainTile()` tente désormais `terrain_hd` en premier, puis revient automatiquement à `terrain` si la tuile HD n'existe pas ou échoue. Seules les tuiles entièrement couvertes par le carré téléchargé de 6 × 6 km sont générées ; le reste de Paris conserve l'ancien terrain.
+- Tests synthétiques ajoutés pour les limites de dalles, l'écriture GLB et un maillage complet de 501 × 501 sommets / 500 000 triangles.
+- **Non démontré à ce stade :** génération avec les vrais rasters IGN et contrôle visuel du terrain HD dans Safari. Le workflow manuel doit encore être lancé pour créer et publier les fichiers `terrain_hd`.
 
 ### Végétation
 
