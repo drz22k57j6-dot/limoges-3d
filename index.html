@@ -1760,7 +1760,120 @@ let grass = null; const grassP = new THREE.Vector3();
 // data/paris/secteurs/index.json : secteurs de 1 km (routes, bordures, trottoirs, arbres, murs, axes), tuiles de terrain
 // et de relief de 2 km. La physique (murs, routes, relief) s'ajoute au fil du vol ; l'affichage (routes, arbres, terrain
 // détaillé) suit le drone dans un rayon de ~1,5 km. Au-delà : un terrain d'ensemble de tout Paris (terrain_loin).
-const STREAM = { gen: 0, idx: null, phys: new Set(), physP: new Map(), vis: new Map(), terr: new Map(), relief: new Set(), busy: false, last: '', treeBufs: new Map(), treeDirty: false, SR: null };
+
+/* Paris — données végétation Ville de Paris (arbres, haies, massifs).
+   Chargement uniquement des secteurs visibles ; les arbres sont adaptés au format LOD
+   historique afin de conserver le rendu existant et de dédoublonner avec les arbres LiDAR. */
+const VEG = { index: null, indexP: null, data: new Map(), meshes: new Map(), hedgeMat: null, massifMat: null };
+async function vegetationIndex() {
+  if (VEG.index) return VEG.index;
+  if (!VEG.indexP) VEG.indexP = fetch(CITY.data + 'vegetation/index.json' + V)
+    .then(r => { if (!r.ok) throw new Error('index végétation HTTP ' + r.status); return r.json(); })
+    .then(v => { if (!v || !v.secteurs) throw new Error('index végétation invalide'); VEG.index = v; return v; })
+    .catch(e => { VEG.indexP = null; throw e; });
+  return VEG.indexP;
+}
+async function loadVegetationSector(k) {
+  if (VEG.data.has(k)) return VEG.data.get(k);
+  const idx = await vegetationIndex();
+  if (!Object.prototype.hasOwnProperty.call(idx.secteurs, k)) { VEG.data.set(k, null); return null; }
+  const r = await fetch(CITY.data + 'vegetation/' + k + '.json' + V);
+  if (!r.ok) throw new Error('végétation ' + k + ' HTTP ' + r.status);
+  const d = await r.json();
+  if (!d || !Array.isArray(d.a) || !Array.isArray(d.h) || !Array.isArray(d.m)) throw new Error('schéma végétation invalide : ' + k);
+  VEG.data.set(k, d); return d;
+}
+function inventoryTreeColor(species) {
+  // Couleurs de houppier indicatives par famille botanique, pas une mesure colorimétrique.
+  const palette = { 1:[74,112,55], 2:[83,126,61], 3:[91,125,58], 4:[92,132,65], 5:[83,119,54], 6:[79,116,58], 7:[73,105,51], 8:[91,124,58], 9:[78,111,56], 10:[80,117,61], 11:[93,127,69], 12:[87,119,58], 13:[48,91,55], 14:[48,88,53], 15:[82,122,61], 16:[100,133,75] };
+  return palette[species] || [82,119,61];
+}
+function mergeVegetationTreeBuffers(keys) {
+  const legacy = keys.map(k => STREAM.treeBufs.get(k)).filter(Boolean);
+  let legacyCount = 0;
+  for (const b of legacy) { if (b.byteLength < 4) continue; legacyCount += new DataView(b).getUint32(0, true); }
+  const cells = new Map(), cellKey = (x,z) => Math.floor(x/4)+':'+Math.floor(z/4);
+  const nearby = (x,z) => {
+    const found=[];
+    for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++) {
+      const list=cells.get(cellKey(x+a*4,z+b*4)); if(list) for(const p of list) if(Math.hypot(p[0]-x,p[1]-z)<2.25) return true;
+    }
+    return false;
+  };
+  for (const b of legacy) {
+    const n=new DataView(b).getUint32(0,true), f=new Float32Array(b,4,n*6);
+    for(let i=0;i<n;i++){const x=f[i*6],z=f[i*6+2],key=cellKey(x,z);let a=cells.get(key);if(!a)cells.set(key,a=[]);a.push([x,z]);}
+  }
+  const inventory=[];
+  for(const k of keys) {
+    const d=VEG.data.get(k); if(!d) continue;
+    for(const t of d.a) {
+      if(!Array.isArray(t)||t.length<8) continue;
+      const [x,z,species,h,crown,trunk,stage,seed]=t;
+      if(![x,z,h,crown].every(Number.isFinite)||h<1||h>45||crown<=0) continue;
+      if(nearby(x,z)) continue;
+      const key=cellKey(x,z);let a=cells.get(key);if(!a)cells.set(key,a=[]);a.push([x,z]);
+      const color=inventoryTreeColor(species), angle=((Math.abs(Number(seed)||0)*0.61803398875)%1)*Math.PI*2;
+      inventory.push({x,z,y:groundH(x,z),h,crown,angle,color});
+    }
+  }
+  const n=legacyCount+inventory.length, out=new ArrayBuffer(4+n*28), dv=new DataView(out);
+  dv.setUint32(0,n,true);
+  let of=4,oc=4+n*24;
+  for(const b of legacy) {
+    const m=new DataView(b).getUint32(0,true);
+    new Uint8Array(out,of,m*24).set(new Uint8Array(b,4,m*24));
+    new Uint8Array(out,oc,m*4).set(new Uint8Array(b,4+m*24,m*4));
+    of+=m*24;oc+=m*4;
+  }
+  const fv=new DataView(out,of,inventory.length*24), cv=new Uint8Array(out,oc,inventory.length*4);
+  inventory.forEach((t,i)=>{
+    const p=i*24;
+    fv.setFloat32(p,t.x,true);fv.setFloat32(p+4,t.y,true);fv.setFloat32(p+8,t.z,true);
+    fv.setFloat32(p+12,t.h,true);fv.setFloat32(p+16,t.crown,true);fv.setFloat32(p+20,t.angle,true);
+    cv.set([...t.color,255],i*4);
+  });
+  return out;
+}
+function buildVegetationMeshes(k, d) {
+  if (VEG.meshes.has(k)) return;
+  const group=new THREE.Group(); group.name='vegetation_'+k;
+  if(!VEG.hedgeMat) VEG.hedgeMat=new THREE.MeshLambertMaterial({color:0x426b35});
+  if(!VEG.massifMat) VEG.massifMat=new THREE.MeshLambertMaterial({color:0x355c32});
+  const up=new THREE.Vector3(0,1,0), dir=new THREE.Vector3(), mid=new THREE.Vector3(), q=new THREE.Quaternion(), scale=new THREE.Vector3();
+  const unitHedge=new THREE.CylinderGeometry(0.5,0.5,1,6,1,false);
+  for(const h of d.h) {
+    const coords=h[0], width=THREE.MathUtils.clamp(Number(h[1])||0.8,0.3,3.5), height=THREE.MathUtils.clamp(Number(h[2])||1.5,0.5,3.5);
+    if(!Array.isArray(coords)||coords.length<2) continue;
+    for(let i=1;i<coords.length;i++){
+      const a=coords[i-1],b=coords[i]; if(!a||!b) continue;
+      const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz); if(len<0.25) continue;
+      dir.set(dx/len,0,dz/len);q.setFromUnitVectors(up,dir);
+      mid.set((a[0]+b[0])/2,groundH((a[0]+b[0])/2,(a[1]+b[1])/2)+height/2,(a[1]+b[1])/2);
+      const mesh=new THREE.Mesh(unitHedge,VEG.hedgeMat);mesh.position.copy(mid);mesh.quaternion.copy(q);mesh.scale.set(width,height,len);mesh.castShadow=!isTouch;mesh.receiveShadow=true;group.add(mesh);
+    }
+  }
+  for(const m of d.m) {
+    const pts=m[0],height=THREE.MathUtils.clamp(Number(m[1])||1.2,0.4,14);
+    if(!Array.isArray(pts)||pts.length<3) continue;
+    const shape=new THREE.Shape();shape.moveTo(pts[0][0],-pts[0][1]);
+    for(let i=1;i<pts.length;i++) shape.lineTo(pts[i][0],-pts[i][1]);
+    shape.closePath();
+    const geo=new THREE.ExtrudeGeometry(shape,{depth:height,bevelEnabled:false,curveSegments:1});
+    geo.rotateX(-Math.PI/2);
+    const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length,cz=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+    geo.translate(0,groundH(cx,cz),0);
+    const mesh=new THREE.Mesh(geo,VEG.massifMat);mesh.castShadow=!isTouch;mesh.receiveShadow=true;group.add(mesh);
+  }
+  scene.add(group);VEG.meshes.set(k,group);
+}
+function freeVegetationMeshes(keep) {
+  for(const [k,g] of VEG.meshes) if(!keep.has(k)) {
+    scene.remove(g);g.traverse(o=>{if(o.isMesh&&o.geometry!==null)o.geometry.dispose();});VEG.meshes.delete(k);
+  }
+}
+
+const STREAM = { gen: 0, idx: null, phys: new Set(), physP: new Map(), vis: new Map(), terr: new Map(), relief: new Set(), busy: false, last: '', treeBufs: new Map(), treeDirty: false, vegetation: true, SR: null };
 window.__STREAM = STREAM;
 const sGet = u => fetch(CITY.data + u + V).then(r => { if (!r.ok) throw new Error(u); return r.arrayBuffer(); });
 function sectorPhys(k) {   // une fois chargée, la physique d'un secteur reste (pas de doublons)
@@ -1828,12 +1941,14 @@ async function streamUpdate(x, z, force) {
     for (const [k, ent] of STREAM.vis) { const [i, j] = k.split('_').map(Number); if (Math.max(Math.abs(i - si), Math.abs(j - sj)) > (isTouch ? 1 : 2)) { freeMeshes(ent.ms); STREAM.vis.delete(k); } }   // téléphone : on ne garde que les 9 secteurs affichés
     const wantT = new Set(), OFF = isTouch ? [-700, 700] : [-1200, 0, 1200]; for (const a of OFF) for (const b of OFF) wantT.add(Math.floor((x + I.RX + a) / 2000) + '_' + Math.floor((-z + I.RY + b) / 2000));
     for (const [k, sc] of STREAM.terr) if (!wantT.has(k)) { if (sc) { scene.remove(sc); sc.traverse(n => { if (n.isMesh) { n.geometry.dispose(); if (n.material.map) n.material.map.dispose(); n.material.dispose(); } }); } STREAM.terr.delete(k); }
-    // 3) arbres des secteurs autour (un seul ensemble, reconstruit seulement si la liste change)
-    const tKeys = visWant.filter(k => STREAM.treeBufs.has(k)), tSig = tKeys.join(',');
-    if (tKeys.length && tSig !== STREAM.treeSig) { STREAM.treeSig = tSig; const tb = tKeys.map(k => STREAM.treeBufs.get(k)); let n = 0; for (const b of tb) n += new DataView(b).getUint32(0, true);
-      const out = new ArrayBuffer(4 + n * 28), dv = new DataView(out); dv.setUint32(0, n, true); let of = 4, oc = 4 + n * 24;
-      for (const b of tb) { const m = new DataView(b).getUint32(0, true); new Uint8Array(out, of, m * 24).set(new Uint8Array(b, 4, m * 24)); new Uint8Array(out, oc, m * 4).set(new Uint8Array(b, 4 + m * 24, m * 4)); of += m * 24; oc += m * 4; }
-      buildTrees(out); }
+    // 3) végétation Ville de Paris : JSON par secteur, fusionnée aux arbres LiDAR sans doublons.
+    if (CITY.id === 'paris') {
+      await Promise.all(visWant.map(async k => { try { const d=await loadVegetationSector(k); if(d) buildVegetationMeshes(k,d); } catch(e) { console.warn('végétation',k,e); } }));
+      freeVegetationMeshes(new Set(visWant));
+    }
+    const tKeys = visWant.filter(k => STREAM.treeBufs.has(k) || VEG.data.get(k));
+    const tSig = tKeys.join(',');
+    if (tKeys.length && tSig !== STREAM.treeSig) { STREAM.treeSig = tSig; buildTrees(mergeVegetationTreeBuffers(tKeys)); }
     if (grass && grass.setMask) { const ti = Math.floor((x + I.RX) / 2000), tj = Math.floor((-z + I.RY) / 2000); grass.setMask(CITY.data + 'tex/herbe/h_' + ti + '_' + tj + '.jpg' + V, [ti * 2000 - I.RX, -((tj + 1) * 2000 - I.RY), 2000, 2000]); }
     // 4) terrain détaillé et routes : le plus proche d'abord
     const tOrder = [...wantT].sort((p, q) => { const c = k => { const [i, j] = k.split('_').map(Number); return Math.hypot((i + 0.5) * 2000 - I.RX - x, -((j + 0.5) * 2000 - I.RY) - z); }; return c(p) - c(q); });
