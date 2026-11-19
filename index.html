@@ -1914,8 +1914,17 @@ function resetPhysics() {
 }
 async function terrainTile(k) {
   if (STREAM.terr.has(k)) return; STREAM.terr.set(k, null);
-  try { const g = await loadGLB(CITY.data + 'terrain/t_' + k + '.wasm', 'tt'); prepTerrain(g.scene);  if (!STREAM.terr.has(k)) return; STREAM.terr.set(k, g.scene); scene.add(g.scene); }
-  catch (e) { STREAM.terr.delete(k); STREAM.complete = false; console.warn('terrain ' + k + ' : ' + (e && (e.message || e))); }   // retenté au tour suivant (avant : sol absent pour toujours → fond bleu)
+  try {
+    let g, source = 'LiDAR HD 50 cm';
+    try { g = await loadGLB(CITY.data + 'terrain_hd/t_' + k + '.wasm', 'tt'); }
+    catch (hdError) { source = 'terrain historique'; g = await loadGLB(CITY.data + 'terrain/t_' + k + '.wasm', 'tt'); }
+    prepTerrain(g.scene); g.scene.userData.terrainSource = source;
+    if (!STREAM.terr.has(k)) return;
+    STREAM.terr.set(k, g.scene); scene.add(g.scene);
+  } catch (e) {
+    STREAM.terr.delete(k); STREAM.complete = false;
+    console.warn('terrain ' + k + ' : ' + (e && (e.message || e)));
+  } // si HD et fallback échouent, retenter au tour suivant
 }
 // Chargement : vérifié 4 fois par seconde. Ordre de priorité : la physique (murs, sol) du secteur du drone,
 // puis celle des 24 secteurs autour (5 × 5 km) et de la zone où le drone sera dans 6 s ; l'affichage (routes,
