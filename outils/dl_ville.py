@@ -16,7 +16,7 @@ def get(url, path, tries=5):
     raise SystemExit('failed ' + path)
 def wms_box(layer, fmt, x0, y0, size, px):
     b = f'{x0},{y0},{x0 + size},{y0 + size}'
-    return 'https://data.geopf.fr/wms-r?' + urllib.parse.urlencode(dict(
+    return 'https://data.geopf.fr/wms-r/wms?' + urllib.parse.urlencode(dict(
         SERVICE='WMS', VERSION='1.3.0', REQUEST='GetMap', LAYERS=layer,
         CRS='EPSG:2154', BBOX=b, WIDTH=px, HEIGHT=px, FORMAT=fmt, STYLES=''))
 
