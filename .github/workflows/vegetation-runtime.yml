@@ -4,6 +4,7 @@ on:
     paths:
       - "index.html"
       - "appart-studio/solarAnalysis.js"
+      - "appart-studio/ui.js"
       - "appart-studio/vegetation.test.mjs"
       - "data/paris/vegetation/**"
       - "outils/test_vegetation_runtime.py"
@@ -31,6 +32,8 @@ jobs:
           node --check /tmp/index-inline.mjs
       - name: Check Appart Studio solar module syntax
         run: node --experimental-default-type=module --check appart-studio/solarAnalysis.js
+      - name: Check Appart Studio UI syntax
+        run: node --experimental-default-type=module --check appart-studio/ui.js
       - name: Test solar vegetation data loading
         run: node --experimental-default-type=module --test appart-studio/vegetation.test.mjs
       - name: Validate all Paris vegetation sectors
