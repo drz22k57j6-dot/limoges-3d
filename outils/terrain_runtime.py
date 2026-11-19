@@ -93,8 +93,8 @@ def write_glb(path, positions, uv, indices, texture_jpeg):
 def sample_mnt_grid(source, xmin, ymin, east, north):
     """Interpolation bilinéaire dans les 36 dalles MNT HD 1 km / 0,5 m."""
     out = np.full(east.shape, np.nan, dtype=np.float32)
-    si = np.clip(np.floor((east - xmin) / SOURCE_TILE_M).astype(int), 0, 5)
-    sj = np.clip(np.floor((north - ymin) / SOURCE_TILE_M).astype(int), 0, 5)
+    si = np.clip(np.floor((east - xmin - 1e-7) / SOURCE_TILE_M).astype(int), 0, 5)
+    sj = np.clip(np.floor((north - ymin - 1e-7) / SOURCE_TILE_M).astype(int), 0, 5)
     for i in np.unique(si):
         for j in np.unique(sj):
             mask = (si == i) & (sj == j)
