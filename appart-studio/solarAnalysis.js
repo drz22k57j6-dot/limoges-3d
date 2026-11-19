@@ -101,6 +101,36 @@ function makeTreeModel(trees, drone, ground) {
     return { ...t, y0, c:[x,y0+t.h*0.72,z], r:Math.max(1.5,t.r) };
   });
 }
+
+// Priorité aux données végétation Paris déjà versionnées dans le dépôt (même repère
+// Lambert-93 local que le moteur 3D). L'API live reste un fallback si le secteur manque.
+export async function fetchInventoryTrees(lon, lat, drone, radiusM = 150) {
+  const [cx, cz] = drone.ll(lon, lat);
+  const si = Math.floor((cx + 10000) / 1000), sj = Math.floor((-cz + 6000) / 1000);
+  const jobs = [];
+  for (let i = si - 1; i <= si + 1; i++) for (let j = sj - 1; j <= sj + 1; j++) {
+    const key = i + '_' + j;
+    const url = new URL('../data/paris/vegetation/' + key + '.json', import.meta.url);
+    jobs.push(fetch(url).then(r => r.ok ? r.json() : null).catch(() => null));
+  }
+  const sectors = await Promise.all(jobs), out = [], seen = new Set();
+  for (const data of sectors) for (const row of data?.a || []) {
+    if (!Array.isArray(row) || row.length < 8) continue;
+    const [x,z,species,h,crown,trunk,stage,seed] = row;
+    if (![x,z,h,crown].every(Number.isFinite) || h <= 0 || h > 45 || crown <= 0 || Math.hypot(x-cx,z-cz) > radiusM) continue;
+    const id = String(seed) + ':' + x + ':' + z;
+    if (seen.has(id)) continue; seen.add(id);
+    const y0 = 0; // ground() est appliqué au moment du calcul pour respecter le terrain de l'adresse
+    out.push({ x, z, h, r: Math.max(1.5, crown), espece: String(species), caduc: species !== 13 && species !== 14, y0, seed });
+  }
+  return out;
+}
+function makeLocalTreeModel(trees, ground) {
+  return trees.map(t => {
+    const y0 = ground(t.x, t.z);
+    return { ...t, y0, c:[t.x,y0+t.h*0.72,t.z], r:Math.max(1.5,t.r) };
+  });
+}
 function makeTreeVisuals(THREE, trees) {
   const group=new THREE.Group(); group.name='appart-studio-solar-trees';
   if(!trees.length) return group;
@@ -128,7 +158,10 @@ export async function calculateSolarReport({ THREE, scene, drone, ground, res, p
   };
   onProgress({ stage:'arbres', done:0, total:windows.length });
   let trees=[];
-  try { trees=makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground); } catch(e) { console.warn('[Appart Studio] arbres indisponibles',e); }
+  try {
+    const inventory=await fetchInventoryTrees(res.lon,res.lat,drone,150);
+    trees=inventory.length ? makeLocalTreeModel(inventory,ground) : makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground);
+  } catch(e) { console.warn('[Appart Studio] inventaire arbres indisponible, fallback API',e); try { trees=makeTreeModel(await fetchTrees(res.lon,res.lat,150),drone,ground); } catch(apiError) { console.warn('[Appart Studio] arbres indisponibles',apiError); } }
   const treeGroup=makeTreeVisuals(THREE,trees);
   const bvh=makeBvh(THREE,scene,[fr.F[0],fr.floorY+fr.H/2,fr.F[1]],250);
   scene.add(treeGroup);
@@ -174,8 +207,14 @@ export async function verifySolarAt({ THREE, scene, drone, ground, res, plan, fr
   const position = sunPosition(date, res.lat, res.lon);
   if (position.el <= 0) return { windows: windows.map(w => ({ id: w.id, index: w.index, fraction: 0, sun: false })), trees: 0, treeGroup: null };
   let trees = [];
-  try { trees = makeTreeModel(await fetchTrees(res.lon, res.lat, 150), drone, ground); }
-  catch (e) { console.warn('[Appart Studio] arbres indisponibles pour Vérifier', e); }
+  try {
+    const inventory = await fetchInventoryTrees(res.lon, res.lat, drone, 150);
+    trees = inventory.length ? makeLocalTreeModel(inventory, ground) : makeTreeModel(await fetchTrees(res.lon, res.lat, 150), drone, ground);
+  } catch (e) {
+    console.warn('[Appart Studio] inventaire arbres indisponible pour Vérifier, fallback API', e);
+    try { trees = makeTreeModel(await fetchTrees(res.lon, res.lat, 150), drone, ground); }
+    catch (apiError) { console.warn('[Appart Studio] arbres indisponibles pour Vérifier', apiError); }
+  }
   const treeGroup = makeTreeVisuals(THREE, trees);
   const bvh = makeBvh(THREE, scene, [fr.F[0], fr.floorY + fr.H / 2, fr.F[1]], 250);
   scene.add(treeGroup);
