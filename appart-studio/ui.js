@@ -297,10 +297,13 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
   }
   const sunUI = { date: null, fraction: 0.5, bounds: null, timer: 0, target: null };
   function disposeSolarTrees() {
-    if (!state.solarTreeGroup) return;
-    scene.remove(state.solarTreeGroup);
-    state.solarTreeGroup.traverse(o => { o.geometry?.dispose?.(); if (o.material) for (const m of [].concat(o.material)) m.dispose?.(); });
+    for (const group of [state.solarTreeGroup, state.solarGreeneryGroup]) {
+      if (!group) continue;
+      scene.remove(group);
+      group.traverse(o => { o.geometry?.dispose?.(); if (o.material) for (const m of [].concat(o.material)) m.dispose?.(); });
+    }
     state.solarTreeGroup = null;
+    state.solarGreeneryGroup = null;
   }
   const parisParts = d => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d).filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
   const parisDay = d => { const p = parisParts(d); return new Date(Date.UTC(+p.year, +p.month - 1, +p.day)); };
@@ -358,7 +361,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
             if(p.total) progressFill.style.width=(100*p.done/p.total)+'%';
             report.textContent=p.stage==='arbres'?'Chargement des arbres…':p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' · fenêtre '+p.window+' · '+p.date:'Finalisation…';
           }});
-          state.solarReport=result; state.solarTreeGroup=result.treeGroup; window.__appartStudioSolarReport=result;
+          state.solarReport=result; state.solarTreeGroup=result.treeGroup; state.solarGreeneryGroup=result.greeneryGroup; window.__appartStudioSolarReport=result;
           const names={sejour:'Séjour',chambre:'Chambre',bureau:'Bureau',dressing:'Dressing',cuisine:'Cuisine',entree:'Entrée',sdb:'Salle de bain',wc:'WC'};
           const roomText=result.rooms.map(room=>{const h=room.hours;return (names[room.type]||room.type||'Pièce')+' · '+room.windows.length+' fenêtre(s) · hiver '+h.winter.toFixed(1)+' h · printemps '+h.spring.toFixed(1)+' h · été '+h.summer.toFixed(1)+' h · aujourd’hui '+h.today.toFixed(1)+' h';}).join('\n');
           const winText=result.windows.map(w=>{const h=w.byDate;return 'Fenêtre '+w.id+' ('+(names[w.roomType]||w.roomType)+') : hiver '+h.winter.hours.toFixed(1)+' h · printemps '+h.spring.hours.toFixed(1)+' h · été '+h.summer.hours.toFixed(1)+' h · aujourd’hui '+h.today.hours.toFixed(1)+' h';}).join('\n');
@@ -573,7 +576,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
       const plan=makeSettingsPlan(r);plan.footprint=bounds.footprint;const fr={F:bounds.F,u:bounds.u,v:bounds.v,floorY:view.floorY(r),H:plan.settings.ceilingHeight};
       if(!floorFitsBuilding(r.floorData,fr.H))throw new Error('Étage refusé : plancher + hauteur sous plafond dépassent le toit du bâtiment IGN.');
       const result=await calculateSolarReport({THREE,scene,drone,ground,res:r,plan,fr,onProgress:p=>{out.textContent=p.stage==='calcul'?'Calcul '+p.done+'/'+p.total+' fenêtres/dates…':'Préparation des obstacles et arbres…';}});
-      state.solarReport=result;state.solarTreeGroup=result.treeGroup;renderDbg();
+      state.solarReport=result;state.solarTreeGroup=result.treeGroup;state.solarGreeneryGroup=result.greeneryGroup;renderDbg();
       const score=scoreSoleil(result.rooms),keys=['winter','spring','summer','today'],labels={winter:'Hiver',spring:'Printemps',summer:'Été',today:'Aujourd’hui'};
       out.textContent='SCORE SOLEIL : '+(score.grade||'—')+(score.grade?' · '+score.winterHours.toFixed(1)+' h hiver · '+score.summerHours.toFixed(1)+' h été':' · pièce non classée')+
         '\nSoleil direct simulé, hors météo\n\n'+result.windows.map((w,i)=>{const h=w.byDate;return 'Fenêtre '+(i+1)+' : '+keys.map(k=>labels[k]+' '+h[k].hours.toFixed(1)+' h').join(' · ');}).join('\n');
@@ -593,6 +596,7 @@ export async function initAppartStudio({ THREE, scene, camera, renderer, CITY, d
     try {
       const result = await verifySolarAt({ THREE, scene, drone, ground, res: state.res, plan: state.plan3d, fr: apt.info.fr, date: when });
       state.solarTreeGroup = result.treeGroup;
+      state.solarGreeneryGroup = result.greeneryGroup;
       out.textContent = 'À ' + time + ' (heure de Paris) · ' + result.trees + ' arbres pris en compte\\n' +
         result.windows.map((w, i) => 'Fenêtre ' + (i + 1) + ' : soleil ' + (w.sun ? 'oui' : 'non') + ' · vitre éclairée ' + Math.round(w.fraction * 100) + ' %').join('\\n');
     } catch (e) { out.textContent = 'Vérification impossible : ' + e.message; }
