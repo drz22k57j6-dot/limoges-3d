@@ -1,0 +1,47 @@
+name: Transfer Paris LiDAR outputs to runtime branch
+
+on:
+  workflow_run:
+    workflows: ["Rebuild Paris LiDAR roofs"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  transfer:
+    if: >-
+      github.event.workflow_run.id == 44269102384 &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'feat/appart-studio-lidar-real-roofs'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout destination branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/appart-studio-runtime-lidar-vegetation
+          fetch-depth: 0
+
+      - name: Fetch generated outputs from completed LiDAR build
+        run: |
+          git fetch origin feat/appart-studio-lidar-real-roofs
+          git checkout FETCH_HEAD -- data/paris/tuiles data/paris/toits_lidar_stats.json
+
+      - name: Verify generated files
+        run: |
+          test -d data/paris/tuiles
+          test -s data/paris/toits_lidar_stats.json
+          echo "Tiles: $(find data/paris/tuiles -type f | wc -l) files"
+          echo "Statistics: $(wc -c < data/paris/toits_lidar_stats.json) bytes"
+
+      - name: Commit and push to runtime branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/paris/tuiles data/paris/toits_lidar_stats.json
+          if git diff --cached --quiet; then
+            echo "No generated output changes to transfer."
+            exit 0
+          fi
+          git commit -m "data(paris): transfer generated LiDAR roof tiles and statistics"
+          git push origin HEAD:feat/appart-studio-runtime-lidar-vegetation
