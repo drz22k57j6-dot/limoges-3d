@@ -353,7 +353,9 @@ ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"re
               "source_resolution_m":0.5 if MNH_HD is not None else 2.0,
               "source":"IGN LiDAR HD MNH 50 cm" if MNH_HD is not None else "IGN LiDAR HD MNH WMS 2 m",
               "high_resolution_tiles_loaded":MNH_HD_TILES_LOADED,"high_resolution_valid_pixels":MNH_HD_VALID_PIXELS,"resolution_usage_m":{}}
-for f in B:
+for building_index, f in enumerate(B, 1):
+    if building_index % 100 == 0:
+        print(f'LiDAR roofs progress: {building_index}/{len(B)} buildings; accepted={ROOF_STATS["eligible"]}; lidar={ROOF_STATS["lidar"]}', flush=True)
     p = f['properties']; g = shape(f['geometry'])
     polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
     for poly in polys:
