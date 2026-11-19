@@ -1,0 +1,47 @@
+name: Paris vegetation runtime checks
+on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "appart-studio/solarAnalysis.js"
+      - "appart-studio/vegetation.test.mjs"
+      - "data/paris/vegetation/**"
+      - "outils/test_vegetation_runtime.py"
+      - ".github/workflows/vegetation-runtime.yml"
+  push:
+    branches:
+      - "feat/appart-studio-runtime-lidar-vegetation"
+    paths:
+      - "index.html"
+      - "appart-studio/solarAnalysis.js"
+      - "appart-studio/vegetation.test.mjs"
+      - "data/paris/vegetation/**"
+      - "outils/test_vegetation_runtime.py"
+      - ".github/workflows/vegetation-runtime.yml"
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check inline browser module syntax
+        run: |
+          python - <<'PY'
+          import re
+          html=open("index.html",encoding="utf-8").read()
+          m=re.search(r'<script type="module">([\\s\\S]*?)</script>',html)
+          if not m: raise SystemExit("inline module not found")
+          open("/tmp/index-inline.mjs","w",encoding="utf-8").write(m.group(1))
+          PY
+          node --check /tmp/index-inline.mjs
+      - name: Check Appart Studio solar module syntax
+        run: node --experimental-default-type=module --check appart-studio/solarAnalysis.js
+      - name: Test solar vegetation data loading
+        run: node --experimental-default-type=module --test appart-studio/vegetation.test.mjs
+      - name: Validate all Paris vegetation sectors
+        run: python -m unittest outils.test_vegetation_runtime -v
