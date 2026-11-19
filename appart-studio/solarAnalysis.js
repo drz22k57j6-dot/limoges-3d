@@ -281,5 +281,5 @@ export async function verifySolarAt({ THREE, scene, drone, ground, res, plan, fr
     const fraction = windowSunHours(win, [sample], (origin,dir)=>apertureBlocked(origin,dir)||baseBlocked(origin,dir), treeTransmission, 15).minutes[0]?.frac || 0;
     return { id: win.id, index: win.index, fraction, sun: fraction > 0.2 };
   });
-  return { windows: results, trees: trees.length, treeGroup };
+  return { windows: results, trees: trees.length, treeGroup, greeneryGroup };
 }
