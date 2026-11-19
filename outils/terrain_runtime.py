@@ -179,13 +179,21 @@ def build_tile(source, output, tile_i, tile_j, *, x0, y0, rx, ry, h0,
     if coverage < 0.995:
         print(f"skip terrain_hd {tile_i}_{tile_j}: couverture MNT HD {coverage:.2%}")
         return None
-    # Les nodata résiduels (<0,5 %) sont interpolés depuis le voisin le plus proche.
-    if not np.isfinite(H).all():
-        good = np.isfinite(H)
-        yy, xx = np.where(good)
-        for row, col in zip(*np.where(~good)):
-            k = int(np.argmin((yy-row)**2 + (xx-col)**2))
-            H[row, col] = H[yy[k], xx[k]]
+    # Les rares nodata sont propagés depuis les voisins valides, sans recherche quadratique.
+    missing = ~np.isfinite(H)
+    for _ in range(8):
+        if not missing.any():
+            break
+        padded = np.pad(H, 1, mode="edge")
+        neighbours = [padded[:-2,1:-1], padded[2:,1:-1], padded[1:-1,:-2], padded[1:-1,2:]]
+        valid = [np.isfinite(a) for a in neighbours]
+        count = sum(v.astype(np.uint8) for v in valid)
+        total = sum(np.where(v,a,0.0) for a,v in zip(neighbours,valid))
+        fill = missing & (count > 0)
+        H[fill] = (total[fill] / count[fill]).astype(np.float32)
+        missing = ~np.isfinite(H)
+    if missing.any():
+        H[missing] = float(np.nanmean(H))
     positions = np.stack([E - origin_e, H - h0, -(N - origin_n)], axis=-1).astype("<f4").reshape(-1, 3)
     U = ((E - east0) / size).astype("<f4")
     V = ((north0 + size - N) / size).astype("<f4")
