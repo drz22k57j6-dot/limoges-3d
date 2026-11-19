@@ -8,16 +8,6 @@ on:
       - "data/paris/vegetation/**"
       - "outils/test_vegetation_runtime.py"
       - ".github/workflows/vegetation-runtime.yml"
-  push:
-    branches:
-      - "feat/appart-studio-runtime-lidar-vegetation"
-    paths:
-      - "index.html"
-      - "appart-studio/solarAnalysis.js"
-      - "appart-studio/vegetation.test.mjs"
-      - "data/paris/vegetation/**"
-      - "outils/test_vegetation_runtime.py"
-      - ".github/workflows/vegetation-runtime.yml"
 jobs:
   runtime:
     runs-on: ubuntu-latest
