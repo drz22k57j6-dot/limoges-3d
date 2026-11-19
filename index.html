@@ -1841,16 +1841,15 @@ function buildVegetationMeshes(k, d) {
   if(!VEG.hedgeMat) VEG.hedgeMat=new THREE.MeshLambertMaterial({color:0x426b35});
   if(!VEG.massifMat) VEG.massifMat=new THREE.MeshLambertMaterial({color:0x355c32});
   const up=new THREE.Vector3(0,1,0), dir=new THREE.Vector3(), mid=new THREE.Vector3(), q=new THREE.Quaternion(), scale=new THREE.Vector3();
-  const unitHedge=new THREE.CylinderGeometry(0.5,0.5,1,6,1,false);
+  const unitHedge=new THREE.BoxGeometry(1,1,1);
   for(const h of d.h) {
     const coords=h[0], width=THREE.MathUtils.clamp(Number(h[1])||0.8,0.3,3.5), height=THREE.MathUtils.clamp(Number(h[2])||1.5,0.5,3.5);
     if(!Array.isArray(coords)||coords.length<2) continue;
     for(let i=1;i<coords.length;i++){
       const a=coords[i-1],b=coords[i]; if(!a||!b) continue;
       const dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz); if(len<0.25) continue;
-      dir.set(dx/len,0,dz/len);q.setFromUnitVectors(up,dir);
       mid.set((a[0]+b[0])/2,groundH((a[0]+b[0])/2,(a[1]+b[1])/2)+height/2,(a[1]+b[1])/2);
-      const mesh=new THREE.Mesh(unitHedge,VEG.hedgeMat);mesh.position.copy(mid);mesh.quaternion.copy(q);mesh.scale.set(width,height,len);mesh.castShadow=!isTouch;mesh.receiveShadow=true;group.add(mesh);
+      const mesh=new THREE.Mesh(unitHedge,VEG.hedgeMat);mesh.position.copy(mid);mesh.rotation.y=-Math.atan2(dz,dx);mesh.scale.set(len,height,width);mesh.castShadow=!isTouch;mesh.receiveShadow=true;group.add(mesh);
     }
   }
   for(const m of d.m) {
@@ -1871,6 +1870,7 @@ function freeVegetationMeshes(keep) {
   for(const [k,g] of VEG.meshes) if(!keep.has(k)) {
     scene.remove(g);g.traverse(o=>{if(o.isMesh&&o.geometry!==null)o.geometry.dispose();});VEG.meshes.delete(k);
   }
+  for(const k of VEG.data.keys()) if(!keep.has(k)) VEG.data.delete(k);
 }
 
 const STREAM = { gen: 0, idx: null, phys: new Set(), physP: new Map(), vis: new Map(), terr: new Map(), relief: new Set(), busy: false, last: '', treeBufs: new Map(), treeDirty: false, vegetation: true, SR: null };
