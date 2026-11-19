@@ -12,7 +12,6 @@ on:
   push:
     branches:
       - "feat/appart-studio-lidar-real-roofs"
-      - "feat/appart-studio-runtime-lidar-vegetation"
 jobs:
   synthetic-roofs:
     runs-on: ubuntu-latest
