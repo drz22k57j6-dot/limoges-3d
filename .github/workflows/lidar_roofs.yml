@@ -5,12 +5,14 @@ on:
       - "outils/build.py"
       - "outils/toits_lidar.py"
       - "outils/test_toits_lidar.py"
+      - "outils/dl_ville.py"
       - "outils/terrain_runtime.py"
       - "outils/test_terrain_runtime.py"
       - ".github/workflows/lidar_roofs.yml"
   push:
     branches:
       - "feat/appart-studio-lidar-real-roofs"
+      - "feat/appart-studio-runtime-lidar-vegetation"
 jobs:
   synthetic-roofs:
     runs-on: ubuntu-latest
