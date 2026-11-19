@@ -124,7 +124,14 @@ def build_roof_mesh(poly, mnh, xmin, ymax, ground_sampler, eave, mesh_max,
     Les trous et contours de l'emprise sont respectés par intersection Shapely + Earcut.
     """
     from shapely.geometry import box as make_box
-    step = max(0.5, float(resolution))
+    # Estimer dès le départ une maille compatible avec le budget de triangles.
+    # L'ancienne version repartait systématiquement à 0,5 m puis recalculait
+    # tout le maillage jusqu'à 12 fois pour les grands toits : coût CPU massif.
+    # Les pics LiDAR restent préservés par l'échantillon maximum de chaque cellule.
+    area = max(float(poly.area), 0.25)
+    target_triangles = max(80, int(triangle_budget * 0.70))
+    estimated_step = math.sqrt((2.0 * area) / target_triangles)
+    step = max(float(resolution), estimated_step)
     result = None
     for _ in range(12):
         positions, indices, vertex_map = [], [], {}
