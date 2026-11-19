@@ -70,6 +70,12 @@ jobs:
         run: |
           mkdir -p data/paris/source data/paris/tuiles
           python -I outils/dl_ville.py "$X0" "$Y0" data/paris/source
+      - name: Generate streamed runtime terrain from MNT LiDAR HD 50 cm
+        env:
+          X0: ${{ steps.address.outputs.x }}
+          Y0: ${{ steps.address.outputs.y }}
+        run: |
+          python -I outils/terrain_runtime.py data/paris/source data/paris/terrain_hd --x0 "$X0" --y0 "$Y0" --step 4
       - name: Prepare non-committed fallback textures for builder-only outputs
         run: |
           mkdir -p pub/data/tex
@@ -126,6 +132,8 @@ jobs:
             echo "| Durée | ${{ steps.build.outputs.seconds }} secondes |"
             echo "### Statistiques toits"
             cat data/paris/toits_lidar_stats.json
+            echo "### Terrain runtime MNT LiDAR HD 50 cm"
+            cat data/paris/terrain_hd/index.json
             echo "### Vérification MNH 50 cm"
             python - <<'PY'
             import json
