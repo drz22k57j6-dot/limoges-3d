@@ -16,7 +16,7 @@ permissions:
   contents: write
   pull-requests: write
 concurrency:
-  group: paris-lidar-roofs
+  group: paris-lidar-roofs-pr28
   cancel-in-progress: false
 jobs:
   rebuild:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feat/appart-studio-lidar-real-roofs
+          ref: feat/appart-studio-runtime-lidar-vegetation
           fetch-depth: 0
       - name: Validate coverage input
         run: |
@@ -150,11 +150,11 @@ jobs:
           subprocess.run(["git","add","data/paris/tuiles","data/paris/toits_lidar_stats.json"],check=True)
           if subprocess.run(["git","diff","--cached","--quiet"]).returncode:
               subprocess.run(["git","commit","-m","build(paris): regenerate 7e tiles with LiDAR roofs"],check=True)
-              subprocess.run(["git","push","origin","HEAD:feat/appart-studio-lidar-real-roofs"],check=True)
+              subprocess.run(["git","push","origin","HEAD:feat/appart-studio-runtime-lidar-vegetation"],check=True)
           PY
       - name: Comment measured build metrics on PR 27
         if: always() && steps.metrics.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr comment 27 --repo "$GITHUB_REPOSITORY" --body "Build Paris 7e mesuré : tuiles avant ${{ steps.before.outputs.bytes }} octets ; après ${{ steps.metrics.outputs.after }} octets ; durée ${{ steps.build.outputs.seconds }} s. Soleil 38 rue Cler non mesuré."
+          gh pr comment 28 --repo "$GITHUB_REPOSITORY" --body "Build Paris 7e mesuré : tuiles avant ${{ steps.before.outputs.bytes }} octets ; après ${{ steps.metrics.outputs.after }} octets ; durée ${{ steps.build.outputs.seconds }} s. Soleil 38 rue Cler non mesuré."
