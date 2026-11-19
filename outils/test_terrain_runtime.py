@@ -56,13 +56,15 @@ class TerrainRuntimeTests(unittest.TestCase):
                                      np.full((2000, 2000), 52, dtype=np.uint16))
             Image.new("RGB", (4096, 4096), (120, 130, 110)).save(source / "ortho_0_0.jpg", quality=85)
             result = build_tile(source, output, 5, 3, x0=655087.0, y0=6865038.0,
-                                rx=10000.0, ry=6000.0, h0=26.93, step=1000.0)
+                                rx=10000.0, ry=6000.0, h0=26.93, step=4.0)
             self.assertIsNotNone(result)
             path = output / "t_5_3.wasm"
             self.assertTrue(path.is_file())
             magic, version, total = struct.unpack_from("<III", path.read_bytes(), 0)
             self.assertEqual((magic, version, total), (0x46546C67, 2, path.stat().st_size))
             self.assertEqual(result["coverage"], 1.0)
+            self.assertEqual(result["vertices"], 501 * 501)
+            self.assertEqual(result["triangles"], 500 * 500 * 2)
 
 
 if __name__ == "__main__":
