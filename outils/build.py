@@ -1,9 +1,13 @@
-import json, struct, io, math, sys, random, os
+import json, struct, io, math, sys, random, os, time
+BUILD_STARTED = time.perf_counter()
 import numpy as np, tifffile
 from PIL import Image, ImageDraw
 from shapely.geometry import shape, Polygon, MultiPolygon, LineString
 from shapely.geometry.polygon import orient
 import mapbox_earcut as earcut
+# Le builder est parfois lancé en mode Python isolé (-I), qui retire le dossier script de sys.path.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from toits_lidar import estimate_roof, build_roof_mesh
 
 D = sys.argv[1]; OUTD = sys.argv[2]
 import os as _o
@@ -19,6 +23,38 @@ def mosaic(prefix):
             a[(2-j)*1000:(3-j)*1000, i*1000:(i+1)*1000] = t
     return a
 MNT = mosaic('mnt'); MNH = mosaic('mnh')
+
+# MNH LiDAR HD haute résolution : 36 dalles de 1 km au pas officiel de 50 cm.
+# Le raster 2 m reste en mémoire pour la détection des arbres et sert de repli
+# uniquement si la dalle haute résolution ne contient pas assez d'échantillons.
+MNH_HD_TILES_LOADED = 0
+MNH_HD_VALID_PIXELS = 0
+
+def mosaic_mnh_hd():
+    global MNH_HD_TILES_LOADED, MNH_HD_VALID_PIXELS
+    path = os.path.join(D, 'mnh_hd_0_0.tif')
+    if not os.path.exists(path):
+        print('MNH 50 cm absent : toitures en mode repli MNH 2 m')
+        return None
+    a = np.full((12000, 12000), np.nan, dtype=np.float32)
+    loaded = 0
+    for i in range(6):
+        for j in range(6):
+            path = os.path.join(D, f'mnh_hd_{i}_{j}.tif')
+            if not os.path.exists(path):
+                print('MNH 50 cm missing tile', i, j)
+                continue
+            tile = np.asarray(tifffile.imread(path), dtype=np.float32)
+            if tile.shape != (2000, 2000):
+                raise ValueError(f'{path}: raster attendu 2000x2000, reçu {tile.shape}')
+            a[(5-j)*2000:(6-j)*2000, i*2000:(i+1)*2000] = tile
+            loaded += 1
+    MNH_HD_TILES_LOADED = loaded
+    MNH_HD_VALID_PIXELS = int(np.count_nonzero(np.isfinite(a) & (a > 0.5)))
+    print('MNH 50 cm tiles', loaded, '/ 36; valid height pixels', MNH_HD_VALID_PIXELS)
+    return a if loaded else None
+
+MNH_HD = mosaic_mnh_hd()
 XMIN, YMAX = X0-R, Y0+R
 def raster_h(x, y, A=MNT):
     c = (np.asarray(x)-XMIN)/2-0.5; r = (YMAX-np.asarray(y))/2-0.5
@@ -251,7 +287,7 @@ TEX_RES = G.texture(facade('res')); TEX_COM = G.texture(facade('com'))
 M_BARRE = G.material('facade_barre', tex=G.texture(facade_barre())); M_TOUR = G.material('facade_tour', tex=G.texture(facade_tour())); M_PIGNON = G.material('pignon', tex=G.texture(pignon()))
 M_RES = G.material('facade_logements', tex=TEX_RES); M_COM = G.material('facade_activites', tex=TEX_COM)
 M_PLAIN = G.material('mur_simple')
-TXD = '/home/claude/game/pub/data/tex/'
+TXD = os.environ.get('TEXTURE_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pub', 'data', 'tex')) + '/'
 def ftex(n): return G.texture(Image.open(TXD+n+'_d.jpg').convert('RGB'), q=84)
 M_ROOF_T = G.material('toit_tuiles', tex=ftex('tuiles'), rough=0.75); M_ROOF_S = G.material('toit_ardoise', tex=ftex('ardoise'), rough=0.6); M_ROOF_F = G.material('toit_plat', tex=ftex('toit_plat'), rough=0.9)
 import os
@@ -313,7 +349,13 @@ wall_tint = {'Résidentiel': (236, 228, 212), 'Industriel': (200, 200, 196), 'Co
 if _o.environ.get('CITY_NAME') == 'paris':   # Paris stone / render when no photo measurement: estimate, flagged as such
     wall_tint.update({'Résidentiel': (226, 214, 190), 'Indifférencié': (224, 213, 192), 'Commercial et services': (222, 214, 198)})
 nb = 0; gables = 0; FOOT = []
-for f in B:
+ROOF_STATS = {"eligible":0,"lidar":0,"fallback":0,"triangles":0,"vertices":0,"reasons":{},
+              "source_resolution_m":0.5 if MNH_HD is not None else 2.0,
+              "source":"IGN LiDAR HD MNH 50 cm" if MNH_HD is not None else "IGN LiDAR HD MNH WMS 2 m",
+              "high_resolution_tiles_loaded":MNH_HD_TILES_LOADED,"high_resolution_valid_pixels":MNH_HD_VALID_PIXELS,"resolution_usage_m":{}}
+for building_index, f in enumerate(B, 1):
+    if building_index % 100 == 0:
+        print(f'LiDAR roofs progress: {building_index}/{len(B)} buildings; accepted={ROOF_STATS["eligible"]}; lidar={ROOF_STATS["lidar"]}', flush=True)
     p = f['properties']; g = shape(f['geometry'])
     polys = list(g.geoms) if isinstance(g, MultiPolygon) else [g]
     for poly in polys:
@@ -352,9 +394,69 @@ for f in B:
         is_tiles = rc[0] > rc[1]*1.1 and rc[0] > rc[2]*1.18
         INFO.append({'id': bid, 'usage': usage, 'hauteur_m': round(h, 1), 'mur_rgb': [int(v) for v in col[:3]], 'mur_source': src,
                      'toit_rgb': [int(v) for v in rcol[:3]], 'toit_source': 'orthophoto IGN', 'x': round(cx-X0, 1), 'z': round(-(cy-Y0), 1)})
-        # gable roof for simple houses
+        # Reconstruction LiDAR HD du toit : MNH relatif au sol, emprise BD TOPO exacte.
+        # La même géométrie opaque est exportée dans le GLB / les tuiles détaillées ;
+        # solarAnalysis.makeBvh() la récupère ensuite par scene.traverse().
+        ROOF_STATS["eligible"] += 1
+        roof_raster = MNH_HD if MNH_HD is not None else MNH
+        roof_resolution = 0.5 if MNH_HD is not None else 2.0
+        roof_est = estimate_roof(poly, roof_raster, XMIN, YMAX, h, resolution=roof_resolution)
+        # Si la dalle 50 cm ne couvre pas réellement ce bâtiment (nodata / tuile
+        # absente), reprendre le MNH 2 m. Un écart de hauteur, lui, reste un rejet.
+        if (not roof_est.get("valid") and MNH_HD is not None
+                and roof_est.get("reason") == "moins de 4 pixels MNH valides"):
+            roof_raster, roof_resolution = MNH, 2.0
+            roof_est = estimate_roof(poly, roof_raster, XMIN, YMAX, h, resolution=roof_resolution)
+        roof_pos, roof_idx, roof_step = (np.empty((0,3)), np.empty((0,), dtype=np.uint32), roof_resolution)
+        if roof_est.get("valid"):
+            roof_pos, roof_idx, roof_step = build_roof_mesh(
+                poly, roof_raster, XMIN, YMAX, mesh_h, roof_est["eave"], roof_est["mesh_max"],
+                resolution=roof_resolution, triangle_budget=400)
+        lidar_roof_ok = bool(roof_est.get("valid") and len(roof_idx) and len(roof_idx)//3 <= 400)
+        if lidar_roof_ok:
+            eave_tops = np.asarray(mesh_h(ex[:,0], ex[:,1]), dtype=float) + roof_est["eave"]
+            # Les murs s'arrêtent à l'égout MNH, en suivant le terrain local ; conserver les façades spécialisées existantes.
+            if sty and sty[0] == 'tour':
+                walls('tour', ex, zb, eave_tops, ground, col, ubay=15.0)
+            elif (k == 'res' and h >= (8 if _o.environ.get('CITY_NAME') == 'paris' else 12)) or (k == 'com' and h >= 8 and _o.environ.get('CITY_NAME') == 'paris') or (sty and sty[0] == 'barre'):
+                for edge_i, (a_, b_) in enumerate(zip(ex[:-1], ex[1:])):
+                    Ls = math.hypot(*(b_-a_))
+                    if Ls < 0.5: continue
+                    edge_top = np.array([eave_tops[edge_i], eave_tops[edge_i+1]])
+                    if Ls < (3 if _o.environ.get('CITY_NAME') == 'paris' else 16):
+                        walls('pignon', np.array([a_, b_]), zb, edge_top, ground,
+                              np.array([255,255,255,255], np.uint8), ubay=3.0)
+                    else:
+                        walls('barre', np.array([a_, b_]), zb, edge_top, ground, col, ubay=12.0)
+            else:
+                walls(k, ex, zb, eave_tops, ground, col)
+            for r in poly.interiors:
+                ri = np.asarray(r.coords)
+                inner_top = np.asarray(mesh_h(ri[:,0], ri[:,1]), dtype=float) + roof_est["eave"]
+                walls(k, ri, zb, inner_top, ground, col)
+            roof_uv = np.column_stack([roof_pos[:,0]/3.0, roof_pos[:,1]/3.0])
+            push('roof_t' if is_tiles else 'roof_s',
+                 L(roof_pos[:,0], roof_pos[:,1], roof_pos[:,2]), roof_uv,
+                 np.tile(rcol, (len(roof_pos),1)), roof_idx)
+            FOOT[-1][1] = float(np.nanmax(roof_pos[:,2])-H0)
+            INFO[-1].update({"toit":f"LiDAR HD — MNH {roof_resolution:g} m", "hauteur_egout_m":round(roof_est["eave"],2),
+                             "hauteur_faitage_m":round(roof_est["ridge"],2),
+                             "triangles_toit":int(len(roof_idx)//3), "pas_maillage_m":round(float(roof_step),2)})
+            ROOF_STATS["lidar"] += 1
+            resolution_key = f"{roof_resolution:g}"
+            ROOF_STATS["resolution_usage_m"][resolution_key] = ROOF_STATS["resolution_usage_m"].get(resolution_key, 0) + 1
+            ROOF_STATS["triangles"] += int(len(roof_idx)//3)
+            ROOF_STATS["vertices"] += int(len(roof_pos))
+        else:
+            ROOF_STATS["fallback"] += 1
+            reason = roof_est.get("reason", "maillage vide ou budget dépassé")
+            ROOF_STATS["reasons"][reason] = ROOF_STATS["reasons"].get(reason,0)+1
+            INFO[-1]["toit_lidar_fallback"] = reason
+        # Fallback conservé : gable heuristique si le LiDAR est absent/incohérent.
         mrr = poly.minimum_rotated_rectangle
-        if (not poly.interiors and h <= 10 and usage in ('Résidentiel', 'Indifférencié') and 40 < poly.area < 300
+        if lidar_roof_ok:
+            pass
+        elif (not poly.interiors and h <= 10 and usage in ('Résidentiel', 'Indifférencié') and 40 < poly.area < 300
                 and mrr.geom_type == 'Polygon' and poly.area/mrr.area > 0.86):
             c = np.asarray(orient(mrr, 1.0).exterior.coords)[:4]
             l01 = np.hypot(*(c[1]-c[0])); l12 = np.hypot(*(c[2]-c[1]))
@@ -394,7 +496,10 @@ for f in B:
         if TILES: lod1(poly, zb, zt, col, rcol)
         nb += 1
 print('buildings', nb, 'gables', gables)
+print('LiDAR roofs', ROOF_STATS)
 json.dump(INFO, open(OUTD+'/batiments_info.json', 'w'), ensure_ascii=False)
+ROOF_STATS["triangle_budget_per_building"] = 400
+json.dump(ROOF_STATS, open(OUTD+'/toits_lidar_stats.json', 'w'), ensure_ascii=False)
 
 BMATS = (('res', M_RES), ('com', M_COM), ('plain', M_PLAIN), ('barre', M_BARRE), ('tour', M_TOUR), ('pignon', M_PIGNON), ('roof_t', M_ROOF_T), ('roof_s', M_ROOF_S), ('roof_f', M_ROOF_F))
 if TILES:
@@ -571,4 +676,13 @@ print('water polys', len(wp))
 
 G.g["scenes"][0]["extras"] = {"origine": "31 allée Le Gréco, 87100 Limoges", "lambert93": [X0, Y0, H0], "rayon_m": R}
 G.write(OUTD+'/ville_objets.glb')
-import os; print([(f, os.path.getsize(OUTD+'/'+f)/1e6) for f in os.listdir(OUTD)])
+import os
+ROOF_STATS["build_seconds"] = round(time.perf_counter()-BUILD_STARTED, 2)
+OUT_BYTES = {name: os.path.getsize(os.path.join(OUTD,name)) for name in os.listdir(OUTD) if os.path.isfile(os.path.join(OUTD,name))}
+ROOF_STATS["output_bytes"] = int(sum(OUT_BYTES.values()))
+if TILES and os.path.isdir(TILES):
+    _tile_files = [os.path.join(root,name) for root,_,names in os.walk(TILES) for name in names if name.endswith('.glb')]
+    ROOF_STATS["detailed_tile_bytes"] = int(sum(os.path.getsize(p) for p in _tile_files if '/d_' in p.replace('\\\\','/')))
+    ROOF_STATS["lod_tile_bytes"] = int(sum(os.path.getsize(p) for p in _tile_files if '/l_' in p.replace('\\\\','/')))
+json.dump(ROOF_STATS, open(OUTD+'/toits_lidar_stats.json', 'w'), ensure_ascii=False)
+print('output MB', {k:round(v/1e6,2) for k,v in OUT_BYTES.items()})

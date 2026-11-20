@@ -342,3 +342,13 @@ Sources : [Google Map Tiles Policies](https://developers.google.com/maps/documen
 - Test hors réseau : `node --test appart-studio/apartmentDefaults.test.mjs`. La trame 3,2 m n'est pas une détection des travées architecturales réelles.
 
 **Non testé :** aucun runtime Node, navigateur Safari/iPhone, capture, validation de géométrie sur les cinq adresses ou vérification réelle du rendu soleil/fenêtre.
+
+
+## Toitures LiDAR HD (outils/build.py)
+
+- Le builder échantillonne le MNH IGN (2 m) à l'intérieur des emprises BD TOPO, après retrait d'une bande périphérique de 0,5 m. Les pixels MNH isolés au-dessus de la hauteur BD TOPO +3 m sont écartés comme candidats végétation.
+- Égout : percentile 15 des pixels situés à moins de 3 m du bord. Faîtage : percentile 95 de tous les pixels valides. Si l'écart du faîtage à la hauteur BD TOPO dépasse 6 m, la reconstruction LiDAR est rejetée et le toit précédent est conservé.
+- Les cellules MNH sont découpées par l'emprise (y compris les cours), avec maillage adaptatif et déduplication des sommets ; plafond de 400 triangles par bâtiment. Les murs détaillés s'arrêtent à l'égout. Les LOD éloignés restent les prismes BD TOPO.
+- Les toits LiDAR sont exportés dans les mêmes meshes opaques que les bâtiments. Le BVH solaire parcourt les meshes visibles de la scène : il teste donc les mêmes surfaces de toit que celles rendues à ce LOD, sans deuxième géométrie d'obstacle.
+- `outils/toits_lidar.py` contient la logique testable indépendamment. Tests synthétiques hors réseau : `python -m unittest discover -s outils -p "test_toits_lidar.py" -v`. Les métriques par build sont écrites dans `toits_lidar_stats.json` (couverture LiDAR, replis, triangles, tailles de sorties/tiles).
+- Limites : résolution source 2 m ; petits détails inférieurs à cette résolution ne peuvent pas être garantis. Les pixels d'émergences de plus de 1,5 m sont conservés quand ils sont supportés par plusieurs pixels MNH et ne sont pas classés comme végétation isolée.
