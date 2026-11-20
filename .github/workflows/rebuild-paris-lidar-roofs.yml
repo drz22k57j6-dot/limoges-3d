@@ -12,6 +12,16 @@ on:
         type: boolean
         required: true
         default: true
+      source_run_id:
+        description: "Reuse a previously uploaded source artifact (leave empty to download fresh IGN data)"
+        type: string
+        required: false
+        default: ""
+      source_run_attempt:
+        description: "Attempt number of the source run artifact"
+        type: string
+        required: false
+        default: "1"
 permissions:
   contents: write
   pull-requests: write
@@ -64,13 +74,23 @@ jobs:
           if [[ -d data/paris/tuiles ]]; then bytes=$(du -sb data/paris/tuiles | cut -f1); fi
           echo "bytes=$bytes" >> "$GITHUB_OUTPUT"
       - name: Download IGN MNT/MNH 2m + MNH LiDAR HD 50cm and source data around rue Cler
+        if: inputs.source_run_id == ''
         env:
           X0: ${{ steps.address.outputs.x }}
           Y0: ${{ steps.address.outputs.y }}
         run: |
           mkdir -p data/paris/source data/paris/tuiles
           python -I outils/dl_ville.py "$X0" "$Y0" data/paris/source
-      - name: Verify and preserve downloaded IGN source data
+      - name: Restore previously uploaded IGN source artifact
+        if: inputs.source_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: paris-lidar-source-${{ inputs.source_run_id }}-${{ inputs.source_run_attempt }}
+          path: data/paris/source/
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.source_run_id }}
+      - name: Verify restored or downloaded IGN source data
         run: |
           python - <<'PY'
           import os
@@ -90,6 +110,7 @@ jobs:
               raise SystemExit("No IGN source files were downloaded")
           PY
       - name: Upload IGN source data before the expensive build
+        if: inputs.source_run_id == ''
         uses: actions/upload-artifact@v4
         with:
           name: paris-lidar-source-${{ github.run_id }}-${{ github.run_attempt }}
