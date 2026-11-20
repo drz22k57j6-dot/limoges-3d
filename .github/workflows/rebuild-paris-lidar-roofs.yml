@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feat/appart-studio-lidar-real-roofs
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - name: Validate coverage input
         run: |
@@ -70,6 +70,33 @@ jobs:
         run: |
           mkdir -p data/paris/source data/paris/tuiles
           python -I outils/dl_ville.py "$X0" "$Y0" data/paris/source
+      - name: Verify and preserve downloaded IGN source data
+        run: |
+          python - <<'PY'
+          import os
+          root = "data/paris/source"
+          files = []
+          total = 0
+          for base, _, names in os.walk(root):
+              for name in names:
+                  path = os.path.join(base, name)
+                  size = os.path.getsize(path)
+                  files.append((path, size))
+                  total += size
+          print(f"Source files: {len(files)}; total: {total} bytes ({total/1e9:.3f} GB)")
+          for path, size in sorted(files):
+              print(f"{size:>12}  {path}")
+          if not files or total == 0:
+              raise SystemExit("No IGN source files were downloaded")
+          PY
+      - name: Upload IGN source data before the expensive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: paris-lidar-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: data/paris/source/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 30
       - name: Prepare non-committed fallback textures for builder-only outputs
         run: |
           mkdir -p pub/data/tex
